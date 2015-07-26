@@ -1,4 +1,4 @@
-short floor(float x)
+short floorMy(float x)
 /* A limited implementation of C function floor - only to convert from float to short.
    Works with positive, negative numbers and 0.
  */
@@ -25,44 +25,47 @@ short roundMy(float x)
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void accel_change(short direction_loc, short accel_loc, float speed1_loc)
-/* Run the function every time you want to change acceleration.
+void change_speed(float speed1_loc)
+/* Run the function every time you want to change speed. It will figure out required accel based on current speed and speed1,
+   and will update t0, speed0, pos0, if accel changed here.
    Inputs:
-    - direction_loc: new direction; ignored if =0 - convenient for the cases when you just want to keep the old
-        direction; direction is only updated when accel changed and old direction=0;
-    - accel_loc: the new value for acceleration
     - speed1_loc: new target speed.
  */
 {
-  if (accel_loc != accel)
-    // Only do something when the acceleration actually changed:
+  short new_accel;
+
+  if (speed1 >= speed)
+    // We have to accelerate
+    new_accel = 1;
+  else
+    // Have to decelerate:
+    new_accel = -1;
+
+  if (new_accel != accel)
+    // Acceleration changed
   {
-    accel = accel_loc;
+    accel = new_accel;
     // Memorizing the current values for t, speed and pos:
     t0 = t;
     speed0 = speed;
     pos0 = pos;
-    if (direction == 0 && direction_loc != 0)
-      {
-        // We are here only if we are to change the direction (from rest only)
-        direction = direction_loc;
-        // Sending the direction sigmal to the motor:
-        if (direction == -1)
-          digitalWrite(PIN_DIR, LOW);
-        else
-          digitalWrite(PIN_DIR, HIGH);
-      }
-    // Updating the target speed:
-    speed1 = speed1_loc;
   }
+
+  if (accel != 0 && moving == 0)
+    // Starting moving
+    moving = 1;
+
+  // Updating the target speed:
+  speed1 = speed1_loc;
+
   return;
 }
 
 
 void show_params()
 {
-//  Serial.print(pos_short_old);   
-//  Serial.print(" ");
-//  Serial.println(pos);
+  //  Serial.print(pos_short_old);
+  //  Serial.print(" ");
+  //  Serial.println(pos);
   return;
 }

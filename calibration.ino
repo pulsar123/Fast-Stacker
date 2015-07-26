@@ -4,6 +4,7 @@ void calibration()
  */
 {
 
+/*
   // Ensuring that the lines before are computed once per switch calibration:
   if (calibrate_flag == 1)
     return;
@@ -66,7 +67,7 @@ void calibration()
 
   if (calibrate_flag == 0)
     calibrate_flag = 1;
-
+*/
   return;
 }
 

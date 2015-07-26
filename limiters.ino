@@ -5,6 +5,7 @@ void limiters()
 {
   short dx, dx_break;
 
+/*
   // Nothing to do if not moving (the special case of limiters enabled at power up time
   // is handled elsewhere - in setup() etc.
   if (direction == 0)
@@ -75,7 +76,7 @@ void limiters()
       }
     }
   }
-
+*/
   return;
 }
 

@@ -31,7 +31,7 @@ void setup() {
   abortMy = 0;
 
   // Initializing program parameters:
-  direction = 0;
+  moving = 0;
   speed1 = 0.0;
   accel = 0;
   speed0 = 0.0;
@@ -74,43 +74,26 @@ void loop()
 
   // Simple test:
 
-  // At t=1s, start moving forward with constant acceleration
-  if (flag == 0 && direction == 0)
+  // At t=0, start moving forward with constant acceleration
+  if (flag == 0)
   {
     flag = 1;
-    // ACcelerate to target speed in -1 direction:
-    accel_change(1, 1, SPEED_LIMIT);
+    // ACcelerate to positive speed:
+    change_speed(SPEED_LIMIT);
     pos0 = 0.0;
     show_params();
   }
 
-  // After 3s of moving forward, start slowing down with constant deceleration
-  if (flag == 1 && accel == 0 && t - t0 > 3000000)
+  if (flag == 1 && accel==0 && t - t0>3000000)
   {
     flag = 2;
-    // Stop (valid for any direction):
-    accel_change(0, -1, 0.0);
-    show_params();
-  }
-
-  if (flag == 2 && direction == 0)
-  {
-    flag = 3;
     // Accelerate in the opposite direction:
-    accel_change(-1, 1, SPEED_LIMIT);
-    show_params();
-  }
-
-  if (flag == 3 && accel == 0 && t - t0 > 3000000)
-  {
-    flag = 4;
-// Stop:
-    accel_change(0, -1, 0.0);
+    change_speed(-SPEED_LIMIT);
     show_params();
   }
 
   // Got to the start:
-  if (flag == 4 && direction == 0)
+  if (flag == 2 && accel==0 && t - t0>3000000)
   {
     flag = 0;
   }

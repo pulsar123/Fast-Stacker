@@ -2,11 +2,10 @@
 //#include "stacker.h"
 
 void motor_control()
-/* Controlling the stepper motor, based on current time, direction, target speed (speed1), acceleration (accel),
+/* Controlling the stepper motor, based on current time, target speed (speed1), acceleration (accel),
    values at the last accel change (t0, pos0, speed0), and old integer position pos_old_short.
 
-   Important: "direction" can be set to zero only here! Also, it should be set to -1 or 1 only outside of this function.
-   "direction" cannot go straight from "-1" to "1" and visa versa without going through "0" first.
+   Important: "moving" can be set to zero only here! Also, it should be set to 1 only outside of this function.
  */
 {
   unsigned long dt, dt_a;
@@ -17,7 +16,7 @@ void motor_control()
   t = micros();
 
   // direction=0 means no motion, so simply returning:
-  if (direction == 0)
+  if (moving == 0)
     return;
 
 
@@ -40,7 +39,7 @@ void motor_control()
     // can be negative or positive:
     dV = (float)accel * ACCEL_LIMIT * (float)dt;
 
-    // Current speed (should be always >0):
+    // Current speed (can be positive or negative):
     speed = speed0 + dV;
 
     // If going beyond the target speed, stop accelerating:
@@ -51,17 +50,18 @@ void motor_control()
       dt_a = (float)accel * (speed1 - speed0) / ACCEL_LIMIT;
       // Current position has two components: first one (from t0 to t_a) is still accelerated,
       // second one (t_a ... t) has accel=0:
-      pos = pos0 + (float)direction * ((float)dt_a * (speed0 + 0.5 * (float)accel * ACCEL_LIMIT * (float)dt_a) + speed1*(float)(dt - dt_a));
+      pos = pos0 + (float)dt_a * (speed0 + 0.5 * (float)accel * ACCEL_LIMIT * (float)dt_a) + speed1*(float)(dt - dt_a);
       //p1 = dt_a * direction * speed0;
       //p2 = dt_a*0.5 * direction * accel * ACCEL_LIMIT * dt_a;
       //p3 = speed1*(float)(dt - dt_a);
       //pp=p1+p2+p3;
       speed = speed1;
       new_accel = 0;
-      if (accel == -1)
+      // If the target speed was zero, stop now
+      if (speed1<1e-8 && speed1>-1e-8)
       {
         // At this point we stopped, so no need to revisit the motor_control module:
-        direction = 0;
+        moving = 0;
         // We can lower the breaking flag now, as we already stopped:
         breaking = 0;
       }
@@ -69,20 +69,20 @@ void motor_control()
     else
     {
       // Current position when accel didn't change between t0 and t:
-      pos = pos0 +  (float)direction * (float)dt * (speed0 + 0.5 * dV );
+      pos = pos0 +  (float)dt * (speed0 + 0.5 * dV );
     }
   }
   else
   {
     // Current position when accel=0
-    pos = pos0 +  (float)dt * (float)direction * speed0;
+    pos = pos0 +  (float)dt * speed0;
   }
 
   //////////  PART 2: Estimating if we need to make a step, and making the step if needed
 
 
   // Integer position (in microsteps):
-  short pos_short = floor(pos);
+  short pos_short = floorMy(pos);
 /*
 Serial.print("pos=");
 Serial.print(pos);
@@ -114,6 +114,18 @@ Serial.print(" dV=");
 Serial.println(dV,6);
 delay(100);
 */
+  // If speed changed the sign since the last step, change motor direction:
+  if (speed>0.0 && speed_old<=0.0)
+    {
+      digitalWrite(PIN_DIR, HIGH);
+      delayMicroseconds(STEP_LOW_DT);
+    }
+  else if(speed<0.0 && speed_old>=0.0)
+  {
+      digitalWrite(PIN_DIR, LOW);
+      delayMicroseconds(STEP_LOW_DT);
+  }
+  
   // If the pos_short changed since the last step, do another step
   if (pos_short != pos_short_old)
   {
@@ -125,6 +137,8 @@ delay(100);
 
     // Saving the current position as old:
     pos_short_old = pos_short;
+    // Old speed (to use to detect when the dirtection has to change):
+    speed_old = speed;
   }
 
 

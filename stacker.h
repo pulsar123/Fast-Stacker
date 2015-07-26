@@ -62,15 +62,16 @@
 
 // Variables used to communicate between modules:
 unsigned long t;  // Time in us measured at the beginning of motor_control() module
-short direction;  // desired direction: -1 for reverse, 0 for stopped, 1 for forward; can only be changed in steps of 1; can only be set to 0 in motor_control()
-float speed1; // Target speed, in microsteps per microsecond (>=0)
-float speed;  // Current speed (>=0)
+short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
+float speed1; // Target speed, in microsteps per microsecond (
+float speed;  // Current speed (negative, 0 or positive)
 short accel; // Current acceleration, in ACCEL_LIMIT units. Allowed values: -1,0,1
 float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
 short pos_short_old;  // Previously computed position
 float pos0;  // Last position when accel changed
 unsigned long t0; // Last time when accel changed
 float speed0; // Last speed when accel changed
+float speed_old; // speed at the previous step
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
 unsigned char calibrate=0; // =3 when both limiters calibration is required; =1/2 when only the fore/background limiter (limit1/2) should be calibrated
