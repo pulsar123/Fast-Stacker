@@ -34,7 +34,7 @@ void change_speed(float speed1_loc)
 {
   short new_accel;
 
-  if (speed1 >= speed)
+  if (speed1_loc >= speed)
     // We have to accelerate
     new_accel = 1;
   else

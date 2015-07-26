@@ -64,7 +64,9 @@ void setup() {
   digitalWrite(PIN_ENABLE, LOW);        
   flag = 0;
   pos = 0;
-//  Serial.begin(9600);
+#ifdef DEBUG
+  Serial.begin(9600);
+#endif
 }
 
 
@@ -79,21 +81,34 @@ void loop()
   {
     flag = 1;
     // ACcelerate to positive speed:
-    change_speed(SPEED_LIMIT);
-    pos0 = 0.0;
+    change_speed(SPEED_LIMIT/3.0);
+//    pos0 = 0.0;
     show_params();
   }
 
-  if (flag == 1 && accel==0 && t - t0>3000000)
+  if (flag == 1 && accel==0 && t - t0>2000000)
   {
     flag = 2;
-    // Accelerate in the opposite direction:
+    change_speed(SPEED_LIMIT);
+    show_params();
+  }
+
+  if (flag == 2 && accel==0 && t - t0>2000000)
+  {
+    flag = 3;
+    change_speed(-SPEED_LIMIT/3.0);
+    show_params();
+  }
+
+  if (flag == 3 && accel==0 && t - t0>2000000)
+  {
+    flag = 4;
     change_speed(-SPEED_LIMIT);
     show_params();
   }
-
+  
   // Got to the start:
-  if (flag == 2 && accel==0 && t - t0>3000000)
+  if (flag == 4 && accel==0 && t - t0>2000000)
   {
     flag = 0;
   }

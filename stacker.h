@@ -8,6 +8,8 @@
 #ifndef STACKER_H
 #define STACKER_H
 
+//#define DEBUG
+
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
 #define PIN_STEP 0

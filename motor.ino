@@ -28,9 +28,11 @@ void motor_control()
   new_accel = accel;
 
 //!!!
-//    dt_a=0;
-//    dV=0;
-//    float p1, p2, p3, pp;
+#ifdef DEBUG
+    dt_a=0;
+    dV=0;
+    float p1, p2, p3, pp;
+#endif
 
   if (accel != 0)
     // Accelerating/decelerating cases
@@ -51,10 +53,10 @@ void motor_control()
       // Current position has two components: first one (from t0 to t_a) is still accelerated,
       // second one (t_a ... t) has accel=0:
       pos = pos0 + (float)dt_a * (speed0 + 0.5 * (float)accel * ACCEL_LIMIT * (float)dt_a) + speed1*(float)(dt - dt_a);
-      //p1 = dt_a * direction * speed0;
-      //p2 = dt_a*0.5 * direction * accel * ACCEL_LIMIT * dt_a;
-      //p3 = speed1*(float)(dt - dt_a);
-      //pp=p1+p2+p3;
+//      p1 = dt_a * direction * speed0;
+//      p2 = dt_a*0.5 * direction * accel * ACCEL_LIMIT * dt_a;
+//      p3 = speed1*(float)(dt - dt_a);
+//      pp=p1+p2+p3;
       speed = speed1;
       new_accel = 0;
       // If the target speed was zero, stop now
@@ -68,7 +70,7 @@ void motor_control()
     }
     else
     {
-      // Current position when accel didn't change between t0 and t:
+      // Current position when accel !=0 :
       pos = pos0 +  (float)dt * (speed0 + 0.5 * dV );
     }
   }
@@ -83,6 +85,8 @@ void motor_control()
 
   // Integer position (in microsteps):
   short pos_short = floorMy(pos);
+
+#ifdef DEBUG
 /*
 Serial.print("pos=");
 Serial.print(pos);
@@ -90,40 +94,104 @@ Serial.print(" pos_short=");
 Serial.print(pos_short);
 Serial.print(" new_accel=");
 Serial.print(new_accel);
-Serial.print(" dir=");
-Serial.print(direction);
+Serial.print(" moving=");
+Serial.print(moving);
 Serial.print(" speed1=");
 Serial.print(speed1,6);
 Serial.print(" pos0=");
 Serial.print(pos0);
 Serial.print(" dt=");
 Serial.print(dt);
-Serial.print(" p1=");
-Serial.print(p1);
-Serial.print(" p2=");
-Serial.print(p2);
-Serial.print(" p3=");
-Serial.print(p3);
-Serial.print(" pp=");
-Serial.print(pp);
+Serial.print(" speed=");
+Serial.print(speed,6);
+Serial.print(" speed_old=");
+Serial.print(speed_old,6);
+Serial.print(" speed0=");
+Serial.print(speed0,6);
+Serial.print(" accel=");
+Serial.print(accel);
 Serial.print(" dt_a=");
 Serial.print(dt_a);
 Serial.print(" acc_limit=");
 Serial.print(ACCEL_LIMIT,9);
 Serial.print(" dV=");
 Serial.println(dV,6);
-delay(100);
+delay(50);
 */
+#endif 
+
   // If speed changed the sign since the last step, change motor direction:
   if (speed>0.0 && speed_old<=0.0)
     {
       digitalWrite(PIN_DIR, HIGH);
       delayMicroseconds(STEP_LOW_DT);
+#ifdef DEBUG
+      Serial.println(" ***PIN_DIR=HIGH");
+Serial.print("pos=");
+Serial.print(pos);
+Serial.print(" pos_short=");
+Serial.print(pos_short);
+Serial.print(" new_accel=");
+Serial.print(new_accel);
+Serial.print(" moving=");
+Serial.print(moving);
+Serial.print(" speed1=");
+Serial.print(speed1,6);
+Serial.print(" pos0=");
+Serial.print(pos0);
+Serial.print(" dt=");
+Serial.print(dt);
+Serial.print(" speed=");
+Serial.print(speed,6);
+Serial.print(" speed_old=");
+Serial.print(speed_old,6);
+Serial.print(" speed0=");
+Serial.print(speed0,6);
+Serial.print(" accel=");
+Serial.print(accel);
+Serial.print(" dt_a=");
+Serial.print(dt_a);
+Serial.print(" acc_limit=");
+Serial.print(ACCEL_LIMIT,9);
+Serial.print(" dV=");
+Serial.println(dV,6);
+#endif
     }
   else if(speed<0.0 && speed_old>=0.0)
   {
       digitalWrite(PIN_DIR, LOW);
       delayMicroseconds(STEP_LOW_DT);
+#ifdef DEBUG
+      Serial.println(" ***PIN_DIR=LOW");
+Serial.print("pos=");
+Serial.print(pos);
+Serial.print(" pos_short=");
+Serial.print(pos_short);
+Serial.print(" new_accel=");
+Serial.print(new_accel);
+Serial.print(" moving=");
+Serial.print(moving);
+Serial.print(" speed1=");
+Serial.print(speed1,6);
+Serial.print(" pos0=");
+Serial.print(pos0);
+Serial.print(" dt=");
+Serial.print(dt);
+Serial.print(" speed=");
+Serial.print(speed,6);
+Serial.print(" speed_old=");
+Serial.print(speed_old,6);
+Serial.print(" speed0=");
+Serial.print(speed0,6);
+Serial.print(" accel=");
+Serial.print(accel);
+Serial.print(" dt_a=");
+Serial.print(dt_a);
+Serial.print(" acc_limit=");
+Serial.print(ACCEL_LIMIT,9);
+Serial.print(" dV=");
+Serial.println(dV,6);
+#endif
   }
   
   // If the pos_short changed since the last step, do another step
