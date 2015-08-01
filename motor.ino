@@ -60,12 +60,15 @@ void motor_control()
       speed = speed1;
       new_accel = 0;
       // If the target speed was zero, stop now
-      if (speed1<1e-8 && speed1>-1e-8)
+      if (speed1<SMALL && speed1>-SMALL)
       {
         // At this point we stopped, so no need to revisit the motor_control module:
         moving = 0;
         // We can lower the breaking flag now, as we already stopped:
         breaking = 0;
+        // At this point any calibration should be done:
+        calibrate_flag = 0;
+        
       }
     }
     else
@@ -123,6 +126,7 @@ delay(50);
   // If speed changed the sign since the last step, change motor direction:
   if (speed>0.0 && speed_old<=0.0)
     {
+      direction = 1;
       digitalWrite(PIN_DIR, HIGH);
       delayMicroseconds(STEP_LOW_DT);
 #ifdef DEBUG
@@ -159,8 +163,9 @@ Serial.println(dV,6);
     }
   else if(speed<0.0 && speed_old>=0.0)
   {
-      digitalWrite(PIN_DIR, LOW);
-      delayMicroseconds(STEP_LOW_DT);
+    direction = -1;
+    digitalWrite(PIN_DIR, LOW);
+    delayMicroseconds(STEP_LOW_DT);
 #ifdef DEBUG
       Serial.println(" ***PIN_DIR=LOW");
 Serial.print("pos=");

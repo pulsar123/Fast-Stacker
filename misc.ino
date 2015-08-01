@@ -34,6 +34,11 @@ void change_speed(float speed1_loc)
 {
   short new_accel;
 
+  // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
+  // DOn't forget to reset breaking=0 somewhere!
+  if (breaking || calibrate_flag == 2)
+    return;
+
   if (speed1_loc >= speed)
     // We have to accelerate
     new_accel = 1;
@@ -60,7 +65,63 @@ void change_speed(float speed1_loc)
 
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+void travel_init(short pos1_short)
+/* Initiating a travel to pos1 at maximum acceleration/speed
+ */
+{
+  // Have to be still to travel:
+  if (moving > 0 || pos1_short==pos_short_old)
+    return;
+
+  if (pos1_short > pos_short_old)
+  {
+    speed_change(SPEED_LIMIT);
+  }
+  else if (pos1_short < pos_short_old)
+  {
+    speed_change(-SPEED_LIMIT);
+  }
+  
+  travel_flag = 1;
+  pos_travel_short = pos1_short;
+
+  return;
+
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void travel()
+/* Travelling to predefined position, pos_travel_short
+ */
+{
+  if (travel_flag==0 || breaking==1)
+    return;
+
+ // Checking how far we are from a limiter in the direction we are moving
+  if (speed < 0.0)
+    dx = pos_short_old - pos_travel_short;
+  else
+    dx = pos_travel_short - pos_short_old;
+  // Preliminary test (for highest possible speed):
+  if (dx <= roundMy(BREAKING_DISTANCE))
+  {
+    // Breaking distance at the current speed:
+    dx_break = roundMy(0.5 * speed * speed / ACCEL_LIMIT);
+    // Accurate test (for the current speed):
+    if (dx <= dx_break)
+      // Emergency breaking, to avoid hitting the limiting switch
+    {
+      change_speed(0.0);
+      breaking = 1;
+    }
+  }
+
+
+}
 
 void show_params()
 {

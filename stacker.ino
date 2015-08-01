@@ -54,11 +54,14 @@ void setup() {
     EEPROM.get( ADDR_LIMIT2, limit2);
   }
   calibrate_init = calibrate;
+  calibrate_flag = 0;
   pos0 = pos;
   pos_short_old = floor(pos);
   t0 = micros();
   t = t0;
   breaking = 0;
+  travel_flag = 0;
+  direction = 1;
 
   // For testing:
   digitalWrite(PIN_ENABLE, LOW);        
@@ -114,15 +117,19 @@ void loop()
   }
 
   // All the processing related to the two extreme limits for the macro rail movements:
-  //  limiters();
+  if (moving==1 && breaking==0)
+    limiters();
 
   // Prevent motor operations if limiters are engaged initially:
   //  if (abortMy && direction == 0)
   //    return;
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
-  //  if (calibrate_init>0 && direction==0 && breaking==0)
-  //    calibration();
+  if (calibrate_init>0 && moving==0 && breaking==0)
+      calibration();
+
+  // Travel arrangements
+  travel();
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();

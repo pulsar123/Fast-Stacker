@@ -35,21 +35,26 @@
 
 //////// Parameters which might need to be changed occasionally ////////
 // Speed limiter, in mm/s
-#define SPEED_LIMIT_MM_S 5
+#define SPEED_LIMIT_MM_S 5 
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 #define BREAKING_DISTANCE_MM 2.0
+// Padding (in microsteps) before hitting the limiters:
+#define LIMITER_PAD (short)400
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
 #define STEP_LOW_DT 3
+// A small float (to detect zero speed):
+#define SMALL 1e-8
 
 //////// Don't modify these /////////
 // Number of microsteps per rotation
 #define MICROSTEPS_PER_ROTATION (MOTOR_STEPS*N_MICROSTEPS)
 // Speed limit in internal units (microsteps per microsecond):
 #define SPEED_LIMIT (MICROSTEPS_PER_ROTATION*SPEED_LIMIT_MM_S/(1.0e6*MM_PER_ROTATION))
+#define SPEED1 SPEED_LIMIT/sqrt(2.0)
 // Breaking distance in internal units (microsteps):
 #define BREAKING_DISTANCE (MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION))
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
@@ -84,6 +89,9 @@ short limit1; // pos_short for the foreground limiter
 short limit2; // pos_short for the background limiter
 short limit_tmp; // temporary value of a new limit when rail activates a limiter
 unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch)
+unsigned char travel_flag; // =1 when travle was initiated
+short pos_travel_short; // position to travel to
+short direction;  // assigned to the current direction (-1 or 1) inside motor_control()
 
 unsigned char flag; // for testing
 
