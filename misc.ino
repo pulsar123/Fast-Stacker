@@ -25,11 +25,12 @@ short roundMy(float x)
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void change_speed(float speed1_loc)
+void change_speed(float speed1_loc, short moving_mode1)
 /* Run the function every time you want to change speed. It will figure out required accel based on current speed and speed1,
    and will update t0, speed0, pos0, if accel changed here.
    Inputs:
     - speed1_loc: new target speed.
+    When moving_mode1=1, global moving_mode=1 is  enabled (to be used in go_to).
  */
 {
   short new_accel;
@@ -38,6 +39,8 @@ void change_speed(float speed1_loc)
   // DOn't forget to reset breaking=0 somewhere!
   if (breaking || calibrate_flag == 2)
     return;
+
+  moving_mode = moving_mode1;
 
   if (speed1_loc >= speed)
     // We have to accelerate
@@ -68,60 +71,72 @@ void change_speed(float speed1_loc)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void travel_init(short pos1_short)
+void go_to(short pos1_short)
 /* Initiating a travel to pos1 at maximum acceleration/speed
  */
 {
-  // Have to be still to travel:
-  if (moving > 0 || pos1_short==pos_short_old)
+  float speed1_loc; 
+  
+  // We are already there:
+  if (moving == 0 && pos1_short == pos_short_old)
     return;
 
-  if (pos1_short > pos_short_old)
+  // Stopping distance in the current direction:
+  float dx_stop = speed * speed / (2.0 * ACCEL_LIMIT);
+  short dx_short = pos1_short - pos_short_old;
+
+  if (dx_short > 0 && speed >= 0.0)
+    //  Target in the same direction as the current speed, positive speed
   {
-    speed_change(SPEED_LIMIT);
+    if (dx_stop <= (float)dx_short)
+      // We can make it by just breaking (no speed change involved):
+    {
+      speed1_loc = SPEED_LIMIT;
+    }
+    else
+      // We can't make it, so will approach the target from the opposite direction (speed change involved):
+    {
+      speed1_loc = -SPEED_LIMIT;
+    }
   }
-  else if (pos1_short < pos_short_old)
+  else if (dx_short < 0 && speed < 0.0)
+    //  Target in the same direction as the current speed, negative speed
   {
-    speed_change(-SPEED_LIMIT);
+    if (dx_stop >= (float)dx_short)
+      // We can make it by just breaking (no speed change involved):
+    {
+      speed1_loc = -SPEED_LIMIT;
+    }
+    else
+      // We can't make it, so will approach the target from the opposite direction (speed change involved):
+    {
+      speed1_loc = SPEED_LIMIT;
+    }
   }
+  else if (dx_short > 0 && speed < 0.0)
+    // Moving in the wrong direction, have to change direction (negative speed)
+  {
+    speed1_loc = SPEED_LIMIT;
+  }
+  else if (dx_short < 0 && speed >= 0.0)
+    // Moving in the wrong direction, have to change direction (positive speed)
+  {
+    speed1_loc = -SPEED_LIMIT;
+  }
+
+// Setting the target speed and moving_mode=1:
+  change_speed(speed1_loc, 1);
+
+  pos_stop_flag = 0;
   
-  travel_flag = 1;
-  pos_travel_short = pos1_short;
+// Global parameter to be used in motor_control():
+  pos_goto_short = pos1_short;
 
   return;
 
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-void travel()
-/* Travelling to predefined position, pos_travel_short
- */
-{
-  if (travel_flag==0 || breaking==1)
-    return;
-
- // Checking how far we are from a limiter in the direction we are moving
-  if (speed < 0.0)
-    dx = pos_short_old - pos_travel_short;
-  else
-    dx = pos_travel_short - pos_short_old;
-  // Preliminary test (for highest possible speed):
-  if (dx <= roundMy(BREAKING_DISTANCE))
-  {
-    // Breaking distance at the current speed:
-    dx_break = roundMy(0.5 * speed * speed / ACCEL_LIMIT);
-    // Accurate test (for the current speed):
-    if (dx <= dx_break)
-      // Emergency breaking, to avoid hitting the limiting switch
-    {
-      change_speed(0.0);
-      breaking = 1;
-    }
-  }
-
-
-}
 
 void show_params()
 {

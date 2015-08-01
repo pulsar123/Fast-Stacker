@@ -36,6 +36,7 @@ void setup() {
   accel = 0;
   speed0 = 0.0;
   speed = 0.0;
+  pos_stop_flag = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
@@ -60,8 +61,7 @@ void setup() {
   t0 = micros();
   t = t0;
   breaking = 0;
-  travel_flag = 0;
-  direction = 1;
+  pos_stop_flag = 0;
 
   // For testing:
   digitalWrite(PIN_ENABLE, LOW);        
@@ -84,7 +84,7 @@ void loop()
   {
     flag = 1;
     // ACcelerate to positive speed:
-    change_speed(SPEED_LIMIT/3.0);
+    change_speed(SPEED_LIMIT/3.0,0);
 //    pos0 = 0.0;
     show_params();
   }
@@ -92,21 +92,21 @@ void loop()
   if (flag == 1 && accel==0 && t - t0>2000000)
   {
     flag = 2;
-    change_speed(SPEED_LIMIT);
+    change_speed(SPEED_LIMIT,0);
     show_params();
   }
 
   if (flag == 2 && accel==0 && t - t0>2000000)
   {
     flag = 3;
-    change_speed(-SPEED_LIMIT/3.0);
+    change_speed(-SPEED_LIMIT/3.0,0);
     show_params();
   }
 
   if (flag == 3 && accel==0 && t - t0>2000000)
   {
     flag = 4;
-    change_speed(-SPEED_LIMIT);
+    change_speed(-SPEED_LIMIT,0);
     show_params();
   }
   
@@ -127,9 +127,6 @@ void loop()
   // Perform calibration of the limiters if requested (only when the rail is at rest):
   if (calibrate_init>0 && moving==0 && breaking==0)
       calibration();
-
-  // Travel arrangements
-  travel();
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();

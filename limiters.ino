@@ -16,7 +16,7 @@ void limiters()
   {
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
-    change_speed(0.0);
+    change_speed(0.0,0);
     // This should be after change_speed(0.0):
     breaking = 1;
     // Requesting immediate (after safely breaking the rail) calibration:
@@ -56,7 +56,7 @@ void limiters()
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch
         {
-          change_speed(0.0);
+          change_speed(0.0,0);
           breaking = 1;          
         }
       }

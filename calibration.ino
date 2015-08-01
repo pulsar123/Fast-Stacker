@@ -36,7 +36,7 @@ void calibration()
       EEPROM.put( ADDR_LIMIT2, limit2);
     }
     // Moving towards switch 1 for its calibration:
-    change_speed(-SPEED_LIMIT);
+    change_speed(-SPEED_LIMIT,0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     calibrate_flag = 2;
   }
@@ -52,7 +52,7 @@ void calibration()
       EEPROM.put( ADDR_LIMIT1, limit1);
     }
     // Moving towards switch 2 for its calibration:
-    change_speed(SPEED_LIMIT);
+    change_speed(SPEED_LIMIT,0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     calibrate_flag = 2;    
   }
@@ -68,9 +68,7 @@ void calibration()
       limit2 = limit_tmp - LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT2, limit2);
       // Travelling back into safe area:
-      travel_init(limit2-100);
-      // We first accelerate to SPEED1=SPEED_LIMIT/sqrt(2)
-//      change_speed(-SPEED1);
+      go_to((limit2-100));
     }
     else if (calibrate_init == 2)
     {
@@ -78,8 +76,7 @@ void calibration()
       limit1 = limit_tmp + LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT1, limit1);
       // Travelling back into safe area:
-      travel_init(limit1+100);
-//      change_speed(SPEED1);
+      go_to((limit1+100));
     }
     calibrate_init = 0;
   }

@@ -19,7 +19,6 @@ void motor_control()
   if (moving == 0)
     return;
 
-
   ////////   PART 1: estimating the current position, pos
 
   // Time in microseconds since the last accel change:
@@ -126,7 +125,6 @@ delay(50);
   // If speed changed the sign since the last step, change motor direction:
   if (speed>0.0 && speed_old<=0.0)
     {
-      direction = 1;
       digitalWrite(PIN_DIR, HIGH);
       delayMicroseconds(STEP_LOW_DT);
 #ifdef DEBUG
@@ -163,7 +161,6 @@ Serial.println(dV,6);
     }
   else if(speed<0.0 && speed_old>=0.0)
   {
-    direction = -1;
     digitalWrite(PIN_DIR, LOW);
     delayMicroseconds(STEP_LOW_DT);
 #ifdef DEBUG
@@ -212,6 +209,36 @@ Serial.println(dV,6);
     pos_short_old = pos_short;
     // Old speed (to use to detect when the dirtection has to change):
     speed_old = speed;
+  }
+
+  if (moving_mode == 1)
+  // Used in go_to mode
+  {
+    // Not sure if good idea:
+    // For small enough speed, we stop instantly when reaching the target location:
+    if (pos_short==pos_goto_short && speed>-SPEED_SMALL && speed<SPEED_SMALL)
+    {
+      new_accel = 0;
+      moving = 0;
+    }
+    // Final position  if full break enabled now:
+    if (speed >= 0.0)
+      pos_stop = pos + 0.5*(speed*speed)/ACCEL_LIMIT;
+      else
+      pos_stop = pos - 0.5*(speed*speed)/ACCEL_LIMIT;
+
+    if (pos_stop_flag==1 && ((pos>pos_stop && pos<pos_stop_old) || (pos<pos_stop && pos>pos_stop_old)))
+    // Time to break happened between the previous and current motor_control calls
+    {
+   // Initiating breaking:
+     if (speed >= 0.0)
+        new_accel = -1;
+        else
+        new_accel = 1;
+    speed1 = 0.0;
+    }
+  pos_stop_old = pos_stop;
+  pos_stop_flag = 1;
   }
 
 

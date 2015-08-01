@@ -54,6 +54,8 @@
 #define MICROSTEPS_PER_ROTATION (MOTOR_STEPS*N_MICROSTEPS)
 // Speed limit in internal units (microsteps per microsecond):
 #define SPEED_LIMIT (MICROSTEPS_PER_ROTATION*SPEED_LIMIT_MM_S/(1.0e6*MM_PER_ROTATION))
+// Speed small enough to allow instant stopping:
+#define SPEED_SMALL (0.01*SPEED_LIMIT)
 #define SPEED1 SPEED_LIMIT/sqrt(2.0)
 // Breaking distance in internal units (microsteps):
 #define BREAKING_DISTANCE (MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION))
@@ -79,6 +81,8 @@ float pos0;  // Last position when accel changed
 unsigned long t0; // Last time when accel changed
 float speed0; // Last speed when accel changed
 float speed_old; // speed at the previous step
+float pos_stop; // Current stop position if breaked
+float pos_stop_old; // Previously computed stop position if breaked
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
 unsigned char calibrate=0; // =3 when both limiters calibration is required; =1/2 when only the fore/background limiter (limit1/2) should be calibrated
@@ -90,9 +94,9 @@ short limit2; // pos_short for the background limiter
 short limit_tmp; // temporary value of a new limit when rail activates a limiter
 unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch)
 unsigned char travel_flag; // =1 when travle was initiated
-short pos_travel_short; // position to travel to
-short direction;  // assigned to the current direction (-1 or 1) inside motor_control()
-
+short pos_goto_short; // position to go to
+short moving_mode; // =0 when using speed_change, =1 when using go_to
+short pos_stop_flag; // flag to detect when motor_control is run first time
 unsigned char flag; // for testing
 
 
