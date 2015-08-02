@@ -27,6 +27,7 @@ const short PIN_LCD_DN_ = 11;
 const short PIN_LCD_SCL = 13;
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
 const short PIN_LIMITERS = 8;
+// Eight 4x4 keypad pins:
 
 //////// Parameters to be set only once //////////
 // Number of full steps per rotation for the stepper motor:
@@ -105,10 +106,27 @@ unsigned char travel_flag; // =1 when travle was initiated
 short pos_goto_short; // position to go to
 short moving_mode; // =0 when using speed_change, =1 when using go_to
 short pos_stop_flag; // flag to detect when motor_control is run first time
+char key_old;  // peviously pressd key (can be NO_KEY); used in keypad()
+short point1;  // foreground point for 2-point focus stacking
+short point2;  // background point for 2-point focus stacking
+
 unsigned char flag; // for testing
 };
 
 struct global g;
+
+// Keypad stuff:
+const byte rows = 4; //four rows
+const byte cols = 4; //three columns
+char keys[rows][cols] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+byte rowPins[rows] = {10, 12, A0, A1}; //connect to the row pinouts of the keypad
+byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 #endif
 

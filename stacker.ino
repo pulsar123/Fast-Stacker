@@ -6,6 +6,7 @@
 */
 #include <EEPROM.h>
 #include <math.h>
+#include <Keypad.h>
 #include "stacker.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -23,6 +24,11 @@ void setup() {
 #else
   digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
 #endif
+
+// Keypad stuff:
+// No locking for keys:
+  keypad.setHoldTime(1000000);
+  g.key_old = '=';
 
   // Limiting switches should not be on when powering up:
   g.limit_on = digitalRead(PIN_LIMITERS);
@@ -68,8 +74,11 @@ void setup() {
   g.breaking = 0;
   g.pos_stop_flag = 0;
 
+// Testing:
   g.flag = 0;
   g.pos = 0;
+  g.point1 = 0;
+  g.point2 = 10000;
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
@@ -113,11 +122,14 @@ void loop()
     show_params();
   }
   
-  // Got to the start:
+  // Go to the start:
   if (g.flag == 4 && g.accel==0 && g.t - g.t0>2000000)
   {
     g.flag = 0;
   }
+
+  // Processing the keypad:
+  process_keypad();
 
   // All the processing related to the two extreme limits for the macro rail movements:
   if (g.moving==1 && g.breaking==0)
