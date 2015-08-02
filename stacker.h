@@ -69,6 +69,9 @@
 #define ADDR_LIMIT1 ADDR_CALIBRATE+1 // pos_short for the foreground limiter; should be 0? (2 bytes)
 #define ADDR_LIMIT2 ADDR_LIMIT1+2 // pos_short for the background limiter (2 bytes)
 
+// All global variables belong to one structure - global:
+struct global 
+{
 // Variables used to communicate between modules:
 unsigned long t;  // Time in us measured at the beginning of motor_control() module
 short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
@@ -98,7 +101,9 @@ short pos_goto_short; // position to go to
 short moving_mode; // =0 when using speed_change, =1 when using go_to
 short pos_stop_flag; // flag to detect when motor_control is run first time
 unsigned char flag; // for testing
+};
 
+struct global g;
 
 #endif
 

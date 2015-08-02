@@ -37,34 +37,34 @@ void change_speed(float speed1_loc, short moving_mode1)
 
   // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
   // DOn't forget to reset breaking=0 somewhere!
-  if (breaking || calibrate_flag == 2)
+  if (g.breaking || g.calibrate_flag == 2)
     return;
 
-  moving_mode = moving_mode1;
+  g.moving_mode = moving_mode1;
 
-  if (speed1_loc >= speed)
+  if (speed1_loc >= g.speed)
     // We have to accelerate
     new_accel = 1;
   else
     // Have to decelerate:
     new_accel = -1;
 
-  if (new_accel != accel)
+  if (new_accel != g.accel)
     // Acceleration changed
   {
-    accel = new_accel;
+    g.accel = new_accel;
     // Memorizing the current values for t, speed and pos:
-    t0 = t;
-    speed0 = speed;
-    pos0 = pos;
+    g.t0 = g.t;
+    g.speed0 = g.speed;
+    g.pos0 = g.pos;
   }
 
-  if (accel != 0 && moving == 0)
+  if (g.accel != 0 && g.moving == 0)
     // Starting moving
-    moving = 1;
+    g.moving = 1;
 
   // Updating the target speed:
-  speed1 = speed1_loc;
+  g.speed1 = speed1_loc;
 
   return;
 }
@@ -78,14 +78,14 @@ void go_to(short pos1_short)
   float speed1_loc; 
   
   // We are already there:
-  if (moving == 0 && pos1_short == pos_short_old)
+  if (g.moving == 0 && pos1_short == g.pos_short_old)
     return;
 
   // Stopping distance in the current direction:
-  float dx_stop = speed * speed / (2.0 * ACCEL_LIMIT);
-  short dx_short = pos1_short - pos_short_old;
+  float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
+  short dx_short = pos1_short - g.pos_short_old;
 
-  if (dx_short > 0 && speed >= 0.0)
+  if (dx_short > 0 && g.speed >= 0.0)
     //  Target in the same direction as the current speed, positive speed
   {
     if (dx_stop <= (float)dx_short)
@@ -99,7 +99,7 @@ void go_to(short pos1_short)
       speed1_loc = -SPEED_LIMIT;
     }
   }
-  else if (dx_short < 0 && speed < 0.0)
+  else if (dx_short < 0 && g.speed < 0.0)
     //  Target in the same direction as the current speed, negative speed
   {
     if (dx_stop >= (float)dx_short)
@@ -113,12 +113,12 @@ void go_to(short pos1_short)
       speed1_loc = SPEED_LIMIT;
     }
   }
-  else if (dx_short > 0 && speed < 0.0)
+  else if (dx_short > 0 && g.speed < 0.0)
     // Moving in the wrong direction, have to change direction (negative speed)
   {
     speed1_loc = SPEED_LIMIT;
   }
-  else if (dx_short < 0 && speed >= 0.0)
+  else if (dx_short < 0 && g.speed >= 0.0)
     // Moving in the wrong direction, have to change direction (positive speed)
   {
     speed1_loc = -SPEED_LIMIT;
@@ -127,10 +127,10 @@ void go_to(short pos1_short)
 // Setting the target speed and moving_mode=1:
   change_speed(speed1_loc, 1);
 
-  pos_stop_flag = 0;
+  g.pos_stop_flag = 0;
   
 // Global parameter to be used in motor_control():
-  pos_goto_short = pos1_short;
+  g.pos_goto_short = pos1_short;
 
   return;
 
