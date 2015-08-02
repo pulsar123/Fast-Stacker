@@ -62,13 +62,12 @@ void calibration()
   {
     g.calibrate = 0;
     g.calibrate_flag = 0;
-    // !!! We still have to rewind a bit, to move into non-limiter-triggered region
     if (g.calibrate_init == 1)
     {
       g.limit2 = g.limit_tmp - LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       // Travelling back into safe area:
-      go_to(g.limit2-100);
+      go_to(g.limit2-100,SPEED_LIMIT);
     }
     else if (g.calibrate_init == 2)
     {
@@ -76,7 +75,7 @@ void calibration()
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT1, g.limit1);
       // Travelling back into safe area:
-      go_to(g.limit1+100);
+      go_to(g.limit1+100,SPEED_LIMIT);
     }
     g.calibrate_init = 0;
   }

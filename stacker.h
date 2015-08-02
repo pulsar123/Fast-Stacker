@@ -58,8 +58,9 @@ const float SMALL = 1e-8;
 //////// Don't modify these /////////
 // Number of microsteps per rotation
 const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
+const float SPEED_SCALE = MICROSTEPS_PER_ROTATION/(1.0e6*MM_PER_ROTATION);  // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
-const float SPEED_LIMIT = MICROSTEPS_PER_ROTATION*SPEED_LIMIT_MM_S/(1.0e6*MM_PER_ROTATION);
+const float SPEED_LIMIT = SPEED_SCALE*SPEED_LIMIT_MM_S;
 // Speed small enough to allow instant stopping:
 const float SPEED_SMALL = 0.01*SPEED_LIMIT;
 const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
@@ -109,6 +110,10 @@ short pos_stop_flag; // flag to detect when motor_control is run first time
 char key_old;  // peviously pressd key (can be NO_KEY); used in keypad()
 short point1;  // foreground point for 2-point focus stacking
 short point2;  // background point for 2-point focus stacking
+short second_point; // The second point in the focus stacking with two points
+short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
+float fps;  // Frames per second parameter
+float mm_per_shot;  // Micrometers per shot parameter
 
 unsigned char flag; // for testing
 };

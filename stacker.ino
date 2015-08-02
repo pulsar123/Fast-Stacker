@@ -25,8 +25,8 @@ void setup() {
   digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
 #endif
 
-// Keypad stuff:
-// No locking for keys:
+  // Keypad stuff:
+  // No locking for keys:
   keypad.setHoldTime(1000000);
   g.key_old = '=';
 
@@ -48,6 +48,7 @@ void setup() {
   g.speed0 = 0.0;
   g.speed = 0.0;
   g.pos_stop_flag = 0;
+  g.stacker_mode = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
@@ -74,11 +75,13 @@ void setup() {
   g.breaking = 0;
   g.pos_stop_flag = 0;
 
-// Testing:
+  // Testing:
   g.flag = 0;
   g.pos = 0;
   g.point1 = 0;
   g.point2 = 10000;
+  g.mm_per_shot = 0.1;
+  g.fps = 0.5;
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
@@ -96,34 +99,34 @@ void loop()
   {
     g.flag = 1;
     // ACcelerate to positive speed:
-    change_speed(SPEED_LIMIT/3.0,0);
-//    pos0 = 0.0;
+    change_speed(SPEED_LIMIT / 3.0, 0);
+    //    pos0 = 0.0;
     show_params();
   }
 
-  if (g.flag == 1 && g.accel==0 && g.t - g.t0>2000000)
+  if (g.flag == 1 && g.accel == 0 && g.t - g.t0 > 2000000)
   {
     g.flag = 2;
-    change_speed(SPEED_LIMIT,0);
+    change_speed(SPEED_LIMIT, 0);
     show_params();
   }
 
-  if (g.flag == 2 && g.accel==0 && g.t - g.t0>2000000)
+  if (g.flag == 2 && g.accel == 0 && g.t - g.t0 > 2000000)
   {
     g.flag = 3;
-    change_speed(-SPEED_LIMIT/3.0,0);
+    change_speed(-SPEED_LIMIT / 3.0, 0);
     show_params();
   }
 
-  if (g.flag == 3 && g.accel==0 && g.t - g.t0>2000000)
+  if (g.flag == 3 && g.accel == 0 && g.t - g.t0 > 2000000)
   {
     g.flag = 4;
-    change_speed(-SPEED_LIMIT,0);
+    change_speed(-SPEED_LIMIT, 0);
     show_params();
   }
-  
+
   // Go to the start:
-  if (g.flag == 4 && g.accel==0 && g.t - g.t0>2000000)
+  if (g.flag == 4 && g.accel == 0 && g.t - g.t0 > 2000000)
   {
     g.flag = 0;
   }
@@ -132,7 +135,7 @@ void loop()
   process_keypad();
 
   // All the processing related to the two extreme limits for the macro rail movements:
-  if (g.moving==1 && g.breaking==0)
+  if (g.moving == 1 && g.breaking == 0)
     limiters();
 
   // Prevent motor operations if limiters are engaged initially:
@@ -140,8 +143,11 @@ void loop()
   //    return;
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
-  if (g.calibrate_init>0 && g.moving==0 && g.breaking==0)
-      calibration();
+  if (g.calibrate_init > 0 && g.moving == 0 && g.breaking == 0)
+    calibration();
+
+  // Camera shutter control:
+  camera();
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();

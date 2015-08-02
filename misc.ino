@@ -66,7 +66,7 @@ void change_speed(float speed1_loc, short moving_mode1)
 #ifdef SAVE_ENERGY
     digitalWrite(PIN_ENABLE, LOW);
     delay(ENABLE_DELAY_MS);
-#endif    
+#endif
   }
 
   // Updating the target speed:
@@ -77,12 +77,12 @@ void change_speed(float speed1_loc, short moving_mode1)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void go_to(short pos1_short)
-/* Initiating a travel to pos1 at maximum acceleration/speed
+void go_to(short pos1_short, float speed)
+/* Initiating a travel to pos1 at maximum acceleration and given speed (positive number)
  */
 {
-  float speed1_loc; 
-  
+  float speed1_loc;
+
   // We are already there:
   if (g.moving == 0 && pos1_short == g.pos_short_old)
     return;
@@ -95,31 +95,31 @@ void go_to(short pos1_short)
     //  Target in the same direction as the current speed, positive speed
     if (dx_stop <= (float)dx_short)
       // We can make it by just breaking (no speed change involved):
-      speed1_loc = SPEED_LIMIT;
+      speed1_loc =speed;
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
-      speed1_loc = -SPEED_LIMIT;
+      speed1_loc = -speed;
   else if (dx_short < 0 && g.speed < 0.0)
     //  Target in the same direction as the current speed, negative speed
     if (dx_stop >= (float)dx_short)
       // We can make it by just breaking (no speed change involved):
-      speed1_loc = -SPEED_LIMIT;
+      speed1_loc = -speed;
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
-      speed1_loc = SPEED_LIMIT;
+      speed1_loc = speed;
   else if (dx_short > 0 && g.speed < 0.0)
     // Moving in the wrong direction, have to change direction (negative speed)
-    speed1_loc = SPEED_LIMIT;
+    speed1_loc = speed;
   else if (dx_short < 0 && g.speed >= 0.0)
     // Moving in the wrong direction, have to change direction (positive speed)
-    speed1_loc = -SPEED_LIMIT;
+    speed1_loc = -speed;
 
-// Setting the target speed and moving_mode=1:
+  // Setting the target speed and moving_mode=1:
   change_speed(speed1_loc, 1);
 
   g.pos_stop_flag = 0;
-  
-// Global parameter to be used in motor_control():
+
+  // Global parameter to be used in motor_control():
   g.pos_goto_short = pos1_short;
 
   return;
@@ -127,6 +127,28 @@ void go_to(short pos1_short)
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+void stop_now()
+/*
+ Things to do when we completely stop. Should only be called from motor_control()
+ */
+{
+  g.moving = 0;
+#ifdef SAVE_ENERGY
+  digitalWrite(PIN_ENABLE, HIGH);
+  delay(ENABLE_DELAY_MS);
+#endif
+  // We can lower the breaking flag now, as we already stopped:
+  g.breaking = 0;
+  // At this point any calibration should be done:
+  g.calibrate_flag = 0;
+  g.speed = 0.0;
+  if (g.stacker_mode == 2)
+  // Ending 2-point focus stacking
+    g.stacker_mode = 0;
+  
+  return;
+}
 
 void show_params()
 {
