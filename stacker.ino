@@ -5,6 +5,7 @@
    To be used with automated macro rail for focus stacking
 */
 #include <EEPROM.h>
+#include <math.h>
 #include "stacker.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -17,7 +18,11 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   // Writing initial values to the motor pins:
+#ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
+#else
+  digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
+#endif
 
   // Limiting switches should not be on when powering up:
   g.limit_on = digitalRead(PIN_LIMITERS);
@@ -63,8 +68,6 @@ void setup() {
   g.breaking = 0;
   g.pos_stop_flag = 0;
 
-  // For testing:
-  digitalWrite(PIN_ENABLE, LOW);        
   g.flag = 0;
   g.pos = 0;
 #ifdef DEBUG

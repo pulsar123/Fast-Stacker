@@ -55,10 +55,14 @@ void motor_control()
       g.speed = g.speed1;
       new_accel = 0;
       // If the target speed was zero, stop now
-      if (g.speed1<SMALL && g.speed1>-SMALL)
+      if (fabs(g.speed1) < SMALL)
       {
         // At this point we stopped, so no need to revisit the motor_control module:
         g.moving = 0;
+#ifdef SAVE_ENERGY
+        digitalWrite(PIN_ENABLE, HIGH);
+        delay(ENABLE_DELAY_MS);
+#endif    
         // We can lower the breaking flag now, as we already stopped:
         g.breaking = 0;
         // At this point any calibration should be done:
@@ -155,6 +159,10 @@ delay(50);
       new_accel = 0;
       g.speed = 0.0;
       g.moving = 0;
+#ifdef SAVE_ENERGY
+      digitalWrite(PIN_ENABLE, HIGH);
+      delay(ENABLE_DELAY_MS);
+#endif    
     }
     // Final position  if a full break were enabled now:
     if (g.speed >= 0.0)

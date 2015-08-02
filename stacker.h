@@ -10,64 +10,69 @@
 
 //#define DEBUG
 
+// If defined, motor will be parked when not moving (probabli will affect the accuracy of positioning)
+#define SAVE_ENERGY
+
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
-#define PIN_STEP 0
-#define PIN_DIR 1
-#define PIN_ENABLE 2  // LOW: enable motor; HIGH: disable motor (to save energy)
+const short PIN_STEP = 0;
+const short PIN_DIR = 1;
+const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
 // LCD pins (Nokia 5110):
-#define PIN_LCD_D_C 5
-#define PIN_LCD_RST 6
-#define PIN_LCD_SCE 7
-#define PIN_LCD_LED 9
-#define PIN_LCD_DN_ 11
-#define PIN_LCD_SCL 13
+const short PIN_LCD_D_C = 5;
+const short PIN_LCD_RST = 6;
+const short PIN_LCD_SCE = 7;
+const short PIN_LCD_LED = 9;
+const short PIN_LCD_DN_ = 11;
+const short PIN_LCD_SCL = 13;
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
-#define PIN_LIMITERS 8
+const short PIN_LIMITERS = 8;
 
 //////// Parameters to be set only once //////////
 // Number of full steps per rotation for the stepper motor:
-#define MOTOR_STEPS 200
+const short MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
-#define N_MICROSTEPS 8
+const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm:
-#define MM_PER_ROTATION 3.98
+const float MM_PER_ROTATION = 3.98;
 
 //////// Parameters which might need to be changed occasionally ////////
 // Speed limiter, in mm/s
-#define SPEED_LIMIT_MM_S 5 
+const float SPEED_LIMIT_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
-#define BREAKING_DISTANCE_MM 2.0
+const float BREAKING_DISTANCE_MM = 2.0;
 // Padding (in microsteps) before hitting the limiters:
-#define LIMITER_PAD (short)400
+const short LIMITER_PAD = 400;
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
-#define STEP_LOW_DT 3
+const short STEP_LOW_DT = 3;
+// Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
+const short ENABLE_DELAY_MS = 3;
 // A small float (to detect zero speed):
-#define SMALL 1e-8
+const float SMALL = 1e-8;
 
 //////// Don't modify these /////////
 // Number of microsteps per rotation
-#define MICROSTEPS_PER_ROTATION (MOTOR_STEPS*N_MICROSTEPS)
+const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
 // Speed limit in internal units (microsteps per microsecond):
-#define SPEED_LIMIT (MICROSTEPS_PER_ROTATION*SPEED_LIMIT_MM_S/(1.0e6*MM_PER_ROTATION))
+const float SPEED_LIMIT = MICROSTEPS_PER_ROTATION*SPEED_LIMIT_MM_S/(1.0e6*MM_PER_ROTATION);
 // Speed small enough to allow instant stopping:
-#define SPEED_SMALL (0.01*SPEED_LIMIT)
-#define SPEED1 SPEED_LIMIT/sqrt(2.0)
+const float SPEED_SMALL = 0.01*SPEED_LIMIT;
+const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
 // Breaking distance in internal units (microsteps):
-#define BREAKING_DISTANCE (MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION))
+const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION);
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // This is a limiter, to minimize damage to the rail and motor
-#define ACCEL_LIMIT (SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE))
+const float ACCEL_LIMIT = SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE);
 
 // EEPROM addresses:
-#define ADDR_POS 0  // Current position (float, 4 bytes)
-#define ADDR_CALIBRATE ADDR_POS+4  // If =1, limiter calibration will be done at the beginning (1 byte)
-#define ADDR_LIMIT1 ADDR_CALIBRATE+1 // pos_short for the foreground limiter; should be 0? (2 bytes)
-#define ADDR_LIMIT2 ADDR_LIMIT1+2 // pos_short for the background limiter (2 bytes)
+const short ADDR_POS = 0;  // Current position (float, 4 bytes)
+const short ADDR_CALIBRATE = ADDR_POS+4;  // If =1, limiter calibration will be done at the beginning (1 byte)
+const short ADDR_LIMIT1 = ADDR_CALIBRATE+1; // pos_short for the foreground limiter; should be 0? (2 bytes)
+const short ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
 
 // All global variables belong to one structure - global:
 struct global 

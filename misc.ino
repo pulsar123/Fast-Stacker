@@ -60,8 +60,14 @@ void change_speed(float speed1_loc, short moving_mode1)
   }
 
   if (g.accel != 0 && g.moving == 0)
+  {
     // Starting moving
     g.moving = 1;
+#ifdef SAVE_ENERGY
+    digitalWrite(PIN_ENABLE, LOW);
+    delay(ENABLE_DELAY_MS);
+#endif    
+  }
 
   // Updating the target speed:
   g.speed1 = speed1_loc;
@@ -87,42 +93,26 @@ void go_to(short pos1_short)
 
   if (dx_short > 0 && g.speed >= 0.0)
     //  Target in the same direction as the current speed, positive speed
-  {
     if (dx_stop <= (float)dx_short)
       // We can make it by just breaking (no speed change involved):
-    {
       speed1_loc = SPEED_LIMIT;
-    }
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
-    {
       speed1_loc = -SPEED_LIMIT;
-    }
-  }
   else if (dx_short < 0 && g.speed < 0.0)
     //  Target in the same direction as the current speed, negative speed
-  {
     if (dx_stop >= (float)dx_short)
       // We can make it by just breaking (no speed change involved):
-    {
       speed1_loc = -SPEED_LIMIT;
-    }
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
-    {
       speed1_loc = SPEED_LIMIT;
-    }
-  }
   else if (dx_short > 0 && g.speed < 0.0)
     // Moving in the wrong direction, have to change direction (negative speed)
-  {
     speed1_loc = SPEED_LIMIT;
-  }
   else if (dx_short < 0 && g.speed >= 0.0)
     // Moving in the wrong direction, have to change direction (positive speed)
-  {
     speed1_loc = -SPEED_LIMIT;
-  }
 
 // Setting the target speed and moving_mode=1:
   change_speed(speed1_loc, 1);
