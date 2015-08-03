@@ -27,7 +27,10 @@ const short PIN_LCD_DN_ = 11;
 const short PIN_LCD_SCL = 13;
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
 const short PIN_LIMITERS = 8;
-// Eight 4x4 keypad pins:
+// Pin to trigger camera shutter:
+const short PIN_SHUTTER = 3;
+// Analogue pin for the battery life sensor:
+#define PIN_BATTERY A0
 
 //////// Parameters to be set only once //////////
 // Number of full steps per rotation for the stepper motor:
@@ -47,6 +50,7 @@ const float SPEED_LIMIT_MM_S = 5;
 const float BREAKING_DISTANCE_MM = 2.0;
 // Padding (in microsteps) before hitting the limiters:
 const short LIMITER_PAD = 400;
+const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
 const short STEP_LOW_DT = 3;
@@ -110,12 +114,18 @@ short pos_stop_flag; // flag to detect when motor_control is run first time
 char key_old;  // peviously pressd key (can be NO_KEY); used in keypad()
 short point1;  // foreground point for 2-point focus stacking
 short point2;  // background point for 2-point focus stacking
+short first_point; // The first point in the focus stacking with two points
 short second_point; // The second point in the focus stacking with two points
+short stacking_direction; // 1/-1 for direct/reverse stacking direction
 short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
 float fps;  // Frames per second parameter
 float mm_per_frame;  // Mm per shot parameter
 float msteps_per_frame; // Microsteps per frame for focus stacking
 short Nframes; // Number of frames for 2-point focus stacking
+short frame_counter; // Counter for shots
+short pos_to_shoot; // Position to shoot the next shot during focus stacking
+short shutter_on; // flag for camera shutter: 0/1 corresponds to off/on
+unsigned long t_shutter; // Time when the camera shutter was triggered
 
 unsigned char flag; // for testing
 };
@@ -131,7 +141,7 @@ char keys[rows][cols] = {
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-byte rowPins[rows] = {10, 12, A0, A1}; //connect to the row pinouts of the keypad
+byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad
 byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 

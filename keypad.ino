@@ -63,12 +63,16 @@ void process_keypad()
             if (d1 < d2)
             {
               go_to(g.point1,SPEED_LIMIT);
+              g.first_point = g.point1;
               g.second_point = g.point2;
+              g.stacking_direction = 1;
             }
             else
             {
               go_to(g.point2,SPEED_LIMIT);
+              g.first_point = g.point2;
               g.second_point = g.point1;
+              g.stacking_direction = -1;
             }
             g.stacker_mode = 1;
           }
@@ -92,6 +96,8 @@ void process_keypad()
     // Estimating the required speed in microsteps per microsecond
     float speed = SPEED_SCALE * g.fps * g.mm_per_frame;
     go_to(g.second_point,speed);
+    g.frame_counter = 0;
+    g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
   }
 

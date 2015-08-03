@@ -18,12 +18,17 @@ void setup() {
   pinMode(PIN_ENABLE, OUTPUT);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
+  pinMode(PIN_SHUTTER, OUTPUT);
+
+
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
 #else
   digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
 #endif
+
+  digitalWrite(PIN_SHUTTER, LOW);
 
   // Keypad stuff:
   // No locking for keys:
@@ -49,6 +54,7 @@ void setup() {
   g.speed = 0.0;
   g.pos_stop_flag = 0;
   g.stacker_mode = 0;
+  g.shutter_on = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
@@ -147,7 +153,8 @@ void loop()
     calibration();
 
   // Camera shutter control:
-  camera();
+  if (g.stacker_mode == 2)
+    camera();
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();

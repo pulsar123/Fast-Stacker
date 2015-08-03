@@ -14,12 +14,15 @@ http://danthompsonsblog.blogspot.ca/2010/05/easydriver-42-tutorial.html
 3 digital pins : 0,1,2
 
 Reed relays
-2 digital pins: 3,4
+1 digital pin: 3
 
 4x4 keypad:
 8 digital pins: 10,12,A0,A1,A2,A3,A4,A5
 
 limiting microswitches: 1 digital pin: 8
+
+battery life sensor:
+1 digital pin: 4
 
 -------------------------
 DP: 13 
