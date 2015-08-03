@@ -1,3 +1,33 @@
+short nintMy(float x)
+/*
+ My version of nint. Float -> short conversion. Valid for positive/negative/zero.
+ */
+{
+  // Rounding x towards 0:
+  short x_short = (short)x;
+  float frac;
+
+  if (x >= 0.0)
+  {
+    frac = x - (float)x_short;
+  }
+  else
+  {
+    frac = (float)x_short - x;
+  }
+
+  if (frac >= 0.5)
+  {
+    if (x >= 0.0)
+      return x_short + 1;
+    else
+      return x_short - 1;
+  }
+  else
+    return x_short;
+}
+
+
 short floorMy(float x)
 /* A limited implementation of C function floor - only to convert from float to short.
    Works with positive, negative numbers and 0.
@@ -95,7 +125,7 @@ void go_to(short pos1_short, float speed)
     //  Target in the same direction as the current speed, positive speed
     if (dx_stop <= (float)dx_short)
       // We can make it by just breaking (no speed change involved):
-      speed1_loc =speed;
+      speed1_loc = speed;
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
       speed1_loc = -speed;
@@ -144,9 +174,9 @@ void stop_now()
   g.calibrate_flag = 0;
   g.speed = 0.0;
   if (g.stacker_mode == 2)
-  // Ending 2-point focus stacking
+    // Ending 2-point focus stacking
     g.stacker_mode = 0;
-  
+
   return;
 }
 

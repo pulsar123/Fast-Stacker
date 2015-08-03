@@ -80,7 +80,7 @@ void setup() {
   g.pos = 0;
   g.point1 = 0;
   g.point2 = 10000;
-  g.mm_per_shot = 0.1;
+  g.mm_per_frame = 0.1;
   g.fps = 0.5;
 #ifdef DEBUG
   Serial.begin(9600);

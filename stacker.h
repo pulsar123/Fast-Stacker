@@ -113,7 +113,9 @@ short point2;  // background point for 2-point focus stacking
 short second_point; // The second point in the focus stacking with two points
 short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
 float fps;  // Frames per second parameter
-float mm_per_shot;  // Micrometers per shot parameter
+float mm_per_frame;  // Mm per shot parameter
+float msteps_per_frame; // Microsteps per frame for focus stacking
+short Nframes; // Number of frames for 2-point focus stacking
 
 unsigned char flag; // for testing
 };

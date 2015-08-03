@@ -40,6 +40,23 @@ void process_keypad()
           // Checking the correctness of limit1/2
           if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
           {
+            // Adjusting points to fit an integer number of shots (by slightly extending or shrinking the position range)
+            // Required microsteps per frame:
+            g.msteps_per_frame = g.mm_per_frame / MM_PER_ROTATION * MICROSTEPS_PER_ROTATION;
+            // Number of frames rounded to the nearest integer:
+            g.Nframes = nintMy(((float)(g.point2-g.point1))/g.msteps_per_frame) + 1;
+            // Adjusted distance to travel:
+            float d = ((float)(g.Nframes-1))*g.msteps_per_frame;
+            // Original midpoint:
+            float mid = ((float)g.point1+(float)g.point2)/2.0;
+            // Adjusted points 
+            g.point1 = (short)(mid - d/2.0);
+            // Making sure we don't go beyond the limits:
+            if (g.point1 < g.limit1)
+              g.point1 = g.limit1;
+            g.point2 = g.point1 + nintMy(d);
+            if (g.point2 > g.limit2)
+              g.point2 = g.limit2;
             // Finding the closest point:
             short d1 = (short)fabs(g.pos_short_old - g.point1);
             short d2 = (short)fabs(g.pos_short_old - g.point2);
@@ -73,7 +90,7 @@ void process_keypad()
   if (g.stacker_mode == 1 && g.moving==0)
   {
     // Estimating the required speed in microsteps per microsecond
-    float speed = SPEED_SCALE * g.fps * g.mm_per_shot;
+    float speed = SPEED_SCALE * g.fps * g.mm_per_frame;
     go_to(g.second_point,speed);
     g.stacker_mode = 2;
   }
