@@ -59,6 +59,19 @@ const short ENABLE_DELAY_MS = 3;
 // A small float (to detect zero speed):
 const float SMALL = 1e-8;
 
+// INPUT PARAMETERS:
+// Number of values for the input parameters (mm_per_frame etc):
+const short N_PARAMS = 16;
+//  Mm per frame parameter (determined by DoF of the lens)
+const float MM_PER_FRAME[] = {0.005, 0.0075, 0.01, 0.015, 0.02, 0.03, 0.04, 0.06, 0.08, 0.12, 0.16, 0.25, 0.38, 0.5, 0.75, 1.0};
+//const float MM_PER_FRAME[N_PARAMS];
+// Frame per second parameter:
+const float FPS[] = {0.038, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.2, 1.6, 2.5, 3.8, 5.0, 6.3};
+//const float FPS[N_PARAMS];
+// Number of shots parameter (to be used in 1-point stacking):
+const short N_SHOTS[] = {1, 2, 3, 4, 6, 8, 12, 16, 25, 38, 50, 75, 100, 150, 200, 300};
+//const short N_SHOTS[N_PARAMS];
+
 //////// Don't modify these /////////
 // Number of microsteps per rotation
 const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
@@ -79,6 +92,9 @@ const short ADDR_POS = 0;  // Current position (float, 4 bytes)
 const short ADDR_CALIBRATE = ADDR_POS+4;  // If =1, limiter calibration will be done at the beginning (1 byte)
 const short ADDR_LIMIT1 = ADDR_CALIBRATE+1; // pos_short for the foreground limiter; should be 0? (2 bytes)
 const short ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
+const short ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
+const short ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
+const short ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
 
 // All global variables belong to one structure - global:
 struct global 
@@ -118,14 +134,17 @@ short first_point; // The first point in the focus stacking with two points
 short second_point; // The second point in the focus stacking with two points
 short stacking_direction; // 1/-1 for direct/reverse stacking direction
 short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
-float fps;  // Frames per second parameter
-float mm_per_frame;  // Mm per shot parameter
+//float fps;  // Frames per second parameter
+//float mm_per_frame;  // Mm per shot parameter
 float msteps_per_frame; // Microsteps per frame for focus stacking
 short Nframes; // Number of frames for 2-point focus stacking
 short frame_counter; // Counter for shots
 short pos_to_shoot; // Position to shoot the next shot during focus stacking
 short shutter_on; // flag for camera shutter: 0/1 corresponds to off/on
 unsigned long t_shutter; // Time when the camera shutter was triggered
+short i_mm_per_frame; // counter for mm_per_frame parameter;
+short i_fps; // counter for fps parameter;
+short i_n_shots; // counter for n_shots parameter;
 
 unsigned char flag; // for testing
 };

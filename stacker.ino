@@ -63,6 +63,9 @@ void setup() {
     g.calibrate = 3;
     g.limit1 = 0;
     g.limit2 = 0;
+    g.i_n_shots = 0;
+    g.i_mm_per_frame = 0;
+    g.i_fps = 0;
   }
   else
   {
@@ -71,6 +74,9 @@ void setup() {
     EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
+    EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
+    EEPROM.get( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+    EEPROM.get( ADDR_I_FPS, g.i_fps);
   }
   g.calibrate_init = g.calibrate;
   g.calibrate_flag = 0;
@@ -86,8 +92,6 @@ void setup() {
   g.pos = 0;
   g.point1 = 0;
   g.point2 = 10000;
-  g.mm_per_frame = 0.1;
-  g.fps = 0.5;
 #ifdef DEBUG
   Serial.begin(9600);
 #endif

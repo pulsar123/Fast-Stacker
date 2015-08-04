@@ -4,7 +4,7 @@ void camera()
  */
 {
 
-  if (g.pos_short_old == g.pos_to_shoot)
+  if (g.pos_short_old==g.pos_to_shoot && g.shutter_on==0)
   {
     // Setting the shutter on:
     digitalWrite(PIN_SHUTTER, HIGH);
