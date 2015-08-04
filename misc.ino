@@ -173,7 +173,7 @@ void stop_now()
   // At this point any calibration should be done:
   g.calibrate_flag = 0;
   g.speed = 0.0;
-  if (g.stacker_mode == 2)
+  if (g.stacker_mode >= 2)
     // Ending 2-point focus stacking
     g.stacker_mode = 0;
 

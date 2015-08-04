@@ -17,6 +17,8 @@ void limiters()
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
     change_speed(0.0,0);
+    // No more stacking if we hit a limiter:
+    g.stacker_mode = 0;
     // This should be after change_speed(0.0):
     g.breaking = 1;
     // Requesting immediate (after safely breaking the rail) calibration:

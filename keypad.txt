@@ -24,6 +24,19 @@ N_shots: input parameter if 0/1 points are set; output parameter if both points 
 D : start shooting (two-points mode), from the nearer point to the other point. Only works when both points were set ("CF" on display)
 * : top menu
 
+NEW:
+1/A : rewind / fast forward
+*/D : start shooting backward/forward (one-point mode)
+5/6 : increase / decrease fps parameter
+8/9 : increase / decrease u/shot parameter
+2/3 : increase / decrease number of shots parameter
+4/B : set closer / further points for two-point shooting
+7/C : fast go to closer / further point
+0 : start shooting (two-points mode), from the nearer point to the other point. Only works when both points were set ("CF" on display)
+# : top menu
+
+
+
 
 2) Shooting mode:
 

@@ -3,6 +3,8 @@ void process_keypad()
  All the keypad runtime stuff goes here
  */
 {
+  float speed; 
+  
   // Action is only needed if the kepad state changed since the last time:
   if (keypad.keyStateChanged())
   {
@@ -44,7 +46,7 @@ void process_keypad()
           go_to(g.point2, SPEED_LIMIT);
           break;
 
-        case 'D': // Start shooting (2-point focus stacking)
+        case '0': // Start shooting (2-point focus stacking)
           // Checking the correctness of point1/2
           if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
           {
@@ -88,6 +90,32 @@ void process_keypad()
           {
             // Should print error message
           }
+          break;
+
+        case '*':  // Initiate one-point focus stacking backwards
+          // Required microsteps per frame:
+          g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+          // Estimating the required speed in microsteps per microsecond
+          speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+          go_to(g.limit1, speed);
+          g.frame_counter = 0;
+          g.pos_to_shoot = g.pos_short_old;
+          g.first_point = g.pos_short_old;
+          g.stacking_direction = -1;
+          g.stacker_mode = 3;
+          break;
+
+        case 'D':  // Initiate one-point focus stacking forward
+          // Required microsteps per frame:
+          g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+          // Estimating the required speed in microsteps per microsecond
+          speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+          go_to(g.limit2, speed);
+          g.frame_counter = 0;
+          g.pos_to_shoot = g.pos_short_old;
+          g.first_point = g.pos_short_old;
+          g.stacking_direction = 1;
+          g.stacker_mode = 3;
           break;
 
         case '2':  // Decrease parameter n_shots
@@ -156,7 +184,7 @@ void process_keypad()
   if (g.stacker_mode == 1 && g.moving == 0)
   {
     // Estimating the required speed in microsteps per microsecond
-    float speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+    speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
     go_to(g.second_point, speed);
     g.frame_counter = 0;
     g.pos_to_shoot = g.pos_short_old;

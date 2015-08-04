@@ -157,8 +157,7 @@ void loop()
     calibration();
 
   // Camera shutter control:
-  if (g.stacker_mode == 2)
-    camera();
+  camera();
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
