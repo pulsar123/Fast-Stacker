@@ -3,8 +3,8 @@ void process_keypad()
  All the keypad runtime stuff goes here
  */
 {
-  float speed; 
-  
+  float speed;
+
   // Action is only needed if the kepad state changed since the last time:
   if (keypad.keyStateChanged())
   {
@@ -74,14 +74,16 @@ void process_keypad()
             {
               go_to(g.point1, SPEED_LIMIT);
               g.first_point = g.point1;
-              g.second_point = g.point2;
+              // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
+              g.second_point = g.point2+1;
               g.stacking_direction = 1;
             }
             else
             {
               go_to(g.point2, SPEED_LIMIT);
               g.first_point = g.point2;
-              g.second_point = g.point1;
+              // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
+              g.second_point = g.point1-1;
               g.stacking_direction = -1;
             }
             g.stacker_mode = 1;
@@ -93,29 +95,37 @@ void process_keypad()
           break;
 
         case '*':  // Initiate one-point focus stacking backwards
-          // Required microsteps per frame:
-          g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-          // Estimating the required speed in microsteps per microsecond
-          speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-          go_to(g.limit1, speed);
-          g.frame_counter = 0;
-          g.pos_to_shoot = g.pos_short_old;
-          g.first_point = g.pos_short_old;
-          g.stacking_direction = -1;
-          g.stacker_mode = 3;
+          // Simplest workaround: ignore the command if currently moving
+          // (better solution would be to stop first)
+          if (!g.moving)
+          {
+            // Required microsteps per frame:
+            g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+            // Estimating the required speed in microsteps per microsecond
+            speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+            go_to(g.limit1, speed);
+            g.frame_counter = 0;
+            g.pos_to_shoot = g.pos_short_old;
+            g.first_point = g.pos_short_old;
+            g.stacking_direction = -1;
+            g.stacker_mode = 3;
+          }
           break;
 
         case 'D':  // Initiate one-point focus stacking forward
-          // Required microsteps per frame:
-          g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-          // Estimating the required speed in microsteps per microsecond
-          speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-          go_to(g.limit2, speed);
-          g.frame_counter = 0;
-          g.pos_to_shoot = g.pos_short_old;
-          g.first_point = g.pos_short_old;
-          g.stacking_direction = 1;
-          g.stacker_mode = 3;
+          if (!g.moving)
+          {
+            // Required microsteps per frame:
+            g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+            // Estimating the required speed in microsteps per microsecond
+            speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+            go_to(g.limit2, speed);
+            g.frame_counter = 0;
+            g.pos_to_shoot = g.pos_short_old;
+            g.first_point = g.pos_short_old;
+            g.stacking_direction = 1;
+            g.stacker_mode = 3;
+          }
           break;
 
         case '2':  // Decrease parameter n_shots

@@ -22,10 +22,10 @@ void limiters()
     // This should be after change_speed(0.0):
     g.breaking = 1;
     // Requesting immediate (after safely breaking the rail) calibration:
-    if (g.speed < -SMALL)
+    if (g.speed < -SPEED_TINY)
       // We hit the foreground switch, so only the background one remains to be calibrated:
       g.calibrate = 2;
-    else if (g.speed > SMALL) 
+    else if (g.speed > SPEED_TINY) 
       // We hit the background switch, so only the foreground one remains to be calibrated:
       g.calibrate = 1;
     else

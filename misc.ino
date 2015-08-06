@@ -120,6 +120,12 @@ void go_to(short pos1_short, float speed)
   // Stopping distance in the current direction:
   float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
   short dx_short = pos1_short - g.pos_short_old;
+  // Reducing the required travel distance by DELTA_POS (for precise position stopping in motor_control()):
+  // The 10* factor is pretty arbitrary - need a better handle on this
+  if (dx_short > 10 * DELTA_POS)
+    dx_short = dx_short - DELTA_POS;
+  else if (dx_short < -10 * DELTA_POS)
+    dx_short = dx_short + DELTA_POS;
 
   if (dx_short > 0 && g.speed >= 0.0)
     //  Target in the same direction as the current speed, positive speed
@@ -176,6 +182,8 @@ void stop_now()
   if (g.stacker_mode >= 2)
     // Ending 2-point focus stacking
     g.stacker_mode = 0;
+  // Saving the current position to EEPROM:
+  EEPROM.put( ADDR_POS, g.pos );
 
   return;
 }

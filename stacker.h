@@ -3,6 +3,25 @@
    User header file
 
    To be used with automated macro rail for focus stacking
+
+
+Issues to address:
+ - Position accuracy after turning off/on again: the motor will likely move to the
+ nearest (or in a certain direction?) full stop, creating an error of that size.
+ I probably should only use full stop positions when stopped (how to figure out
+ which ones are full stop?)
+ - Similar issue when using SAVE_ENERGY: I should use full stops, or the error will
+ accumulate every time I stop.
+ - Apparently stepper motors can't change direction atarbitrary microsteps, perhaps not
+ even at all full steps - needs to be figured out and implemented.
+ - Very good chance that go_to() will not be accurate to a microstep level (and that is
+ required for correct stacking). Possible solution: always travel slightly shorter distance 
+ (can be tricky if has to reverse direction), and switch to travelling at constant low
+ speed (low enough that instant stopping - withing a single microstep - will be
+ within ACCEL_LIMIT) when almost at the destionation. Then instantly stop when hitting the exact
+ position.
+ - Change camera() to only trigger shutter between microsteps (to minimize vibrations).
+   
 */
 
 #ifndef STACKER_H
@@ -10,7 +29,8 @@
 
 //#define DEBUG
 
-// If defined, motor will be parked when not moving (probabli will affect the accuracy of positioning)
+// If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
+// I think it makes sense to only use full stops when at rest in saving mode
 #define SAVE_ENERGY
 
 //////// Pin assignment ////////
@@ -50,14 +70,13 @@ const float SPEED_LIMIT_MM_S = 5;
 const float BREAKING_DISTANCE_MM = 2.0;
 // Padding (in microsteps) before hitting the limiters:
 const short LIMITER_PAD = 400;
-const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
+const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
+const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
 const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
-// A small float (to detect zero speed):
-const float SMALL = 1e-8;
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
@@ -75,17 +94,19 @@ const short N_SHOTS[] = {1, 2, 3, 4, 6, 8, 12, 16, 25, 38, 50, 75, 100, 150, 200
 //////// Don't modify these /////////
 // Number of microsteps per rotation
 const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
+// Breaking distance in internal units (microsteps):
+const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION);
 const float SPEED_SCALE = MICROSTEPS_PER_ROTATION/(1.0e6*MM_PER_ROTATION);  // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE*SPEED_LIMIT_MM_S;
-// Speed small enough to allow instant stopping:
-const float SPEED_SMALL = 0.01*SPEED_LIMIT;
-const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
-// Breaking distance in internal units (microsteps):
-const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION);
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // This is a limiter, to minimize damage to the rail and motor
 const float ACCEL_LIMIT = SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE);
+// Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
+const float SPEED_SMALL = sqrt(2.0*ACCEL_LIMIT);
+// A small float (to detect zero speed):
+const float SPEED_TINY = 1e-3*SPEED_SMALL;
+const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
 
 // EEPROM addresses:
 const short ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -145,6 +166,7 @@ unsigned long t_shutter; // Time when the camera shutter was triggered
 short i_mm_per_frame; // counter for mm_per_frame parameter;
 short i_fps; // counter for fps parameter;
 short i_n_shots; // counter for n_shots parameter;
+short direction; // -1/1 for reverse/forward directions of moving
 
 unsigned char flag; // for testing
 };

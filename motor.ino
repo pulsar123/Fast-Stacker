@@ -10,7 +10,7 @@ void motor_control()
 {
   unsigned long dt, dt_a;
   float dV;
-  short new_accel;
+  short new_accel, instant_stop;
 
   // Current time in microseconds:
   g.t = micros();
@@ -25,6 +25,7 @@ void motor_control()
   dt = g.t - g.t0;
   // Storing the current accel value:
   new_accel = g.accel;
+  instant_stop = 0;
 
   //!!!
 #ifdef DEBUG
@@ -43,29 +44,55 @@ void motor_control()
     // Current speed (can be positive or negative):
     g.speed = g.speed0 + dV;
 
-    // If going beyond the target speed, stop accelerating:
-    if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
+    // This change takes precedence over the next module
+    if (g.moving_mode == 1)
     {
-      // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
-      // dt_a = t_a-t0; should be >0, and <dt:
-      dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
-      // Current position has two components: first one (from t0 to t_a) is still accelerated,
-      // second one (t_a ... t) has accel=0:
-      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
-      g.speed = g.speed1;
-      new_accel = 0;
-      // If the target speed was zero, stop now
-      if (fabs(g.speed1) < SMALL)
+      // If we are almost there and speed becomes small enough for an instant stop, we switch to constant speed SPEED_SMALL
+      if (fabs(g.speed) <= SPEED_SMALL && (g.accel == -1 && g.speed >= 0.0 && g.speed1 >= 0.0 || g.accel == 1 && g.speed < 0.0 && g.speed1 < 0.0))
       {
-        // At this point we stopped, so no need to revisit the motor_control module
-        stop_now();
+        // Updating g.speed1 value:
+        if (g.speed >= 0.0)
+          g.speed1 = SPEED_SMALL;
+        else
+          g.speed1 = -SPEED_SMALL;
+        // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong SPEED_SMALL
+        // dt_a = t_a-t0; should be >0, and <dt:
+        dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
+        // Current position has two components: first one (from t0 to t_a) is still decelerated,
+        // second one (t_a ... t) has accel=0:
+        g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
+        g.speed = g.speed1;
+        new_accel = 0;
       }
+
     }
-    else
+
+    // If going beyond the target speed, stop accelerating:. The new_accel condition is to avoid interference with the module above
+    if (new_accel != 0)
     {
-      // Current position when accel !=0 :
-      g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
-    }
+      if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
+      {
+        // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
+        // dt_a = t_a-t0; should be >0, and <dt:
+        dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
+        // Current position has two components: first one (from t0 to t_a) is still accelerated,
+        // second one (t_a ... t) has accel=0:
+        g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
+        g.speed = g.speed1;
+        new_accel = 0;
+        // If the target speed was zero, stop now
+        if (fabs(g.speed1) < SPEED_TINY)
+        {
+          // At this point we stopped, so no need to revisit the motor_control module
+          stop_now();
+        }
+      }
+      else
+      {
+        // Current position when accel !=0 :
+        g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
+      }
+    } // if new_accel!=0
   }
   else
   {
@@ -118,11 +145,13 @@ void motor_control()
   {
     digitalWrite(PIN_DIR, HIGH);
     delayMicroseconds(STEP_LOW_DT);
+    //    g.direction = 1;
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
     digitalWrite(PIN_DIR, LOW);
     delayMicroseconds(STEP_LOW_DT);
+    //    g.direction = -1;
   }
 
   // If the pos_short changed since the last step, do another step
@@ -144,10 +173,12 @@ void motor_control()
     // Used in go_to mode
   {
     // Not sure if good idea:
-    // For small enough speed, we stop instantly when reaching the target location:
-    if (pos_short == g.pos_goto_short && g.speed > -SPEED_SMALL && g.speed < SPEED_SMALL)
+    // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
+    if ((g.speed1>=0.0 && g.speed>=0.0 && pos_short>=g.pos_goto_short || g.speed1<0.0 && g.speed<0.0 && pos_short<=g.pos_goto_short)
+        && fabs(g.speed)<SPEED_SMALL+SPEED_TINY)
     {
       new_accel = 0;
+      instant_stop = 1;
       stop_now();
     }
     // Final position  if a full break were enabled now:
@@ -160,7 +191,7 @@ void motor_control()
     float pos_goto = (float)g.pos_goto_short;
     if (g.pos_stop_flag == 1 && ((pos_goto > g.pos_stop && pos_goto < g.pos_stop_old) || (pos_goto < g.pos_stop && pos_goto > g.pos_stop_old)))
       // Time to break happened between the previous and current motor_control calls
-      // If we initiate breaking now, we'll always slightly overshoot the target position (so te previous part
+      // If we initiate breaking now, we'll always slightly overshoot the target position (so the previous part
       // with the instant stop when speed is very small makes sense)
     {
       // Initiating breaking:
@@ -178,7 +209,7 @@ void motor_control()
   //////////  PART 3: Finalizing
 
   // If accel was modified here, update pos0, t0 to the current ones:
-  if (new_accel != g.accel)
+  if (new_accel != g.accel || instant_stop == 1)
   {
     g.t0 = g.t;
     g.pos0 = g.pos;

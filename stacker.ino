@@ -55,6 +55,7 @@ void setup() {
   g.pos_stop_flag = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
+  g.direction = 1;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)

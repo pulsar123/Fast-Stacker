@@ -7,6 +7,7 @@
 
 New: Nokia 5110 (https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide)
 DPins: 5,6,7,9,11,13  (11,13 cannot be moved)
+Or perhaps (http://forum.arduino.cc/index.php?topic=176794.0): 8,9,10,11,13 (LED?)
 
 
 Easydriver
