@@ -7,6 +7,7 @@
 #include <EEPROM.h>
 #include <math.h>
 #include <Keypad.h>
+#include "pcd8544.h"
 #include "stacker.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -20,7 +21,23 @@ void setup() {
 
   pinMode(PIN_SHUTTER, OUTPUT);
 
+  pinMode(PIN_LCD_LED, OUTPUT);
+  // Change the LCD backlighting here (0...255). WIll be implemented as user-controlled later
+  analogWrite(PIN_LCD_LED, 255);
 
+  lcd.begin();  // Always call lcd.begin() first.
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.println("  Automated "); 
+  lcd.println("focus stacker");
+  lcd.print(" ver. ");
+  lcd.println(VERSION);
+  lcd.println("(c) Sergey");
+  lcd.println("Mashchenko");
+  lcd.print("  2015");
+  delay(500);
+  lcd.clear();
+  
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)

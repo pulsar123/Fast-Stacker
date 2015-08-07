@@ -12,26 +12,35 @@ Issues to address:
  which ones are full stop?)
  - Similar issue when using SAVE_ENERGY: I should use full stops, or the error will
  accumulate every time I stop.
- - Apparently stepper motors can't change direction atarbitrary microsteps, perhaps not
+ - Apparently stepper motors can't change direction at atarbitrary microsteps, perhaps not
  even at all full steps - needs to be figured out and implemented.
- - Very good chance that go_to() will not be accurate to a microstep level (and that is
+ - [DONE] Very good chance that go_to() will not be accurate to a microstep level (and that is
  required for correct stacking). Possible solution: always travel slightly shorter distance 
  (can be tricky if has to reverse direction), and switch to travelling at constant low
  speed (low enough that instant stopping - withing a single microstep - will be
  within ACCEL_LIMIT) when almost at the destionation. Then instantly stop when hitting the exact
  position.
- - Change camera() to only trigger shutter between microsteps (to minimize vibrations).
+ - [DONE] Change camera() to only trigger shutter between microsteps (to minimize vibrations).
    
 */
 
 #ifndef STACKER_H
 #define STACKER_H
 
+
+#define VERSION "0.01"
 //#define DEBUG
+
+// Options controlling compilation:
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 // I think it makes sense to only use full stops when at rest in saving mode
-#define SAVE_ENERGY
+//#define SAVE_ENERGY
+// If defined, each go_to() operation will move the rail slighly shorter distance (by DELTA_POS),
+// and when at the end the low speed SPEED_SMALL is reached, deceleration stops, and motion proceeds
+// at that low speed until the exact  target position is reached, at which point the rail stops
+// instantly (SPEED_SMALL is small enough to ensure that deceleration stays within ACCEL_LIMIT)
+//#define HIGH_ACCURACY
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -39,7 +48,7 @@ const short PIN_STEP = 0;
 const short PIN_DIR = 1;
 const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
 // LCD pins (Nokia 5110):
-const short PIN_LCD_D_C = 5;
+const short PIN_LCD_DC = 5;
 const short PIN_LCD_RST = 6;
 const short PIN_LCD_SCE = 7;
 const short PIN_LCD_LED = 9;
@@ -185,6 +194,13 @@ char keys[rows][cols] = {
 byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad
 byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
+
+// LCD stuff
+// Create a pcd8544 object.
+// Hardware SPI will be used.
+// sdin (MOSI) is on pin 11 and sclk on pin 13.
+// The LCD has 6 lines (rows) and 14 columns
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 
 #endif
 
