@@ -27,8 +27,8 @@ void setup() {
 
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.println("  Automated "); 
+  lcd.setCursor(0, 0);
+  lcd.println("  Automated ");
   lcd.println("focus stacker");
   lcd.print(" ver. ");
   lcd.println(VERSION);
@@ -36,8 +36,7 @@ void setup() {
   lcd.println("Mashchenko");
   lcd.print("  2015");
   delay(500);
-  lcd.clear();
-  
+
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
@@ -73,6 +72,7 @@ void setup() {
   g.stacker_mode = 0;
   g.shutter_on = 0;
   g.direction = 1;
+  g.points_byte = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
@@ -99,12 +99,18 @@ void setup() {
   g.calibrate_init = g.calibrate;
   g.calibrate_flag = 0;
   g.pos0 = g.pos;
-  g.pos_short_old = floor(g.pos);
+  g.pos_short_old = floorMy(g.pos);
   g.t0 = micros();
   g.t = g.t0;
   g.breaking = 0;
   g.pos_stop_flag = 0;
+  g.frame_counter = 0;
 
+  // Default lcd layout:
+  lcd.clear();
+  // Bottom (status) line: motion status; current frame; 2 points; battery status
+  display_status_line(" ");
+    
   // Testing:
   g.flag = 0;
   g.pos = 0;

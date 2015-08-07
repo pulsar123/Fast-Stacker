@@ -93,6 +93,7 @@ void change_speed(float speed1_loc, short moving_mode1)
   {
     // Starting moving
     g.moving = 1;
+    motion_status();
 #ifdef SAVE_ENERGY
     digitalWrite(PIN_ENABLE, LOW);
     delay(ENABLE_DELAY_MS);
@@ -116,6 +117,12 @@ void go_to(short pos1_short, float speed)
   // We are already there:
   if (g.moving == 0 && pos1_short == g.pos_short_old)
     return;
+
+  if (pos1_short > g.pos_short_old)
+    g.direction = 1;
+  else
+    g.direction = -1;
+  motion_status();
 
   // Stopping distance in the current direction:
   float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
@@ -185,6 +192,8 @@ void stop_now()
     g.stacker_mode = 0;
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
+
+  display_status_line(" ");
 
   return;
 }

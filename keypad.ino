@@ -23,19 +23,29 @@ void process_keypad()
           break;
 
         case '1':  // Rewinding
+          g.direction = -1;
+          motion_status();
           change_speed(-SPEED_LIMIT, 0);
           break;
 
         case 'A':  // Fast forwarding
+          g.direction = 1;
+          motion_status();
           change_speed(SPEED_LIMIT, 0);
           break;
 
         case '4':  // Set foreground point
           g.point1 = g.pos_short_old;
+          if (g.points_byte == 0 || g.points_byte == 2)
+            g.points_byte = g.points_byte + 1;
+          points_status();
           break;
 
         case 'B':  // Set background point
           g.point2 = g.pos_short_old;
+          if (g.points_byte == 0 || g.points_byte == 1)
+            g.points_byte = g.points_byte + 2;
+          points_status();
           break;
 
         case '7':  // Go to the foreground point
@@ -75,7 +85,7 @@ void process_keypad()
               go_to(g.point1, SPEED_LIMIT);
               g.first_point = g.point1;
               // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-              g.second_point = g.point2+1;
+              g.second_point = g.point2 + 1;
               g.stacking_direction = 1;
             }
             else
@@ -83,7 +93,7 @@ void process_keypad()
               go_to(g.point2, SPEED_LIMIT);
               g.first_point = g.point2;
               // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-              g.second_point = g.point1-1;
+              g.second_point = g.point1 - 1;
               g.stacking_direction = -1;
             }
             g.stacker_mode = 1;

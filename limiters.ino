@@ -16,20 +16,21 @@ void limiters()
   {
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
-    change_speed(0.0,0);
+    change_speed(0.0, 0);
     // No more stacking if we hit a limiter:
     g.stacker_mode = 0;
     // This should be after change_speed(0.0):
     g.breaking = 1;
+    letter_status("B");
     // Requesting immediate (after safely breaking the rail) calibration:
     if (g.speed < -SPEED_TINY)
       // We hit the foreground switch, so only the background one remains to be calibrated:
       g.calibrate = 2;
-    else if (g.speed > SPEED_TINY) 
+    else if (g.speed > SPEED_TINY)
       // We hit the background switch, so only the foreground one remains to be calibrated:
       g.calibrate = 1;
     else
-    // Speed was 0 when a limiter was triggered; normally shouldn't happen; just in case calibrating both limiters:
+      // Speed was 0 when a limiter was triggered; normally shouldn't happen; just in case calibrating both limiters:
       g.calibrate = 3;
     g.calibrate_init = g.calibrate;
     // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
@@ -58,8 +59,9 @@ void limiters()
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch
         {
-          change_speed(0.0,0);
-          g.breaking = 1;          
+          change_speed(0.0, 0);
+          g.breaking = 1;
+          letter_status("B");
         }
       }
     }

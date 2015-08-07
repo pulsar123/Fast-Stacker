@@ -176,6 +176,8 @@ short i_mm_per_frame; // counter for mm_per_frame parameter;
 short i_fps; // counter for fps parameter;
 short i_n_shots; // counter for n_shots parameter;
 short direction; // -1/1 for reverse/forward directions of moving
+char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
+byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
 
 unsigned char flag; // for testing
 };

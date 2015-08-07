@@ -145,13 +145,11 @@ void motor_control()
   {
     digitalWrite(PIN_DIR, HIGH);
     delayMicroseconds(STEP_LOW_DT);
-    //    g.direction = 1;
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
     digitalWrite(PIN_DIR, LOW);
     delayMicroseconds(STEP_LOW_DT);
-    //    g.direction = -1;
   }
 
   // If the pos_short changed since the last step, do another step
@@ -175,15 +173,15 @@ void motor_control()
 #ifdef HIGH_ACCURACY
     // Not sure if good idea:
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
-    if ((g.speed1>=0.0 && g.speed>=0.0 && pos_short>=g.pos_goto_short || g.speed1<0.0 && g.speed<0.0 && pos_short<=g.pos_goto_short)
-        && fabs(g.speed)<SPEED_SMALL+SPEED_TINY)
+    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 < 0.0 && g.speed < 0.0 && pos_short <= g.pos_goto_short)
+        && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
     {
       new_accel = 0;
       instant_stop = 1;
       stop_now();
     }
 #endif
-    
+
     // Final position  if a full break were enabled now:
     if (g.speed >= 0.0)
       g.pos_stop = g.pos + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;

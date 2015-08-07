@@ -9,6 +9,7 @@ void calibration()
     // The flag ensures that this if statement is only eneterd once per limiter
     // (should be zeroed at the end of each limiter calibration)
     g.calibrate_flag = 1;
+    letter_status("C");
     if (g.calibrate == 3)
       // First we calibrate limit1:
       g.calibrate = 1;
@@ -21,6 +22,7 @@ void calibration()
       g.calibrate = 0;
       g.calibrate_init = 0;
       g.calibrate_flag = 0;
+      letter_status(" ");
       return;
     }
   }
@@ -39,6 +41,7 @@ void calibration()
     change_speed(-SPEED_LIMIT,0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;
+    letter_status("C");
   }
 
   if (g.calibrate == 2 && g.calibrate_flag==1)
@@ -55,6 +58,7 @@ void calibration()
     change_speed(SPEED_LIMIT,0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;    
+    letter_status("C");
   }
 
   // Cleanup after a single limiter (emergency) calibration is done
@@ -62,6 +66,7 @@ void calibration()
   {
     g.calibrate = 0;
     g.calibrate_flag = 0;
+    letter_status(" ");
     if (g.calibrate_init == 1)
     {
       g.limit2 = g.limit_tmp - LIMITER_PAD;
