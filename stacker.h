@@ -68,6 +68,8 @@ const short MOTOR_STEPS = 200;
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm:
 const float MM_PER_ROTATION = 3.98;
+// MM per microstep:
+const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 
 //////// Parameters which might need to be changed occasionally ////////
 // Speed limiter, in mm/s

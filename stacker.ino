@@ -108,8 +108,7 @@ void setup() {
 
   // Default lcd layout:
   lcd.clear();
-  // Bottom (status) line: motion status; current frame; 2 points; battery status
-  display_status_line(" ");
+  display_all(" ");
     
   // Testing:
   g.flag = 0;
@@ -126,6 +125,7 @@ void setup() {
 void loop()
 {
 
+/*
   // Simple test:
 
   // At t=0, start moving forward with constant acceleration
@@ -164,6 +164,7 @@ void loop()
   {
     g.flag = 0;
   }
+  */
 
   // Processing the keypad:
   process_keypad();

@@ -38,14 +38,14 @@ void process_keypad()
           g.point1 = g.pos_short_old;
           if (g.points_byte == 0 || g.points_byte == 2)
             g.points_byte = g.points_byte + 1;
-          points_status();
+          display_all(" ");
           break;
 
         case 'B':  // Set background point
           g.point2 = g.pos_short_old;
           if (g.points_byte == 0 || g.points_byte == 1)
             g.points_byte = g.points_byte + 2;
-          points_status();
+          display_all(" ");
           break;
 
         case '7':  // Go to the foreground point
@@ -144,6 +144,7 @@ void process_keypad()
           else
             g.i_n_shots = 0;
           EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+          display_one_point_params();
           break;
 
         case '3':  // Increase parameter n_shots
@@ -152,6 +153,7 @@ void process_keypad()
           else
             g.i_n_shots = N_PARAMS - 1;
           EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+          display_one_point_params();
           break;
 
         case '5':  // Decrease parameter mm_per_frame
@@ -159,6 +161,7 @@ void process_keypad()
             g.i_mm_per_frame--;
           else
             g.i_mm_per_frame = 0;
+          display_all(" ");
           EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
           break;
 
@@ -168,6 +171,7 @@ void process_keypad()
           else
             g.i_mm_per_frame = N_PARAMS - 1;
           EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+          display_all(" ");
           break;
 
         case '8':  // Decrease parameter fps
@@ -176,6 +180,7 @@ void process_keypad()
           else
             g.i_fps = 0;
           EEPROM.put( ADDR_I_FPS, g.i_fps);
+          display_all(" ");
           break;
 
         case '9':  // Increase parameter fps
@@ -184,6 +189,7 @@ void process_keypad()
           else
             g.i_fps = N_PARAMS - 1;
           EEPROM.put( ADDR_I_FPS, g.i_fps);
+          display_all(" ");
           break;
 
       } // End of case

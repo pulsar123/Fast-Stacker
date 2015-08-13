@@ -193,7 +193,8 @@ void stop_now()
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
 
-  display_status_line(" ");
+// Refresh the whole display:
+  display_all(" ");
 
   return;
 }
