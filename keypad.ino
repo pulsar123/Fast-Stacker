@@ -38,22 +38,34 @@ void process_keypad()
           g.point1 = g.pos_short_old;
           if (g.points_byte == 0 || g.points_byte == 2)
             g.points_byte = g.points_byte + 1;
-          display_all(" ");
+          points_status();
+          display_two_point_params();
+          display_two_points();
+          display_comment_line("  P1 was set  ");
+          EEPROM.put( ADDR_POINT1, g.point1);
+          EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
           break;
 
         case 'B':  // Set background point
           g.point2 = g.pos_short_old;
           if (g.points_byte == 0 || g.points_byte == 1)
             g.points_byte = g.points_byte + 2;
-          display_all(" ");
+          points_status();
+          display_two_point_params();
+          display_two_points();
+          display_comment_line("  P2 was set  ");
+          EEPROM.put( ADDR_POINT2, g.point2);
+          EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
           break;
 
         case '7':  // Go to the foreground point
           go_to(g.point1, SPEED_LIMIT);
+          display_comment_line(" Going to P1  ");
           break;
 
         case 'C':  // Go to the background point
           go_to(g.point2, SPEED_LIMIT);
+          display_comment_line(" Going to P2  ");
           break;
 
         case '0': // Start shooting (2-point focus stacking)
@@ -97,10 +109,12 @@ void process_keypad()
               g.stacking_direction = -1;
             }
             g.stacker_mode = 1;
+            display_comment_line("2-points stack");
           }
           else
           {
             // Should print error message
+            display_comment_line("Bad 2 points! ");
           }
           break;
 
@@ -119,6 +133,7 @@ void process_keypad()
             g.first_point = g.pos_short_old;
             g.stacking_direction = -1;
             g.stacker_mode = 3;
+            display_comment_line("1-point stack ");
           }
           break;
 
@@ -135,6 +150,7 @@ void process_keypad()
             g.first_point = g.pos_short_old;
             g.stacking_direction = 1;
             g.stacker_mode = 3;
+            display_comment_line("1-point stack ");
           }
           break;
 
@@ -200,6 +216,7 @@ void process_keypad()
       // Any key press in stacking mode interrupts stacking
       g.stacker_mode = 0;
       change_speed(0.0, 0);
+      display_comment_line("Stacking abort");
     }
 
     g.key_old = key;
@@ -217,6 +234,14 @@ void process_keypad()
     g.stacker_mode = 2;
   }
 
-  return;
+// Disabling the last comment line displaying after COMMENT_DELAY interval:
+  if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
+  {
+    g.comment_flag == 0;
+    display_current_position();
+  }
+
+
+return;
 }
 

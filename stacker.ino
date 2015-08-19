@@ -3,6 +3,11 @@
    Stepper motor module
 
    To be used with automated macro rail for focus stacking
+
+   I am using the following libraries:
+
+    - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
+    - Keypad library: http://playground.arduino.cc/Code/Keypad
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -72,7 +77,7 @@ void setup() {
   g.stacker_mode = 0;
   g.shutter_on = 0;
   g.direction = 1;
-  g.points_byte = 0;
+  g.comment_flag = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
@@ -84,6 +89,9 @@ void setup() {
     g.i_n_shots = 0;
     g.i_mm_per_frame = 0;
     g.i_fps = 0;
+    g.point1 = 0;
+    g.point2 = 0;
+    g.points_byte = 0;
   }
   else
   {
@@ -95,6 +103,9 @@ void setup() {
     EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
     EEPROM.get( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
     EEPROM.get( ADDR_I_FPS, g.i_fps);
+    EEPROM.get( ADDR_POINT1, g.point1);
+    EEPROM.get( ADDR_POINT2, g.point2);
+    EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
   }
   g.calibrate_init = g.calibrate;
   g.calibrate_flag = 0;

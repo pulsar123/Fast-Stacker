@@ -89,6 +89,8 @@ const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
 
+const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
+
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 16;
@@ -127,6 +129,9 @@ const short ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter
 const short ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
 const short ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
 const short ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
+const short ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
+const short ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
+const short ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
 
 // All global variables belong to one structure - global:
 struct global 
@@ -179,7 +184,10 @@ short i_fps; // counter for fps parameter;
 short i_n_shots; // counter for n_shots parameter;
 short direction; // -1/1 for reverse/forward directions of moving
 char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
+char p_buffer[16]; // keeps a copy of the buffer used to print position on display
 byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
+unsigned long t_comment; // time when commment line was triggered
+byte comment_flag; // flag used to trigger the comment line briefly
 
 unsigned char flag; // for testing
 };

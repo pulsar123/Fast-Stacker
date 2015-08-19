@@ -22,6 +22,7 @@ void limiters()
     // This should be after change_speed(0.0):
     g.breaking = 1;
     letter_status("B");
+    display_comment_line("Hit a limiter ");
     // Requesting immediate (after safely breaking the rail) calibration:
     if (g.speed < -SPEED_TINY)
       // We hit the foreground switch, so only the background one remains to be calibrated:

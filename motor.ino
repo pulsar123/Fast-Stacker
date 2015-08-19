@@ -5,7 +5,7 @@ void motor_control()
 /* Controlling the stepper motor, based on current time, target speed (speed1), acceleration (accel),
    values at the last accel change (t0, pos0, speed0), and old integer position pos_old_short.
 
-   Important: "moving" can be set to zero only here! Also, it should be set to 1 only outside of this function.
+   Important: g.moving can be set to zero only here (by calling stop_now())! Also, it should be set to 1 only outside of this function.
  */
 {
   unsigned long dt, dt_a;
@@ -27,7 +27,6 @@ void motor_control()
   new_accel = g.accel;
   instant_stop = 0;
 
-  //!!!
 #ifdef DEBUG
   dt_a = 0;
   dV = 0;
@@ -153,6 +152,8 @@ void motor_control()
   }
 
   // If the pos_short changed since the last step, do another step
+  // This implicitely assumes that there are more than one arduino loops per step; if not, perhaps
+  // I should allow more than one step here, in rapid sequence? This can result in high accelerations though
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):

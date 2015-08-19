@@ -141,83 +141,96 @@ void display_u_per_f()
 /*
  Display the input parameter u per frame (1000*MM_PER_FRAME)
  */
- {
-  lcd.setCursor(0,0);
-  sprintf(g.buffer, "%4dus ", (short)(1000.0*MM_PER_FRAME[g.i_mm_per_frame]));
+{
+  lcd.setCursor(0, 0);
+  sprintf(g.buffer, "%4dus ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
   lcd.print(g.buffer);
   return;
- }
+}
 
 
 void display_fps()
 /*
  Display the input parameter fps (frames per second)
  */
- {
-  lcd.setCursor(7,0);
+{
+  lcd.setCursor(7, 0);
   sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
   lcd.print(g.buffer);
   return;
- }
+}
 
 
 void display_one_point_params()
 /*
- Display the three parameters for one-point shooting: 
+ Display the three parameters for one-point shooting:
   - input parameter N_SHOTS,
   - travel distance, mm,
   - travel time, s.
  */
- {
-  lcd.setCursor(0,1);
-  float dx = (N_SHOTS[g.i_n_shots]-1) * MM_PER_FRAME[g.i_mm_per_frame];
-  short dt = nintMy((float)(N_SHOTS[g.i_n_shots]-1) / FPS[g.i_fps]);
+{
+  lcd.setCursor(0, 1);
+  float dx = (N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
+  short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   sprintf(g.buffer, "%3d %4.1fm %3ds", N_SHOTS[g.i_n_shots], dx, dt);
   lcd.print(g.buffer);
   return;
- }
+}
 
 
 void display_two_point_params()
 /*
- Display the three parameters for two-point shooting: 
+ Display the three parameters for two-point shooting:
   - number of shots,
   - travel distance, mm,
   - travel time, s.
  */
- {
-  lcd.setCursor(0,2);
-  float dx = MM_PER_MICROSTEP * (float)(g.point2-g.point1);
-  short dt = nintMy((float)(g.Nframes-1) / FPS[g.i_fps]);
+{
+  lcd.setCursor(0, 2);
+  float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
+  short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
   lcd.print(g.buffer);
   return;
- }
+}
 
 
 void display_two_points()
 /*
  Display the positions (in mm) of two points: foreground, F, and background, B.
  */
- {
-  lcd.setCursor(0,3);
-  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP*(float)g.point1, MM_PER_MICROSTEP*(float)g.point2);
+{
+  lcd.setCursor(0, 3);
+  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP * (float)g.point1, MM_PER_MICROSTEP * (float)g.point2);
   lcd.print(g.buffer);
   return;
- }
+}
 
 
- void display_current_position()
- /*
-  Display the current position on the transient line
-  */
+void display_current_position()
+/*
+ Display the current position on the transient line
+ */
 {
-  lcd.setCursor(0,4);
-  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP*g.pos);
-  lcd.print(g.buffer);
+  lcd.setCursor(0, 4);
+  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
+  // Do the slow display operation only if the number changed:
+  if (strcmp(g.buffer, g.p_buffer) != 0)
+    lcd.print(g.buffer);
   return;
 
 }
 
 
+void display_comment_line(char *l)
+/*
+ Display a comment line briefly (then it should be replaced with display_current_positio() output)
+ */
+ {
+  lcd.setCursor(0, 4);
+  lcd.print(*l);  
+  g.t_comment = g.t;
+  g.comment_flag = 1;
+  return;
+ }
 

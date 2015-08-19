@@ -10,6 +10,7 @@ void calibration()
     // (should be zeroed at the end of each limiter calibration)
     g.calibrate_flag = 1;
     letter_status("C");
+    display_comment_line(" Calibrating  ");
     if (g.calibrate == 3)
       // First we calibrate limit1:
       g.calibrate = 1;

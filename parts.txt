@@ -43,6 +43,7 @@
 1.31 20 21 twenty resistors 33R 1W  http://www.ebay.ca/itm/391156925202
 1.30 23 22 two headphone jacks 2.5mm  http://www.ebay.com/itm/2pcs-2-5mm-Female-Audio-Connector-5-Pin-DIP-Headphone-Jack-Socket-PJ-202m-/121606507044?pt=LH_DefaultDomain_0&hash=item1c50500a24
 2.68 27 16 coupler 4-7mm http://www.ebay.ca/itm/331236618242?_trksid=p2057872.m2749.l2649&var=540417689785&ssPageName=STRK%3AMEBIDX%3AIT
-1.98 06 - two RJ45 sockets http://www.ebay.ca/itm/NETWORK-Enthernet-RJ45-8-pin-CAT5-CAT5E-PCB-FEMALE-SHIELDING-SOCKET-JACK-US10-/331424637135?pt=LH_DefaultDomain_0&hash=item4d2a72a0cf
+1.98 06 06 two RJ45 sockets http://www.ebay.ca/itm/NETWORK-Enthernet-RJ45-8-pin-CAT5-CAT5E-PCB-FEMALE-SHIELDING-SOCKET-JACK-US10-/331424637135?pt=LH_DefaultDomain_0&hash=item4d2a72a0cf
 3.48 19 - ten M3x35 bolts http://www.ebay.com/itm/10Pcs-50pcs-Metric-Thread-M3-304-Stainless-Steel-Hex-Socket-Head-Screw-Bolt-Nut-/321762484601?ssPageName=ADME:L:OU:CA:1120
 2.50 22 - Nokia 5110 display http://www.ebay.ca/itm/291356564507
+3.00 -  - Fifty M3 x 12mm countersunk machine screws http://www.ebay.ca/itm/M3-x-12mm-Slot-Flat-Countersunk-head-Stainless-Steel-Machine-Screws-50-pcs-/171864291058?hash=item2803e8f6f2
