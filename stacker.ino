@@ -14,6 +14,7 @@
 #include <Keypad.h>
 #include "pcd8544.h"
 #include "stacker.h"
+#include "stdio.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void setup() {
@@ -30,6 +31,7 @@ void setup() {
   // Change the LCD backlighting here (0...255). WIll be implemented as user-controlled later
   analogWrite(PIN_LCD_LED, 255);
 
+#ifdef LCD
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -40,7 +42,8 @@ void setup() {
   lcd.println("(c) Sergey");
   lcd.println("Mashchenko");
   lcd.print("  2015");
-  delay(500);
+#endif
+  //  delay(500);
 
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
@@ -54,6 +57,7 @@ void setup() {
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(1000000);
+  keypad.setDebounceTime(50);
   g.key_old = '=';
 
   // Limiting switches should not be on when powering up:
@@ -80,17 +84,18 @@ void setup() {
   g.comment_flag = 0;
 
   // Checking if EEPROM was never used:
-  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
+  //  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
+  if (1)
   {
     g.pos = 0.0;
     g.calibrate = 3;
-    g.limit1 = 0;
-    g.limit2 = 0;
-    g.i_n_shots = 0;
-    g.i_mm_per_frame = 0;
-    g.i_fps = 0;
-    g.point1 = 0;
-    g.point2 = 0;
+    g.limit1 = -15000;
+    g.limit2 = 15000;
+    g.i_n_shots = 7;
+    g.i_mm_per_frame = 7;
+    g.i_fps = 7;
+    g.point1 = -10000;
+    g.point2 = 10000;
     g.points_byte = 0;
   }
   else
@@ -107,6 +112,10 @@ void setup() {
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
   }
+  //!!!
+  g.calibrate = 0;
+
+
   g.calibrate_init = g.calibrate;
   g.calibrate_flag = 0;
   g.pos0 = g.pos;
@@ -116,18 +125,32 @@ void setup() {
   g.breaking = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
+  g.state_old = (KeyState)0;
+
 
   // Default lcd layout:
+#ifdef LCD
   lcd.clear();
+#endif
   display_all(" ");
-    
+
+#ifdef TIMING
+  g.t_old = g.t0;
+  g.i_timing = 0;
+#endif
+
   // Testing:
   g.flag = 0;
   g.pos = 0;
-  g.point1 = 0;
+  g.point1 = -10000;
   g.point2 = 10000;
 #ifdef DEBUG
   Serial.begin(9600);
+  delay(250);
+#endif
+#ifdef DEBUG
+  Serial.print(" test=");
+  Serial.println(g.flag);
 #endif
 }
 
@@ -136,53 +159,54 @@ void setup() {
 void loop()
 {
 
-/*
-  // Simple test:
+  /*
+    // Simple test:
 
-  // At t=0, start moving forward with constant acceleration
-  if (g.flag == 0)
-  {
-    g.flag = 1;
-    // ACcelerate to positive speed:
-    change_speed(SPEED_LIMIT / 3.0, 0);
-    //    pos0 = 0.0;
-    show_params();
-  }
+    // At t=0, start moving forward with constant acceleration
+    if (g.flag == 0)
+    {
+      g.flag = 1;
+      // ACcelerate to positive speed:
+      change_speed(SPEED_LIMIT / 3.0, 0);
+      //    pos0 = 0.0;
+      show_params();
+    }
 
-  if (g.flag == 1 && g.accel == 0 && g.t - g.t0 > 2000000)
-  {
-    g.flag = 2;
-    change_speed(SPEED_LIMIT, 0);
-    show_params();
-  }
+    if (g.flag == 1 && g.accel == 0 && g.t - g.t0 > 2000000)
+    {
+      g.flag = 2;
+      change_speed(SPEED_LIMIT, 0);
+      show_params();
+    }
 
-  if (g.flag == 2 && g.accel == 0 && g.t - g.t0 > 2000000)
-  {
-    g.flag = 3;
-    change_speed(-SPEED_LIMIT / 3.0, 0);
-    show_params();
-  }
+    if (g.flag == 2 && g.accel == 0 && g.t - g.t0 > 2000000)
+    {
+      g.flag = 3;
+      change_speed(-SPEED_LIMIT / 3.0, 0);
+      show_params();
+    }
 
-  if (g.flag == 3 && g.accel == 0 && g.t - g.t0 > 2000000)
-  {
-    g.flag = 4;
-    change_speed(-SPEED_LIMIT, 0);
-    show_params();
-  }
+    if (g.flag == 3 && g.accel == 0 && g.t - g.t0 > 2000000)
+    {
+      g.flag = 4;
+      change_speed(-SPEED_LIMIT, 0);
+      show_params();
+    }
 
-  // Go to the start:
-  if (g.flag == 4 && g.accel == 0 && g.t - g.t0 > 2000000)
-  {
-    g.flag = 0;
-  }
-  */
+    // Go to the start:
+    if (g.flag == 4 && g.accel == 0 && g.t - g.t0 > 2000000)
+    {
+      g.flag = 0;
+    }
+    */
 
   // Processing the keypad:
   process_keypad();
+        //Serial.println("S1");
 
   // All the processing related to the two extreme limits for the macro rail movements:
-  if (g.moving == 1 && g.breaking == 0)
-    limiters();
+//  if (g.moving == 1 && g.breaking == 0)
+//    limiters();
 
   // Prevent motor operations if limiters are engaged initially:
   //  if (abortMy && direction == 0)
@@ -194,9 +218,34 @@ void loop()
 
   // Camera shutter control:
   camera();
+//        Serial.println("S2");
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
 
+        //Serial.println("S3");
+
+
+#ifdef TIMING
+  g.i_timing++;
+  if (g.i_timing == N_TIMING)
+  {
+    float dt_loop = (float)(g.t - g.t_old) / (float)N_TIMING;
+    // Inverse speed_limit is us/ustep:
+    float loops_per_step = 1.0 / SPEED_LIMIT / dt_loop;
+    // Displaying the average loop time (us), and number of loops per motor step (at maximum allowed speed)
+    //    sprintf(g.buffer, "%5fus, %5.1f", dt_loop, dt_step / dt_loop);
+    sprintf(g.buffer, "%5dus, %3d.%1d", (int)dt_loop, (int)loops_per_step, (int)(10.0 * (loops_per_step - (int)loops_per_step)));
+#ifdef DEBUG
+    Serial.println(g.buffer);
+#endif
+#ifdef LCD
+    lcd.setCursor(0, 4);
+    lcd.print(g.buffer);
+#endif
+    g.i_timing = 0;
+    g.t_old = g.t;
+  }
+#endif
 }
 

@@ -70,6 +70,12 @@ void change_speed(float speed1_loc, short moving_mode1)
   if (g.breaking || g.calibrate_flag == 2)
     return;
 
+#ifdef DEBUG
+            Serial.println(111);
+            Serial.print(" speed1_loc=");
+            Serial.println(speed1_loc,6);
+#endif
+
   g.moving_mode = moving_mode1;
 
   if (speed1_loc >= g.speed)
@@ -102,7 +108,11 @@ void change_speed(float speed1_loc, short moving_mode1)
 
   // Updating the target speed:
   g.speed1 = speed1_loc;
-
+#ifdef DEBUG
+            Serial.println(222);
+            Serial.print(" speed1=");
+            Serial.println(g.speed1,6);
+#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -195,6 +205,12 @@ void stop_now()
 
 // Refresh the whole display:
   display_all(" ");
+#ifdef DEBUG
+            Serial.println(444);
+            Serial.print(" g.moving=");
+            Serial.println(g.moving);
+#endif
+
 
   return;
 }

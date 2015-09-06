@@ -29,7 +29,15 @@ Issues to address:
 
 
 #define VERSION "0.01"
-//#define DEBUG
+// For debugging (motor doesn't work when debug is on!):
+#define DEBUG
+// For timing the main loop:
+//#define TIMING
+// Compute and display timing results every that many loops:
+const unsigned long N_TIMING = 10000;
+
+// If undefined, lcd will not be used
+//#define LCD
 
 // Options controlling compilation:
 
@@ -47,13 +55,13 @@ Issues to address:
 const short PIN_STEP = 0;
 const short PIN_DIR = 1;
 const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
-// LCD pins (Nokia 5110):
-const short PIN_LCD_DC = 5;
-const short PIN_LCD_RST = 6;
-const short PIN_LCD_SCE = 7;
-const short PIN_LCD_LED = 9;
-const short PIN_LCD_DN_ = 11;
-const short PIN_LCD_SCL = 13;
+// LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
+const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
+const short PIN_LCD_RST = 6;  // Via 10 kOhm resistor
+const short PIN_LCD_SCE = 7;  // Via 1 kOhm resistor
+const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
+const short PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
+const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
 const short PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
@@ -101,7 +109,7 @@ const float MM_PER_FRAME[] = {0.005, 0.0075, 0.01, 0.015, 0.02, 0.03, 0.04, 0.06
 const float FPS[] = {0.038, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.2, 1.6, 2.5, 3.8, 5.0, 6.3};
 //const float FPS[N_PARAMS];
 // Number of shots parameter (to be used in 1-point stacking):
-const short N_SHOTS[] = {1, 2, 3, 4, 6, 8, 12, 16, 25, 38, 50, 75, 100, 150, 200, 300};
+const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 12, 16, 25, 38, 50, 75, 100, 150, 200, 300};
 //const short N_SHOTS[N_PARAMS];
 
 //////// Don't modify these /////////
@@ -188,6 +196,11 @@ char p_buffer[16]; // keeps a copy of the buffer used to print position on displ
 byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
 unsigned long t_comment; // time when commment line was triggered
 byte comment_flag; // flag used to trigger the comment line briefly
+KeyState state_old;  // keeping old keypas state
+#ifdef TIMING
+unsigned long t_old;
+unsigned long i_timing;
+#endif
 
 unsigned char flag; // for testing
 };
@@ -203,8 +216,8 @@ char keys[rows][cols] = {
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad
-byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad
+byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
+byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 // LCD stuff

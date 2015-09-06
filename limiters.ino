@@ -14,6 +14,10 @@ void limiters()
     // Triggering the limiter is an exceptional event, should rarely happen, and will
     // necessitate re-calibration of the rail
   {
+#ifdef DEBUG
+  Serial.print(" limiter=");
+  Serial.println(g.limit_on);
+#endif
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
     change_speed(0.0, 0);
@@ -42,6 +46,7 @@ void limiters()
   }
   else
     ////// Soft limits ///////
+    
   {
     // No soft limits enforced when doing calibration:
     if (g.calibrate_init == 0)

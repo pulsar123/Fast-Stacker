@@ -27,7 +27,7 @@ void motor_control()
   new_accel = g.accel;
   instant_stop = 0;
 
-#ifdef DEBUG
+  #ifdef DEBUG
   dt_a = 0;
   dV = 0;
   float p1, p2, p3, pp;
@@ -108,27 +108,27 @@ void motor_control()
 #ifdef DEBUG
   /*
   Serial.print("pos=");
-  Serial.print(pos);
+  Serial.print(g.pos);
   Serial.print(" pos_short=");
   Serial.print(pos_short);
   Serial.print(" new_accel=");
   Serial.print(new_accel);
   Serial.print(" moving=");
-  Serial.print(moving);
+  Serial.print(g.moving);
   Serial.print(" speed1=");
-  Serial.print(speed1,6);
+  Serial.print(g.speed1,6);
   Serial.print(" pos0=");
-  Serial.print(pos0);
+  Serial.print(g.pos0);
   Serial.print(" dt=");
   Serial.print(dt);
   Serial.print(" speed=");
-  Serial.print(speed,6);
+  Serial.print(g.speed,6);
   Serial.print(" speed_old=");
-  Serial.print(speed_old,6);
+  Serial.print(g.speed_old,6);
   Serial.print(" speed0=");
-  Serial.print(speed0,6);
+  Serial.print(g.speed0,6);
   Serial.print(" accel=");
-  Serial.print(accel);
+  Serial.print(g.accel);
   Serial.print(" dt_a=");
   Serial.print(dt_a);
   Serial.print(" acc_limit=");
@@ -142,12 +142,16 @@ void motor_control()
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
+#ifndef DEBUG
     digitalWrite(PIN_DIR, HIGH);
+#endif    
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
+#ifndef DEBUG
     digitalWrite(PIN_DIR, LOW);
+#endif
     delayMicroseconds(STEP_LOW_DT);
   }
 
@@ -157,10 +161,14 @@ void motor_control()
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):
+#ifndef DEBUG
     digitalWrite(PIN_STEP, LOW);
+#endif
     // For Easydriver, the delay should be at least 1.0 us:
     delayMicroseconds(STEP_LOW_DT);
+#ifndef DEBUG
     digitalWrite(PIN_STEP, HIGH);
+#endif    
 
     // Saving the current position as old:
     g.pos_short_old = pos_short;
@@ -171,7 +179,7 @@ void motor_control()
   if (g.moving_mode == 1)
     // Used in go_to mode
   {
-#ifdef HIGH_ACCURACY
+//#ifdef HIGH_ACCURACY
     // Not sure if good idea:
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
     if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 < 0.0 && g.speed < 0.0 && pos_short <= g.pos_goto_short)
@@ -181,7 +189,7 @@ void motor_control()
       instant_stop = 1;
       stop_now();
     }
-#endif
+//#endif
 
     // Final position  if a full break were enabled now:
     if (g.speed >= 0.0)
