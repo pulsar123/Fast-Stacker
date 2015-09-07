@@ -1,3 +1,13 @@
+float Msteps_per_frame ()
+{
+  return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+}
+
+short Nframes ()
+{
+  return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+}
+
 void process_keypad()
 /*
  All the keypad runtime stuff goes here
@@ -47,7 +57,7 @@ void process_keypad()
             Serial.print(" g.moving=");
             Serial.println(g.moving);
             Serial.print(" speed1=");
-            Serial.println(g.speed1,6);
+            Serial.println(g.speed1, 6);
 #endif
 
             break;
@@ -90,9 +100,10 @@ void process_keypad()
             // Checking the correctness of point1/2
             if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
             {
-              // Adjusting points to fit an integer number of shots (by slightly extending or shrinking the position range)
               // Required microsteps per frame:
-              g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+              g.msteps_per_frame = Msteps_per_frame();
+              /*  Skipping this for now
+              // Adjusting points to fit an integer number of shots (by slightly extending or shrinking the position range)
               // Number of frames rounded to the nearest integer (+1 to include both ends):
               g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
               // Adjusted distance to travel:
@@ -107,6 +118,9 @@ void process_keypad()
               g.point2 = g.point1 + nintMy(d);
               if (g.point2 > g.limit2)
                 g.point2 = g.limit2;
+                */
+              // Using instead the simplest approach, which will result the last shot to always slightly undershoot
+              g.Nframes = Nframes();
               // Finding the closest point:
               short d1 = (short)fabs(g.pos_short_old - g.point1);
               short d2 = (short)fabs(g.pos_short_old - g.point2);
@@ -115,7 +129,7 @@ void process_keypad()
                 go_to(g.point1, SPEED_LIMIT);
                 g.first_point = g.point1;
                 // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-                g.second_point = g.point2 + 1;
+                g.second_point = g.point2;
                 g.stacking_direction = 1;
               }
               else
@@ -123,7 +137,7 @@ void process_keypad()
                 go_to(g.point2, SPEED_LIMIT);
                 g.first_point = g.point2;
                 // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-                g.second_point = g.point1 - 1;
+                g.second_point = g.point1;
                 g.stacking_direction = -1;
               }
               g.stacker_mode = 1;
@@ -142,20 +156,20 @@ void process_keypad()
             if (!g.moving)
             {
               // Required microsteps per frame:
-              g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+              g.msteps_per_frame = Msteps_per_frame();
               // Estimating the required speed in microsteps per microsecond
               speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
               go_to(g.limit1, speed);
 #ifdef DEBUG
-  Serial.print("msteps_per_frame=");
-  Serial.println(g.msteps_per_frame);
-  Serial.print("speed=");
-  Serial.println(speed,6);
-  Serial.print("g.limit1=");
-  Serial.println(g.limit1);
-  Serial.print("g.limit2=");
-  Serial.println(g.limit2);
-#endif  
+              Serial.print("msteps_per_frame=");
+              Serial.println(g.msteps_per_frame);
+              Serial.print("speed=");
+              Serial.println(speed, 6);
+              Serial.print("g.limit1=");
+              Serial.println(g.limit1);
+              Serial.print("g.limit2=");
+              Serial.println(g.limit2);
+#endif
               g.frame_counter = 0;
               g.pos_to_shoot = g.pos_short_old;
               g.first_point = g.pos_short_old;
@@ -169,7 +183,7 @@ void process_keypad()
             if (!g.moving)
             {
               // Required microsteps per frame:
-              g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+              g.msteps_per_frame = Msteps_per_frame();
               // Estimating the required speed in microsteps per microsecond
               speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
               go_to(g.limit2, speed);
@@ -189,7 +203,7 @@ void process_keypad()
               g.i_n_shots = 0;
             EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
             //!!!
-//            display_one_point_params();
+            //            display_one_point_params();
             display_all(" ");
             break;
 
@@ -207,10 +221,12 @@ void process_keypad()
               g.i_mm_per_frame--;
             else
               g.i_mm_per_frame = 0;
-              // Required microsteps per frame:
-              g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-              // Number of frames rounded to the nearest integer (+1 to include both ends):
-              g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+            // Required microsteps per frame:
+            g.msteps_per_frame = Msteps_per_frame();
+            // Number of frames rounded to the nearest integer (+1 to include both ends):
+            //            g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+            // Using instead the simplest approach, which will result the last shot to always slightly undershoot
+            g.Nframes = Nframes();
             display_all(" ");
             EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
             break;
@@ -220,10 +236,12 @@ void process_keypad()
               g.i_mm_per_frame++;
             else
               g.i_mm_per_frame = N_PARAMS - 1;
-              // Required microsteps per frame:
-              g.msteps_per_frame = (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-              // Number of frames rounded to the nearest integer (+1 to include both ends):
-              g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+            // Required microsteps per frame:
+            g.msteps_per_frame = Msteps_per_frame();
+            // Number of frames rounded to the nearest integer (+1 to include both ends):
+            //            g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+            // Using instead the simplest approach, which will result the last shot to always slightly undershoot
+            g.Nframes = Nframes();
             EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
             display_all(" ");
             break;
@@ -292,7 +310,7 @@ void process_keypad()
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
   {
     g.comment_flag == 0;
-//    display_current_position();
+    //    display_current_position();
   }
 
 

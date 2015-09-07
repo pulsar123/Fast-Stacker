@@ -124,7 +124,8 @@ const float SPEED_LIMIT = SPEED_SCALE*SPEED_LIMIT_MM_S;
 // This is a limiter, to minimize damage to the rail and motor
 const float ACCEL_LIMIT = SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE);
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
-const float SPEED_SMALL = sqrt(2.0*ACCEL_LIMIT);
+//!!! 2* - to make goto accurate, but with higher decelerations at the end
+const float SPEED_SMALL = 2*sqrt(2.0*ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-3*SPEED_SMALL;
 const float SPEED1 = SPEED_LIMIT/sqrt(2.0);

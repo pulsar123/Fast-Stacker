@@ -27,7 +27,7 @@ void motor_control()
   new_accel = g.accel;
   instant_stop = 0;
 
-  #ifdef DEBUG
+#ifdef DEBUG
   dt_a = 0;
   dV = 0;
   float p1, p2, p3, pp;
@@ -144,7 +144,7 @@ void motor_control()
   {
 #ifndef DEBUG
     digitalWrite(PIN_DIR, HIGH);
-#endif    
+#endif
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
@@ -168,7 +168,7 @@ void motor_control()
     delayMicroseconds(STEP_LOW_DT);
 #ifndef DEBUG
     digitalWrite(PIN_STEP, HIGH);
-#endif    
+#endif
 
     // Saving the current position as old:
     g.pos_short_old = pos_short;
@@ -179,40 +179,46 @@ void motor_control()
   if (g.moving_mode == 1)
     // Used in go_to mode
   {
-//#ifdef HIGH_ACCURACY
+    //#ifdef HIGH_ACCURACY
     // Not sure if good idea:
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
-    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 < 0.0 && g.speed < 0.0 && pos_short <= g.pos_goto_short)
+    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 <= 0.0 && g.speed <= 0.0 && pos_short <= g.pos_goto_short)
         && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
     {
+#ifdef DEBUG
+      Serial.println(666);
+#endif
       new_accel = 0;
       instant_stop = 1;
       stop_now();
     }
-//#endif
+    //#endif
 
-    // Final position  if a full break were enabled now:
-    if (g.speed >= 0.0)
-      g.pos_stop = g.pos + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
-    else
-      g.pos_stop = g.pos - 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
-
-    // Checking if pos_goto is bracketed between pos_stop_old and pos_stop (not checked first time):
-    float pos_goto = (float)g.pos_goto_short;
-    if (g.pos_stop_flag == 1 && ((pos_goto > g.pos_stop && pos_goto < g.pos_stop_old) || (pos_goto < g.pos_stop && pos_goto > g.pos_stop_old)))
-      // Time to break happened between the previous and current motor_control calls
-      // If we initiate breaking now, we'll always slightly overshoot the target position (so the previous part
-      // with the instant stop when speed is very small makes sense)
+    if (instant_stop == 0)
     {
-      // Initiating breaking:
+      // Final position  if a full break were enabled now:
       if (g.speed >= 0.0)
-        new_accel = -1;
+        g.pos_stop = g.pos + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
       else
-        new_accel = 1;
-      g.speed1 = 0.0;
+        g.pos_stop = g.pos - 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
+
+      // Checking if pos_goto is bracketed between pos_stop_old and pos_stop (not checked first time):
+      float pos_goto = (float)g.pos_goto_short;
+      if (g.pos_stop_flag == 1 && ((pos_goto > g.pos_stop && pos_goto < g.pos_stop_old) || (pos_goto < g.pos_stop && pos_goto > g.pos_stop_old)))
+        // Time to break happened between the previous and current motor_control calls
+        // If we initiate breaking now, we'll always slightly overshoot the target position (so the previous part
+        // with the instant stop when speed is very small makes sense)
+      {
+        // Initiating breaking:
+        if (g.speed >= 0.0)
+          new_accel = -1;
+        else
+          new_accel = 1;
+        g.speed1 = 0.0;
+      }
+      g.pos_stop_old = g.pos_stop;
+      g.pos_stop_flag = 1;
     }
-    g.pos_stop_old = g.pos_stop;
-    g.pos_stop_flag = 1;
   }
 
 

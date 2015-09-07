@@ -127,6 +127,8 @@ void setup() {
   g.frame_counter = 0;
   g.state_old = (KeyState)0;
 
+  g.msteps_per_frame = Msteps_per_frame();
+  g.Nframes = Nframes();
 
   // Default lcd layout:
 #ifdef LCD
@@ -202,11 +204,11 @@ void loop()
 
   // Processing the keypad:
   process_keypad();
-        //Serial.println("S1");
+  //Serial.println("S1");
 
   // All the processing related to the two extreme limits for the macro rail movements:
-//  if (g.moving == 1 && g.breaking == 0)
-//    limiters();
+  //  if (g.moving == 1 && g.breaking == 0)
+  //    limiters();
 
   // Prevent motor operations if limiters are engaged initially:
   //  if (abortMy && direction == 0)
@@ -218,12 +220,12 @@ void loop()
 
   // Camera shutter control:
   camera();
-//        Serial.println("S2");
+  //        Serial.println("S2");
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
 
-        //Serial.println("S3");
+  //Serial.println("S3");
 
 
 #ifdef TIMING

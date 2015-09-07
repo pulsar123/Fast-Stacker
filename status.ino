@@ -23,10 +23,10 @@ void letter_status(char* l)
 {
 #ifdef LCD
   lcd.setCursor(0, 5);
-  lcd.print(*l);
+  lcd.print(l);
 #endif
 #ifdef DEBUG
-  Serial.println(*l);
+  Serial.println(l);
 #endif  
   return;
 }
@@ -290,10 +290,10 @@ void display_comment_line(char *l)
  {
 #ifdef LCD  
   lcd.setCursor(0, 4);
-  lcd.print(*l);  
+  lcd.print(l);  
 #endif  
 #ifdef DEBUG  
-  Serial.println(*l);
+  Serial.println(l);
 #endif
   g.t_comment = g.t;
   g.comment_flag = 1;
