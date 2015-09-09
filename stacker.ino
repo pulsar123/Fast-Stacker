@@ -102,7 +102,7 @@ void setup() {
   {
     // Reading the current position from EEPROM:
     EEPROM.get( ADDR_POS, g.pos );
-    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
+//    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
@@ -112,11 +112,7 @@ void setup() {
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
   }
-  //!!!
-  g.calibrate = 0;
 
-
-  g.calibrate_init = g.calibrate;
   g.calibrate_flag = 0;
   g.pos0 = g.pos;
   g.pos_short_old = floorMy(g.pos);
@@ -142,6 +138,7 @@ void setup() {
 #endif
 
   // Testing:
+  g.calibrate = 0;
   g.flag = 0;
   g.pos = 0;
   g.point1 = -10000;

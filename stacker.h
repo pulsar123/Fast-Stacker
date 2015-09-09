@@ -166,8 +166,7 @@ float pos_stop_old; // Previously computed stop position if breaked
 short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
-unsigned char calibrate=0; // =3 when both limiters calibration is required; =1/2 when only the fore/background limiter (limit1/2) should be calibrated
-unsigned char calibrate_init=0; // a copy of calibrate
+unsigned char calibrate=0; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
 unsigned char calibrate_flag=0; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
 // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
 unsigned char limit_on; // =0/1 when the limiting switches are off/on

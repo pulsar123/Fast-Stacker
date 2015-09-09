@@ -17,8 +17,16 @@ void process_keypad()
 {
   float speed;
 
+  // Disabling the last comment line displaying after COMMENT_DELAY interval:
+  if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
+  {
+    g.comment_flag == 0;
+    //    display_current_position();
+  }
+
+
   // ?? Ignore keypad during emergency breaking
-  if (g.breaking == 1)
+  if (g.breaking == 1 || g.calibrate == 3)
     return;
 
   // Reading a keypad key if any:
@@ -328,14 +336,6 @@ void process_keypad()
             */
 #endif
   }
-
-  // Disabling the last comment line displaying after COMMENT_DELAY interval:
-  if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
-  {
-    g.comment_flag == 0;
-    //    display_current_position();
-  }
-
 
   return;
 }

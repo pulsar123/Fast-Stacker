@@ -201,12 +201,12 @@ void stop_now()
     EEPROM.put( ADDR_POS, g.pos );
   }
 
-  if (g.calibrate_flag == 4)
-    g.calibrate_flag = 5;
-
   // At this point any calibration should be done (we are in a safe zone, afyter calibrating both limiters):
   if (g.calibrate_flag == 5)
     g.calibrate_flag = 0;
+
+  if (g.calibrate_flag == 4)
+    g.calibrate_flag = 5;
 
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;
@@ -223,7 +223,6 @@ void stop_now()
   Serial.print(" g.moving=");
   Serial.println(g.moving);
 #endif
-
 
   return;
 }
