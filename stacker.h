@@ -4,6 +4,9 @@
 
    To be used with automated macro rail for focus stacking
 
+== Handling limiters (limiting switches) ==
+There are two limiters - foreground (smaller pos) and background (larger pos).
+
 
 Issues to address:
  - Position accuracy after turning off/on again: the motor will likely move to the
@@ -30,7 +33,7 @@ Issues to address:
 
 #define VERSION "0.01"
 // For debugging (motor doesn't work when debug is on!):
-#define DEBUG
+//#define DEBUG
 // For timing the main loop:
 //#define TIMING
 // Compute and display timing results every that many loops:
@@ -43,7 +46,7 @@ const unsigned long N_TIMING = 10000;
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 // I think it makes sense to only use full stops when at rest in saving mode
-//#define SAVE_ENERGY
+#define SAVE_ENERGY
 // If defined, each go_to() operation will move the rail slighly shorter distance (by DELTA_POS),
 // and when at the end the low speed SPEED_SMALL is reached, deceleration stops, and motion proceeds
 // at that low speed until the exact  target position is reached, at which point the rail stops
@@ -87,10 +90,11 @@ const float SPEED_LIMIT_MM_S = 5;
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 2.0;
-// Padding (in microsteps) before hitting the limiters:
+// Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
 const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
+const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
 const short STEP_LOW_DT = 3;
@@ -159,11 +163,13 @@ float speed0; // Last speed when accel changed
 float speed_old; // speed at the previous step
 float pos_stop; // Current stop position if breaked
 float pos_stop_old; // Previously computed stop position if breaked
+short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
 unsigned char calibrate=0; // =3 when both limiters calibration is required; =1/2 when only the fore/background limiter (limit1/2) should be calibrated
 unsigned char calibrate_init=0; // a copy of calibrate
-unsigned char calibrate_flag=0; // a flag for each leg of calibration
+unsigned char calibrate_flag=0; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
+// 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
 unsigned char limit_on; // =0/1 when the limiting switches are off/on
 short limit1; // pos_short for the foreground limiter
 short limit2; // pos_short for the background limiter
@@ -198,6 +204,7 @@ byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only
 unsigned long t_comment; // time when commment line was triggered
 byte comment_flag; // flag used to trigger the comment line briefly
 KeyState state_old;  // keeping old keypas state
+//short limiter_engaged;  // =1 when hitting a limiter
 #ifdef TIMING
 unsigned long t_old;
 unsigned long i_timing;

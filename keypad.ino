@@ -3,10 +3,12 @@ float Msteps_per_frame ()
   return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
 }
 
+
 short Nframes ()
 {
   return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
 }
+
 
 void process_keypad()
 /*
@@ -15,6 +17,9 @@ void process_keypad()
 {
   float speed;
 
+  // ?? Ignore keypad during emergency breaking
+  if (g.breaking == 1)
+    return;
 
   // Reading a keypad key if any:
   char key = keypad.getKey();
@@ -66,6 +71,8 @@ void process_keypad()
             g.point1 = g.pos_short_old;
             if (g.points_byte == 0 || g.points_byte == 2)
               g.points_byte = g.points_byte + 1;
+            g.msteps_per_frame = Msteps_per_frame();
+            g.Nframes = Nframes();
             points_status();
             display_two_point_params();
             display_two_points();
@@ -78,6 +85,8 @@ void process_keypad()
             g.point2 = g.pos_short_old;
             if (g.points_byte == 0 || g.points_byte == 1)
               g.points_byte = g.points_byte + 2;
+            g.msteps_per_frame = Msteps_per_frame();
+            g.Nframes = Nframes();
             points_status();
             display_two_point_params();
             display_two_points();
@@ -304,6 +313,20 @@ void process_keypad()
     g.frame_counter = 0;
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
+#ifdef DEBUG
+    /*
+            Serial.print("STACKER2: g.second_point=");
+            Serial.print(g.second_point);
+            Serial.print(", g.pos_to_shoot=");
+            Serial.print(g.pos_to_shoot);
+            Serial.print(", g.stacking_direction=");
+            Serial.print(g.stacking_direction);
+            Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
+            Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
+            Serial.print(", g.shutter_on=");
+            Serial.println(g.shutter_on);
+            */
+#endif
   }
 
   // Disabling the last comment line displaying after COMMENT_DELAY interval:

@@ -71,9 +71,9 @@ void change_speed(float speed1_loc, short moving_mode1)
     return;
 
 #ifdef DEBUG
-            Serial.println(111);
-            Serial.print(" speed1_loc=");
-            Serial.println(speed1_loc,6);
+  Serial.println(111);
+  Serial.print(" speed1_loc=");
+  Serial.println(speed1_loc, 6);
 #endif
 
   g.moving_mode = moving_mode1;
@@ -109,9 +109,9 @@ void change_speed(float speed1_loc, short moving_mode1)
   // Updating the target speed:
   g.speed1 = speed1_loc;
 #ifdef DEBUG
-            Serial.println(222);
-            Serial.print(" speed1=");
-            Serial.println(g.speed1,6);
+  Serial.println(222);
+  Serial.print(" speed1=");
+  Serial.println(g.speed1, 6);
 #endif
   return;
 }
@@ -188,29 +188,40 @@ void stop_now()
  */
 {
   g.moving = 0;
+
 #ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH);
   delay(ENABLE_DELAY_MS);
 #endif
+
+  // Things to do if we are not in the emergency breaking mode:
+  if (g.breaking == 0)
+  {
+    // Saving the current position to EEPROM:
+    EEPROM.put( ADDR_POS, g.pos );
+  }
+
+  if (g.calibrate_flag == 4)
+    g.calibrate_flag = 5;
+
+  // At this point any calibration should be done (we are in a safe zone, afyter calibrating both limiters):
+  if (g.calibrate_flag == 5)
+    g.calibrate_flag = 0;
+
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;
-  // At this point any calibration should be done:
-  g.calibrate_flag = 0;
   g.speed = 0.0;
   if (g.stacker_mode >= 2)
   {
     // Ending 2-point focus stacking
     g.stacker_mode = 0;
   }
-  // Saving the current position to EEPROM:
-  EEPROM.put( ADDR_POS, g.pos );
-
-// Refresh the whole display:
+  // Refresh the whole display:
   display_all(" ");
 #ifdef DEBUG
-            Serial.println(444);
-            Serial.print(" g.moving=");
-            Serial.println(g.moving);
+  Serial.println(444);
+  Serial.print(" g.moving=");
+  Serial.println(g.moving);
 #endif
 
 

@@ -147,7 +147,7 @@ void setup() {
   g.point1 = -10000;
   g.point2 = 10000;
 #ifdef DEBUG
-  Serial.begin(9600);
+  Serial.begin(250000);
   delay(250);
 #endif
 #ifdef DEBUG
@@ -204,28 +204,22 @@ void loop()
 
   // Processing the keypad:
   process_keypad();
-  //Serial.println("S1");
 
   // All the processing related to the two extreme limits for the macro rail movements:
-  //  if (g.moving == 1 && g.breaking == 0)
-  //    limiters();
+  limiters();
 
   // Prevent motor operations if limiters are engaged initially:
   //  if (abortMy && direction == 0)
   //    return;
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
-  if (g.calibrate_init > 0 && g.moving == 0 && g.breaking == 0)
-    calibration();
+  calibration();
 
   // Camera shutter control:
   camera();
-  //        Serial.println("S2");
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
-
-  //Serial.println("S3");
 
 
 #ifdef TIMING

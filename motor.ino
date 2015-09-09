@@ -15,7 +15,7 @@ void motor_control()
   // Current time in microseconds:
   g.t = micros();
 
-  // direction=0 means no motion, so simply returning:
+  // moving=0 means no motion, so simply returning:
   if (g.moving == 0)
     return;
 

@@ -5,6 +5,14 @@ void limiters()
 {
   short dx, dx_break;
 
+  if (g.moving == 0 || g.breaking == 1)
+    return;
+
+  // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
+  // This ensures that we don't accidently measure the original limiter as the second one.
+  if (g.calibrate_flag == 3 && ((g.calibrate_init == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate_init == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
+    return;
+
   // Priority action: read the input from the limiting switches:
   g.limit_on = digitalRead(PIN_LIMITERS);
 
@@ -14,40 +22,62 @@ void limiters()
     // Triggering the limiter is an exceptional event, should rarely happen, and will
     // necessitate re-calibration of the rail
   {
+    // The flag=2 regime (moving in the opposite direction after hitting a limiter followed by emergency breaking): ignoring the limit_on-HIGH state:
+    // Same in flag=5 mode (rewinding into safe zone after hitting the second limiter)
+    if (g.calibrate_flag == 2 || g.calibrate_flag == 5)
+      return;
+
 #ifdef DEBUG
-  Serial.print(" limiter=");
-  Serial.println(g.limit_on);
+    Serial.print(" limiter=");
+    Serial.println(g.limit_on);
 #endif
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
     change_speed(0.0, 0);
-    // No more stacking if we hit a limiter:
-    g.stacker_mode = 0;
     // This should be after change_speed(0.0):
     g.breaking = 1;
     letter_status("B");
     display_comment_line("Hit a limiter ");
-    // Requesting immediate (after safely breaking the rail) calibration:
-    if (g.speed < -SPEED_TINY)
-      // We hit the foreground switch, so only the background one remains to be calibrated:
-      g.calibrate = 2;
-    else if (g.speed > SPEED_TINY)
-      // We hit the background switch, so only the foreground one remains to be calibrated:
-      g.calibrate = 1;
+
+    if (g.calibrate_flag == 0)
+    {
+      g.calibrate_flag = 1;
+      // Requesting immediate (after safely breaking the rail) calibration:
+      if (g.speed < 0.0)
+        // We hit the foreground switch, so only the background one remains to be calibrated:
+        g.calibrate = 2;
+      else
+        // We hit the background switch, so only the foreground one remains to be calibrated:
+        g.calibrate = 1;
+
+      g.calibrate_init = g.calibrate;
+      // No more stacking if we hit a limiter:
+      g.stacker_mode = 0;
+    }
     else
-      // Speed was 0 when a limiter was triggered; normally shouldn't happen; just in case calibrating both limiters:
-      g.calibrate = 3;
-    g.calibrate_init = g.calibrate;
+      // If calibrate_flag = 3
+    {
+      g.calibrate_flag = 4;
+    }
     // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
     g.limit_tmp = g.pos_short_old;
-    // Only initial limiter initates calibration; second time we hit it is a part of automatically initiated calibration:
-    if (g.calibrate_flag == 0)
-      g.calibrate_flag = 1;
   }
   else
+
     ////// Soft limits ///////
-    
   {
+    // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
+    if (g.calibrate_flag == 2)
+    {
+      g.pos_limiter_off = g.pos_short_old;
+      // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
+      g.calibrate_flag = 3;
+    }
+
+    // No soft limits during calibration:
+    if (g.calibrate_flag > 0)
+      return;
+
     // No soft limits enforced when doing calibration:
     if (g.calibrate_init == 0)
     {
