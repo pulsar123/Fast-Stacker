@@ -52,61 +52,65 @@ void limiters()
           g.calibrate = 1;
       }
       else
-        // if g.calibrate=3
+        //  g.calibrate=3
       {
         g.calibrate = 1;
       }
-    }
 
-    // No more stacking if we hit a limiter:
-    g.stacker_mode = 0;
+      // No more stacking if we hit a limiter:
+      g.stacker_mode = 0;
+    }
+    else
+      // If calibrate_flag = 3
+    {
+      g.calibrate_flag = 4;
+    }
+    // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
+    g.limit_tmp = g.pos_short_old;
   }
   else
-    // If calibrate_flag = 3
-  {
-    g.calibrate_flag = 4;
-  }
-  // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
-  g.limit_tmp = g.pos_short_old;
-}
-else
 
-  ////// Soft limits ///////
-{
-  // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
-  if (g.calibrate_flag == 2)
+    ////// Soft limits ///////
   {
-    g.pos_limiter_off = g.pos_short_old;
-    // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
-    g.calibrate_flag = 3;
-  }
-
-  // No soft limits enforced when doing calibration:
-  if (g.calibrate == 0)
-  {
-    // Checking how far we are from a limiter in the direction we are moving
-    if (g.speed < 0.0)
-      dx = g.pos_short_old - g.limit1;
-    else
-      dx = g.limit2 - g.pos_short_old;
-    // Preliminary test (for highest possible speed):
-    if (dx <= roundMy(BREAKING_DISTANCE))
+    // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
+    if (g.calibrate_flag == 2)
     {
-      // Breaking distance at the current speed:
-      dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
-      // Accurate test (for the current speed):
-      if (dx <= dx_break)
-        // Emergency breaking, to avoid hitting the limiting switch
+      g.pos_limiter_off = g.pos_short_old;
+      // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
+      g.calibrate_flag = 3;
+    }
+
+    // No soft limits enforced when doing calibration:
+    if (g.calibrate == 0)
+    {
+      // Checking how far we are from a limiter in the direction we are moving
+      if (g.speed < 0.0)
+        dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+      else
+        dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+        
+      // Something wrong:
+      if (dx < 0)
+        return;
+        
+      // Preliminary test (for highest possible speed):
+      if (dx <= roundMy(BREAKING_DISTANCE))
       {
-        change_speed(0.0, 0);
-        g.breaking = 1;
-        letter_status("B");
+        // Breaking distance at the current speed:
+        dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
+        // Accurate test (for the current speed):
+        if (dx <= dx_break)
+          // Emergency breaking, to avoid hitting the limiting switch
+        {
+          change_speed(0.0, 0);
+          g.breaking = 1;
+          letter_status("B");
+        }
       }
     }
   }
-}
 
-return;
+  return;
 }
 
 

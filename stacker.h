@@ -92,6 +92,8 @@ const float SPEED_LIMIT_MM_S = 5;
 const float BREAKING_DISTANCE_MM = 2.0;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
+// A bit of extra padding when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
+const short LIMITER_PAD2 = 100;
 const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
