@@ -26,7 +26,7 @@ void process_keypad()
 
 
   // ?? Ignore keypad during emergency breaking
-  if (g.breaking == 1 || g.calibrate == 3)
+  if (g.breaking == 1 || (g.calibrate==3 && g.calibrate_warning==0))
     return;
 
   // Reading a keypad key if any:
@@ -44,6 +44,14 @@ void process_keypad()
 
     if (state == PRESSED)
     {
+      if (g.calibrate_warning == 1)
+      // Any key pressed when calibrate_warning=1 will initiate calibration:
+      {
+        g.calibrate_warning = 0;
+        display_all(" ");
+        return;
+      }
+      
       // Keys interpretation depends on the stacker_mode:
       if (g.stacker_mode == 0)
         // Mode 0: default; rewinding etc.

@@ -83,10 +83,13 @@ void setup() {
   g.direction = 1;
   g.comment_flag = 0;
 
+  // Uncomment to emulate the very first run:
+  EEPROM.write(0, 255);  EEPROM.write(1, 255);
+
   // Checking if EEPROM was never used:
-  //  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255 && EEPROM.read(2) == 255 && EEPROM.read(3) == 255)
-  if (1)
+  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
   {
+    // Values for the very first run:
     g.pos = 0.0;
     g.calibrate = 3;
     g.limit1 = -15000;
@@ -97,12 +100,23 @@ void setup() {
     g.point1 = -10000;
     g.point2 = 10000;
     g.points_byte = 0;
+    // Saving these values in EEPROM:
+    EEPROM.put( ADDR_POS, g.pos );
+    EEPROM.put( ADDR_CALIBRATE, g.calibrate );
+    EEPROM.put( ADDR_LIMIT1, g.limit1);
+    EEPROM.put( ADDR_LIMIT2, g.limit2);
+    EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+    EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+    EEPROM.put( ADDR_I_FPS, g.i_fps);
+    EEPROM.put( ADDR_POINT1, g.point1);
+    EEPROM.put( ADDR_POINT2, g.point2);
+    EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
   }
   else
   {
-    // Reading the current position from EEPROM:
+    // Reading the values from EEPROM:
     EEPROM.get( ADDR_POS, g.pos );
-//    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
+    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
@@ -114,6 +128,10 @@ void setup() {
   }
 
   g.calibrate_flag = 0;
+  if (g.calibrate == 3)
+    g.calibrate_warning = 1;
+  else
+    g.calibrate_warning = 0;
   g.pos0 = g.pos;
   g.pos_short_old = floorMy(g.pos);
   g.t0 = micros();

@@ -6,7 +6,7 @@ void calibration()
  */
 {
 
-  if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1)
+  if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.calibrate_warning == 1)
     return;
 
   if (g.calibrate == 3 && g.calibrate_flag == 0)

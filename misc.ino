@@ -203,10 +203,16 @@ void stop_now()
 
   // At this point any calibration should be done (we are in a safe zone, afyter calibrating both limiters):
   if (g.calibrate_flag == 5)
+  {
     g.calibrate_flag = 0;
+    EEPROM.put( ADDR_CALIBRATE, 0 );
+  }
 
   if (g.calibrate_flag == 4)
     g.calibrate_flag = 5;
+
+  if ((g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
+    g.calibrate_warning = 1;
 
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;

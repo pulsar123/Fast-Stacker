@@ -171,6 +171,7 @@ unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=
 unsigned char calibrate=0; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
 unsigned char calibrate_flag=0; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
 // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
+unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
 unsigned char limit_on; // =0/1 when the limiting switches are off/on
 short limit1; // pos_short for the foreground limiter
 short limit2; // pos_short for the background limiter
