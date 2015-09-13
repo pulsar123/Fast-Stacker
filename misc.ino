@@ -111,7 +111,9 @@ void change_speed(float speed1_loc, short moving_mode1)
 #ifdef DEBUG
   Serial.println(222);
   Serial.print(" speed1=");
-  Serial.println(g.speed1, 6);
+  Serial.print(g.speed1, 6);
+  Serial.print(" g.speed=");
+  Serial.println(g.speed, 6);
 #endif
   return;
 }

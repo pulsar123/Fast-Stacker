@@ -18,11 +18,16 @@ void display_all(char* l)
   }
   else
   {
+#ifdef DEBUG
+    Serial.println("Press any key to start calibration");
+#endif
+#ifdef LCD
     lcd.setCursor(0, 0);  lcd.print("  Calibration ");
     lcd.setCursor(0, 1);  lcd.print("  required!   ");
     lcd.setCursor(0, 2);  lcd.print("Press any key ");
     lcd.setCursor(0, 3);  lcd.print("to start      ");
     lcd.setCursor(0, 4);  lcd.print("calibration.   ");
+#endif    
   }
   return;
 }
@@ -286,7 +291,11 @@ void display_current_position()
     Serial.print("; g.point1=");
     Serial.print(g.point1);
     Serial.print("; g.point2=");
-    Serial.println(g.point2);
+    Serial.print(g.point2);
+    Serial.print("; g.limit1=");
+    Serial.print(g.limit1);
+    Serial.print("; g.limit2=");
+    Serial.println(g.limit2);
 #endif
   }
   return;

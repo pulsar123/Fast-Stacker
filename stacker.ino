@@ -84,21 +84,23 @@ void setup() {
   g.comment_flag = 0;
 
   // Uncomment to emulate the very first run:
-  EEPROM.write(0, 255);  EEPROM.write(1, 255);
+  //EEPROM.write(0, 255);  EEPROM.write(1, 255);
 
   // Checking if EEPROM was never used:
-  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
+//  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
+if (1)
   {
     // Values for the very first run:
     g.pos = 0.0;
-    g.calibrate = 3;
-    g.limit1 = -15000;
-    g.limit2 = 15000;
+    //!!!
+    g.calibrate = 0;
+    g.limit1 = -30000;
+    g.limit2 = 30000;
     g.i_n_shots = 7;
     g.i_mm_per_frame = 7;
     g.i_fps = 7;
-    g.point1 = -10000;
-    g.point2 = 10000;
+    g.point1 = -3000;
+    g.point2 = 3000;
     g.points_byte = 0;
     // Saving these values in EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
@@ -159,8 +161,8 @@ void setup() {
   g.calibrate = 0;
   g.flag = 0;
   g.pos = 0;
-  g.point1 = -10000;
-  g.point2 = 10000;
+//  g.point1 = -10000;
+//  g.point2 = 10000;
 #ifdef DEBUG
   Serial.begin(250000);
   delay(250);

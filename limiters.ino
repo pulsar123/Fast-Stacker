@@ -84,20 +84,41 @@ void limiters()
     if (g.calibrate == 0)
     {
       // Checking how far we are from a limiter in the direction we are moving
-      if (g.speed < 0.0)
-        dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+      // If current speed is non-zero, we use its sign to determine the direction we are moving to
+      if (g.speed < -SPEED_TINY || g.speed > SPEED_TINY)
+      {
+        if (g.speed < 0.0)
+          dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+        else
+          dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+      }
       else
-        dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
-        
+      // Otherwise, we use the target direction sign, speed1:
+      {
+        if (g.speed1 < -SPEED_TINY)
+          dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+        else if (g.speed1 > SPEED_TINY)
+          dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+        else
+          return;
+      }
+#ifdef DEBUG
+//      Serial.print("dx=");
+//      Serial.println(dx);
+#endif
       // Something wrong:
       if (dx < 0)
         return;
-        
+
       // Preliminary test (for highest possible speed):
       if (dx <= roundMy(BREAKING_DISTANCE))
       {
         // Breaking distance at the current speed:
         dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
+#ifdef DEBUG
+//        Serial.print("dx_break=");
+//        Serial.println(dx_break);
+#endif
         // Accurate test (for the current speed):
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch

@@ -33,7 +33,7 @@ Issues to address:
 
 #define VERSION "0.01"
 // For debugging (motor doesn't work when debug is on!):
-//#define DEBUG
+#define DEBUG
 // For timing the main loop:
 //#define TIMING
 // Compute and display timing results every that many loops:
