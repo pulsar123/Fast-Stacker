@@ -93,7 +93,7 @@ void limiters()
           dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
       }
       else
-      // Otherwise, we use the target direction sign, speed1:
+        // Otherwise, we use the target direction sign, speed1:
       {
         if (g.speed1 < -SPEED_TINY)
           dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
@@ -102,9 +102,18 @@ void limiters()
         else
           return;
       }
+
+      // Much simpler way ???:
+      /*
+      if (g.direction == 0)
+        dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+      else
+        dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+        */
+
 #ifdef DEBUG
-//      Serial.print("dx=");
-//      Serial.println(dx);
+      //      Serial.print("dx=");
+      //      Serial.println(dx);
 #endif
       // Something wrong:
       if (dx < 0)
@@ -116,8 +125,8 @@ void limiters()
         // Breaking distance at the current speed:
         dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
 #ifdef DEBUG
-//        Serial.print("dx_break=");
-//        Serial.println(dx_break);
+        //        Serial.print("dx_break=");
+        //        Serial.println(dx_break);
 #endif
         // Accurate test (for the current speed):
         if (dx <= dx_break)

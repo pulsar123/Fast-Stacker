@@ -31,6 +31,11 @@ void setup() {
   // Change the LCD backlighting here (0...255). WIll be implemented as user-controlled later
   analogWrite(PIN_LCD_LED, 255);
 
+#ifdef DEBUG
+  Serial.begin(250000);
+  delay(250);
+#endif
+
 #ifdef LCD
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
@@ -87,13 +92,12 @@ void setup() {
   //EEPROM.write(0, 255);  EEPROM.write(1, 255);
 
   // Checking if EEPROM was never used:
-//  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
-if (1)
+  if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
+    //if (1)
   {
     // Values for the very first run:
     g.pos = 0.0;
-    //!!!
-    g.calibrate = 0;
+    g.calibrate = 3;
     g.limit1 = -30000;
     g.limit2 = 30000;
     g.i_n_shots = 7;
@@ -127,6 +131,19 @@ if (1)
     EEPROM.get( ADDR_POINT1, g.point1);
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
+#ifdef DEBUG
+    Serial.println("EEPROM values:");
+    Serial.println(g.pos, 2);
+    Serial.println(g.calibrate);
+    Serial.println(g.limit1);
+    Serial.println(g.limit2);
+    Serial.println(g.i_n_shots);
+    Serial.println(g.i_mm_per_frame);
+    Serial.println(g.i_fps);
+    Serial.println(g.point1);
+    Serial.println(g.point2);
+    Serial.println(g.points_byte);
+#endif
   }
 
   g.calibrate_flag = 0;
@@ -134,6 +151,8 @@ if (1)
     g.calibrate_warning = 1;
   else
     g.calibrate_warning = 0;
+  // Memorizing the initial value of g.calibrate:
+  g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
   g.pos_short_old = floorMy(g.pos);
   g.t0 = micros();
@@ -158,18 +177,14 @@ if (1)
 #endif
 
   // Testing:
-  g.calibrate = 0;
+  //  g.calibrate = 0;
   g.flag = 0;
-  g.pos = 0;
-//  g.point1 = -10000;
-//  g.point2 = 10000;
+  //  g.pos = 0;
+  //  g.point1 = -10000;
+  //  g.point2 = 10000;
 #ifdef DEBUG
-  Serial.begin(250000);
-  delay(250);
-#endif
-#ifdef DEBUG
-  Serial.print(" test=");
-  Serial.println(g.flag);
+  Serial.print("Initial g.limit1=");
+  Serial.println(g.limit1);
 #endif
 }
 

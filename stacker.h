@@ -137,16 +137,17 @@ const float SPEED_TINY = 1e-3*SPEED_SMALL;
 const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
 
 // EEPROM addresses:
-const short ADDR_POS = 0;  // Current position (float, 4 bytes)
-const short ADDR_CALIBRATE = ADDR_POS+4;  // If =1, limiter calibration will be done at the beginning (1 byte)
-const short ADDR_LIMIT1 = ADDR_CALIBRATE+1; // pos_short for the foreground limiter; should be 0? (2 bytes)
-const short ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
-const short ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
-const short ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
-const short ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
-const short ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
-const short ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
-const short ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
+const int ADDR_POS = 0;  // Current position (float, 4 bytes)
+const int ADDR_CALIBRATE = ADDR_POS+4;  // If =1, limiter calibration will be done at the beginning (1 byte)
+//!!! +1
+const int ADDR_LIMIT1 = ADDR_CALIBRATE+2; // pos_short for the foreground limiter; should be 0? (2 bytes)
+const int ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
+const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
+const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
+const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
+const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
+const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
+const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
 
 // All global variables belong to one structure - global:
 struct global 
@@ -169,6 +170,7 @@ short pos_limiter_off; // Position when after hitting a limiter, breaking, and m
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
 unsigned char calibrate=0; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
+unsigned char calibrate_init; // Initial value of g.calibrate (amtters only for the first calibration, calibrate=3)
 unsigned char calibrate_flag=0; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
 // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
 unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning

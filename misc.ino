@@ -196,17 +196,15 @@ void stop_now()
   delay(ENABLE_DELAY_MS);
 #endif
 
-  // Things to do if we are not in the emergency breaking mode:
-  if (g.breaking == 0)
-  {
-    // Saving the current position to EEPROM:
-    EEPROM.put( ADDR_POS, g.pos );
-  }
+  // Saving the current position to EEPROM:
+  EEPROM.put( ADDR_POS, g.pos );
 
   // At this point any calibration should be done (we are in a safe zone, afyter calibrating both limiters):
   if (g.calibrate_flag == 5)
   {
     g.calibrate_flag = 0;
+    g.calibrate_init = 0;
+
     EEPROM.put( ADDR_CALIBRATE, 0 );
   }
 
@@ -215,6 +213,10 @@ void stop_now()
 
   if ((g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
     g.calibrate_warning = 1;
+
+  // In the initial calibration, disable the warning flag after the first leg:
+  if (g.calibrate_init == 3 && g.calibrate_warning == 1)
+    g.calibrate_warning = 0;
 
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;

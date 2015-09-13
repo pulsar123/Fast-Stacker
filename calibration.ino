@@ -39,6 +39,10 @@ void calibration()
     // Saving the foreround limit:
     g.limit1 = g.limit_tmp + LIMITER_PAD;
     EEPROM.put( ADDR_LIMIT1, g.limit1);
+#ifdef DEBUG
+  Serial.print("Writing 1 g.limit1=");
+  Serial.println(g.limit1);
+#endif
 
     // Moving towards switch 2 for its calibration:
     change_speed(SPEED_LIMIT, 0);
@@ -62,6 +66,10 @@ void calibration()
       // Saving the foreround limit:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT1, g.limit1);
+#ifdef DEBUG
+  Serial.print("Writing 2 g.limit1=");
+  Serial.println(g.limit1);
+#endif
       // Travelling back into safe area:
       go_to(g.limit1 + DELTA_LIMITER, SPEED_LIMIT);
     }
