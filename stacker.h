@@ -4,10 +4,6 @@
 
    To be used with automated macro rail for focus stacking
 
-== Handling limiters (limiting switches) ==
-There are two limiters - foreground (smaller pos) and background (larger pos).
-
-
 Issues to address:
  - Position accuracy after turning off/on again: the motor will likely move to the
  nearest (or in a certain direction?) full stop, creating an error of that size.
@@ -31,7 +27,7 @@ Issues to address:
 #define STACKER_H
 
 
-#define VERSION "0.02"
+#define VERSION "0.03"
 // For debugging (motor doesn't work when debug is on!):
 //#define DEBUG
 // For timing the main loop:
@@ -104,6 +100,8 @@ const short STEP_LOW_DT = 3;
 const short ENABLE_DELAY_MS = 3;
 
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
+const unsigned long T_KEY_LAG = 1000000; // time in us to key a parameter change key pressed before it will start repeating
+const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating for parameter change keys
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
@@ -167,6 +165,9 @@ float speed_old; // speed at the previous step
 float pos_stop; // Current stop position if breaked
 float pos_stop_old; // Previously computed stop position if breaked
 short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
+unsigned long t_key_pressed; // Last time when a key as pressed
+unsigned long int t_last_repeat; // Last time when a key was repeating (for parameter change keys)
+int N_repeats; // Counter of key repeats
 
 unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
 unsigned char calibrate=0; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated

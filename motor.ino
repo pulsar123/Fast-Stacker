@@ -43,55 +43,29 @@ void motor_control()
     // Current speed (can be positive or negative):
     g.speed = g.speed0 + dV;
 
-#ifdef HIGH_ACCURACY
-    // This change takes precedence over the next module
-    if (g.moving_mode == 1)
+    // If going beyond the target speed, stop accelerating:
+    if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
     {
-      // If we are almost there and speed becomes small enough for an instant stop, we switch to constant speed SPEED_SMALL
-      if (fabs(g.speed) <= SPEED_SMALL && (g.accel == -1 && g.speed >= 0.0 && g.speed1 >= 0.0 || g.accel == 1 && g.speed < 0.0 && g.speed1 < 0.0))
+      // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
+      // dt_a = t_a-t0; should be >0, and <dt:
+      dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
+      // Current position has two components: first one (from t0 to t_a) is still accelerated,
+      // second one (t_a ... t) has accel=0:
+      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
+      g.speed = g.speed1;
+      new_accel = 0;
+      // If the target speed was zero, stop now
+      if (fabs(g.speed1) < SPEED_TINY)
       {
-        // Updating g.speed1 value:
-        if (g.speed >= 0.0)
-          g.speed1 = SPEED_SMALL;
-        else
-          g.speed1 = -SPEED_SMALL;
-        // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong SPEED_SMALL
-        // dt_a = t_a-t0; should be >0, and <dt:
-        dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
-        // Current position has two components: first one (from t0 to t_a) is still decelerated,
-        // second one (t_a ... t) has accel=0:
-        g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
-        g.speed = g.speed1;
-        new_accel = 0;
+        // At this point we stopped, so no need to revisit the motor_control module
+        stop_now();
       }
     }
-#endif
-    // If going beyond the target speed, stop accelerating:. The new_accel condition is to avoid interference with the module above
-    if (new_accel != 0)
+    else
     {
-      if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
-      {
-        // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
-        // dt_a = t_a-t0; should be >0, and <dt:
-        dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
-        // Current position has two components: first one (from t0 to t_a) is still accelerated,
-        // second one (t_a ... t) has accel=0:
-        g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
-        g.speed = g.speed1;
-        new_accel = 0;
-        // If the target speed was zero, stop now
-        if (fabs(g.speed1) < SPEED_TINY)
-        {
-          // At this point we stopped, so no need to revisit the motor_control module
-          stop_now();
-        }
-      }
-      else
-      {
-        // Current position when accel !=0 :
-        g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
-      }
-    } // if new_accel!=0
+      // Current position when accel !=0 :
+      g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
+    }
   }
   else
   {
@@ -104,40 +78,6 @@ void motor_control()
 
   // Integer position (in microsteps):
   short pos_short = floorMy(g.pos);
-
-#ifdef DEBUG
-  /*
-  Serial.print("pos=");
-  Serial.print(g.pos);
-  Serial.print(" pos_short=");
-  Serial.print(pos_short);
-  Serial.print(" new_accel=");
-  Serial.print(new_accel);
-  Serial.print(" moving=");
-  Serial.print(g.moving);
-  Serial.print(" speed1=");
-  Serial.print(g.speed1,6);
-  Serial.print(" pos0=");
-  Serial.print(g.pos0);
-  Serial.print(" dt=");
-  Serial.print(dt);
-  Serial.print(" speed=");
-  Serial.print(g.speed,6);
-  Serial.print(" speed_old=");
-  Serial.print(g.speed_old,6);
-  Serial.print(" speed0=");
-  Serial.print(g.speed0,6);
-  Serial.print(" accel=");
-  Serial.print(g.accel);
-  Serial.print(" dt_a=");
-  Serial.print(dt_a);
-  Serial.print(" acc_limit=");
-  Serial.print(ACCEL_LIMIT,9);
-  Serial.print(" dV=");
-  Serial.println(dV,6);
-  delay(50);
-  */
-#endif
 
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
@@ -179,7 +119,6 @@ void motor_control()
   if (g.moving_mode == 1)
     // Used in go_to mode
   {
-    //#ifdef HIGH_ACCURACY
     // Not sure if good idea:
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
     if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 <= 0.0 && g.speed <= 0.0 && pos_short <= g.pos_goto_short)
@@ -192,7 +131,6 @@ void motor_control()
       instant_stop = 1;
       stop_now();
     }
-    //#endif
 
     if (instant_stop == 0)
     {

@@ -1,7 +1,5 @@
 /* Sergey Mashchenko 2015
 
-   Stepper motor module
-
    To be used with automated macro rail for focus stacking
 
    I am using the following libraries:
@@ -156,6 +154,9 @@ void setup() {
   g.pos_short_old = floorMy(g.pos);
   g.t0 = micros();
   g.t = g.t0;
+  g.t_key_pressed = g.t0;
+  g.t_last_repeat = g.t0;
+  g.N_repeats = 0;
   g.breaking = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;

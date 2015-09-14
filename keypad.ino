@@ -26,15 +26,44 @@ void process_keypad()
 
 
   // ?? Ignore keypad during emergency breaking
-  if (g.breaking == 1 || (g.calibrate==3 && g.calibrate_warning==0))
+  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0))
     return;
 
+  // Stuff to do at every call to keypad()
+  if (g.stacker_mode == 1 && g.moving == 0)
+  {
+    // Estimating the required speed in microsteps per microsecond
+    speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+    go_to(g.second_point, speed);
+    g.frame_counter = 0;
+    g.pos_to_shoot = g.pos_short_old;
+    g.stacker_mode = 2;
+#ifdef DEBUG
+    /*
+            Serial.print("STACKER2: g.second_point=");
+            Serial.print(g.second_point);
+            Serial.print(", g.pos_to_shoot=");
+            Serial.print(g.pos_to_shoot);
+            Serial.print(", g.stacking_direction=");
+            Serial.print(g.stacking_direction);
+            Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
+            Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
+            Serial.print(", g.shutter_on=");
+            Serial.println(g.shutter_on);
+            */
+#endif
+  }
+  
+  
   // Reading a keypad key if any:
   char key = keypad.getKey();
   KeyState state = keypad.getState();
 
-  // Action is only needed if the kepad state changed since the last time:
-  if (state != g.state_old && (state == PRESSED || state == RELEASED))
+  // Action is only needed if the kepad state changed since the last time,
+  // or if one of the parameter change keys was pressed longer than T_KEY_LAG microseconds:
+  if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
+      state == PRESSED && g.state_old == PRESSED && (key == '2' || key == '3' || key == '5'
+          || key == '6' || key == '8' || key == '9') && g.t-g.t_key_pressed > T_KEY_LAG)
   {
 #ifdef DEBUG
     Serial.print(state);
@@ -44,14 +73,36 @@ void process_keypad()
 
     if (state == PRESSED)
     {
-      if (g.calibrate_warning == 1)
-      // Any key pressed when calibrate_warning=1 will initiate calibration:
+      if (g.state_old != PRESSED)
       {
-        g.calibrate_warning = 0;
-        display_all(" ");
-        return;
+        // Memorizing the time when a key was pressed:
+        g.t_key_pressed = g.t;
+        if (g.calibrate_warning == 1)
+          // Any key pressed when calibrate_warning=1 will initiate calibration:
+        {
+          g.calibrate_warning = 0;
+          display_all(" ");
+          return;
+        }
       }
-      
+
+      else
+        // We are here when a change parameter key was pressed longer than T_KEY_LAG
+      {
+        if (g.N_repeats == 0)
+          // Will be used for keys with repetition (parameter change keys):
+          g.t_last_repeat = g.t;
+        // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
+        if (g.t-g.t_last_repeat > T_KEY_REPEAT)
+        {
+          g.N_repeats++;
+          g.t_last_repeat = g.t;
+        }
+        else
+          // Too early for a repeated key, so returning now:
+          return;
+      }
+
       // Keys interpretation depends on the stacker_mode:
       if (g.stacker_mode == 0)
         // Mode 0: default; rewinding etc.
@@ -127,24 +178,7 @@ void process_keypad()
             {
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
-              /*  Skipping this for now
-              // Adjusting points to fit an integer number of shots (by slightly extending or shrinking the position range)
-              // Number of frames rounded to the nearest integer (+1 to include both ends):
-              g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
-              // Adjusted distance to travel:
-              float d = ((float)(g.Nframes - 1)) * g.msteps_per_frame;
-              // Original midpoint:
-              float mid = ((float)g.point1 + (float)g.point2) / 2.0;
-              // Adjusted points
-              g.point1 = (short)(mid - d / 2.0);
-              // Making sure we don't go beyond the limits:
-              if (g.point1 < g.limit1)
-                g.point1 = g.limit1;
-              g.point2 = g.point1 + nintMy(d);
-              if (g.point2 > g.limit2)
-                g.point2 = g.limit2;
-                */
-              // Using instead the simplest approach, which will result the last shot to always slightly undershoot
+              // Using the simplest approach which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
               // Finding the closest point:
               short d1 = (short)fabs(g.pos_short_old - g.point1);
@@ -248,8 +282,6 @@ void process_keypad()
               g.i_mm_per_frame = 0;
             // Required microsteps per frame:
             g.msteps_per_frame = Msteps_per_frame();
-            // Number of frames rounded to the nearest integer (+1 to include both ends):
-            //            g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
             // Using instead the simplest approach, which will result the last shot to always slightly undershoot
             g.Nframes = Nframes();
             display_all(" ");
@@ -263,8 +295,6 @@ void process_keypad()
               g.i_mm_per_frame = N_PARAMS - 1;
             // Required microsteps per frame:
             g.msteps_per_frame = Msteps_per_frame();
-            // Number of frames rounded to the nearest integer (+1 to include both ends):
-            //            g.Nframes = nintMy(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
             // Using instead the simplest approach, which will result the last shot to always slightly undershoot
             g.Nframes = Nframes();
             EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
@@ -305,6 +335,8 @@ void process_keypad()
     else
       // if a key was just released
     {
+      // Resetting the counter of key repeats:
+      g.N_repeats = 0;
       // Breaking / stopping if no keys pressed (only after rewind/fastforward)
       if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED)
       {
@@ -319,31 +351,6 @@ void process_keypad()
     g.state_old = state;
   }  // End of if(keyStateChanged)
 
-
-  // Stuff to do at every call to keypad()
-  if (g.stacker_mode == 1 && g.moving == 0)
-  {
-    // Estimating the required speed in microsteps per microsecond
-    speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-    go_to(g.second_point, speed);
-    g.frame_counter = 0;
-    g.pos_to_shoot = g.pos_short_old;
-    g.stacker_mode = 2;
-#ifdef DEBUG
-    /*
-            Serial.print("STACKER2: g.second_point=");
-            Serial.print(g.second_point);
-            Serial.print(", g.pos_to_shoot=");
-            Serial.print(g.pos_to_shoot);
-            Serial.print(", g.stacking_direction=");
-            Serial.print(g.stacking_direction);
-            Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
-            Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
-            Serial.print(", g.shutter_on=");
-            Serial.println(g.shutter_on);
-            */
-#endif
-  }
 
   return;
 }
