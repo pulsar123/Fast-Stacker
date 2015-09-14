@@ -89,11 +89,10 @@ void setup() {
   g.comment_flag = 0;
 
   // Uncomment to emulate the very first run:
-  //EEPROM.write(0, 255);  EEPROM.write(1, 255);
+//  EEPROM.write(0, 255);  EEPROM.write(1, 255);
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
-    //if (1)
   {
     // Values for the very first run:
     g.pos = 0.0;
@@ -176,8 +175,10 @@ void setup() {
   g.i_timing = 0;
 #endif
 
-  // Testing:
-  //  g.calibrate = 0;
+  // Testing !!!!:
+//    g.calibrate = 0;
+//    g.limit1 = -30000;
+//    g.limit2 = 30000;
   g.flag = 0;
   //  g.pos = 0;
   //  g.point1 = -10000;
@@ -193,56 +194,11 @@ void setup() {
 void loop()
 {
 
-  /*
-    // Simple test:
-
-    // At t=0, start moving forward with constant acceleration
-    if (g.flag == 0)
-    {
-      g.flag = 1;
-      // ACcelerate to positive speed:
-      change_speed(SPEED_LIMIT / 3.0, 0);
-      //    pos0 = 0.0;
-      show_params();
-    }
-
-    if (g.flag == 1 && g.accel == 0 && g.t - g.t0 > 2000000)
-    {
-      g.flag = 2;
-      change_speed(SPEED_LIMIT, 0);
-      show_params();
-    }
-
-    if (g.flag == 2 && g.accel == 0 && g.t - g.t0 > 2000000)
-    {
-      g.flag = 3;
-      change_speed(-SPEED_LIMIT / 3.0, 0);
-      show_params();
-    }
-
-    if (g.flag == 3 && g.accel == 0 && g.t - g.t0 > 2000000)
-    {
-      g.flag = 4;
-      change_speed(-SPEED_LIMIT, 0);
-      show_params();
-    }
-
-    // Go to the start:
-    if (g.flag == 4 && g.accel == 0 && g.t - g.t0 > 2000000)
-    {
-      g.flag = 0;
-    }
-    */
-
   // Processing the keypad:
   process_keypad();
 
   // All the processing related to the two extreme limits for the macro rail movements:
   limiters();
-
-  // Prevent motor operations if limiters are engaged initially:
-  //  if (abortMy && direction == 0)
-  //    return;
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
   calibration();
