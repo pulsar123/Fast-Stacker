@@ -34,14 +34,14 @@ void process_keypad()
   {
     // Estimating the required speed in microsteps per microsecond
     speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-    go_to(g.second_point, speed);
+    go_to(g.destination_point, speed);
     g.frame_counter = 0;
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
 #ifdef DEBUG
     /*
-            Serial.print("STACKER2: g.second_point=");
-            Serial.print(g.second_point);
+            Serial.print("STACKER2: g.destination_point=");
+            Serial.print(g.destination_point);
             Serial.print(", g.pos_to_shoot=");
             Serial.print(g.pos_to_shoot);
             Serial.print(", g.stacking_direction=");
@@ -53,8 +53,8 @@ void process_keypad()
             */
 #endif
   }
-  
-  
+
+
   // Reading a keypad key if any:
   char key = keypad.getKey();
   KeyState state = keypad.getState();
@@ -63,7 +63,7 @@ void process_keypad()
   // or if one of the parameter change keys was pressed longer than T_KEY_LAG microseconds:
   if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
       state == PRESSED && g.state_old == PRESSED && (key == '2' || key == '3' || key == '5'
-          || key == '6' || key == '8' || key == '9') && g.t-g.t_key_pressed > T_KEY_LAG)
+          || key == '6' || key == '8' || key == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
   {
 #ifdef DEBUG
     Serial.print(state);
@@ -93,7 +93,7 @@ void process_keypad()
           // Will be used for keys with repetition (parameter change keys):
           g.t_last_repeat = g.t;
         // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
-        if (g.t-g.t_last_repeat > T_KEY_REPEAT)
+        if (g.t - g.t_last_repeat > T_KEY_REPEAT)
         {
           g.N_repeats++;
           g.t_last_repeat = g.t;
@@ -107,14 +107,12 @@ void process_keypad()
       if (g.stacker_mode == 0)
         // Mode 0: default; rewinding etc.
       {
+        // When error 1 (limiter on initially), the only commands accepted are reqind and fast forward:
+        if (g.error == 1 && key != '1' && key != 'A')
+          return;
+
         switch (key)
         {
-          /*
-          case NO_KEY: // Breaking / stopping if no keys pressed (only after rewind/fastforward)
-            if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED)
-              change_speed(0.0, 0);
-            break;
-          */
           case '1':  // Rewinding
             g.direction = -1;
             motion_status();
@@ -186,17 +184,17 @@ void process_keypad()
               if (d1 < d2)
               {
                 go_to(g.point1, SPEED_LIMIT);
-                g.first_point = g.point1;
+                g.starting_point = g.point1;
                 // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-                g.second_point = g.point2;
+                g.destination_point = g.point2;
                 g.stacking_direction = 1;
               }
               else
               {
                 go_to(g.point2, SPEED_LIMIT);
-                g.first_point = g.point2;
+                g.starting_point = g.point2;
                 // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
-                g.second_point = g.point1;
+                g.destination_point = g.point1;
                 g.stacking_direction = -1;
               }
               g.stacker_mode = 1;
@@ -231,7 +229,7 @@ void process_keypad()
 #endif
               g.frame_counter = 0;
               g.pos_to_shoot = g.pos_short_old;
-              g.first_point = g.pos_short_old;
+              g.starting_point = g.pos_short_old;
               g.stacking_direction = -1;
               g.stacker_mode = 3;
               display_comment_line("1-point stack ");
@@ -248,7 +246,7 @@ void process_keypad()
               go_to(g.limit2, speed);
               g.frame_counter = 0;
               g.pos_to_shoot = g.pos_short_old;
-              g.first_point = g.pos_short_old;
+              g.starting_point = g.pos_short_old;
               g.stacking_direction = 1;
               g.stacker_mode = 3;
               display_comment_line("1-point stack ");

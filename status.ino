@@ -7,28 +7,55 @@ void display_all(char* l)
  Refreshing the whole screen
  */
 {
-  if (g.calibrate_warning == 0)
+  if (g.error == 0)
   {
-    display_u_per_f();  display_fps();
-    display_one_point_params();
-    display_two_point_params();
-    display_two_points();
-    display_current_position();
-    display_status_line(l);
-  }
-  else
-  {
+    if (g.calibrate_warning == 0)
+    {
+      display_u_per_f();  display_fps();
+      display_one_point_params();
+      display_two_point_params();
+      display_two_points();
+      display_current_position();
+      display_status_line(l);
+    }
+    else
+    {
 #ifdef DEBUG
-    Serial.println("Press any key to start calibration");
+      Serial.println("Press any key to start calibration");
 #endif
 #ifdef LCD
-    lcd.setCursor(0, 0);  lcd.print("  Calibration ");
-    lcd.setCursor(0, 1);  lcd.print("  required!   ");
-    lcd.setCursor(0, 2);  lcd.print("Press any key ");
-    lcd.setCursor(0, 3);  lcd.print("to start      ");
-    lcd.setCursor(0, 4);  lcd.print("calibration.   ");
-#endif    
+      lcd.setCursor(0, 0);  lcd.print("  Calibration ");
+      lcd.setCursor(0, 1);  lcd.print("  required!   ");
+      lcd.setCursor(0, 2);  lcd.print("Press any key ");
+      lcd.setCursor(0, 3);  lcd.print("to start      ");
+      lcd.setCursor(0, 4);  lcd.print("calibration.   ");
+#endif
+    }
   }
+  
+  else
+  // Error code displaying:
+  {
+    switch (g.error)
+    {
+      case 1:
+#ifdef DEBUG
+        Serial.println("Cable disconnected or limiter is on!");
+        Serial.println("Connect the cable if it is disconnected.");
+        Serial.println("If cable is connected, rewind to safe area");
+#endif
+#ifdef LCD
+        lcd.setCursor(0, 0);  lcd.print("Cable discon- ");
+        lcd.setCursor(0, 1);  lcd.print("nected, or    ");
+        lcd.setCursor(0, 2);  lcd.print("limiter is on!");
+        lcd.setCursor(0, 3);  lcd.print("Only if cable ");
+        lcd.setCursor(0, 4);  lcd.print("is connected,  ");
+        lcd.setCursor(0, 5);  lcd.print("rewind.        ");
+#endif        
+        break;
+    } // case
+  }
+
   return;
 }
 
@@ -37,6 +64,8 @@ void letter_status(char* l)
  Display a letter code "l" at the beginning of the status line
  */
 {
+  if (g.error)
+    return;
 #ifdef LCD
   lcd.setCursor(0, 5);
   lcd.print(l);
@@ -52,6 +81,8 @@ void motion_status()
  Motion status: 2-char status showing the direction and speed (rewind vs. focus stacking)
  */
 {
+  if (g.error)
+    return;
 #ifdef LCD
   lcd.setCursor(2, 5);
 
@@ -82,6 +113,8 @@ void motion_status()
 
 void display_frame_counter()
 {
+  if (g.error)
+    return;
   // Printing frame counter:
   sprintf (g.buffer, "%4u",  g.frame_counter);
 #ifdef LCD
@@ -103,6 +136,8 @@ void points_status()
   points (point1/point2).
  */
 {
+  if (g.error)
+    return;
 #ifdef LCD
   lcd.setCursor(9, 5);
 
@@ -145,6 +180,8 @@ void battery_status()
  Just a placeholder for now.
  */
 {
+  if (g.error)
+    return;
 #ifdef LCD
   lcd.setCursor(12, 5);
   // For now:
@@ -159,6 +196,8 @@ void display_status_line(char* l)
  Display the whole status line
  */
 {
+  if (g.error)
+    return;
   letter_status(l);
   motion_status();
   display_frame_counter();
@@ -173,6 +212,8 @@ void display_u_per_f()
  Display the input parameter u per frame (1000*MM_PER_FRAME)
  */
 {
+  if (g.error)
+    return;
   sprintf(g.buffer, "%4dus ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
 #ifdef LCD
   lcd.setCursor(0, 0);
@@ -190,6 +231,8 @@ void display_fps()
  Display the input parameter fps (frames per second)
  */
 {
+  if (g.error)
+    return;
   //  sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
   sprintf(g.buffer, "%5d.%3dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
 #ifdef LCD
@@ -211,6 +254,8 @@ void display_one_point_params()
   - travel time, s.
  */
 {
+  if (g.error)
+    return;
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
@@ -234,6 +279,8 @@ void display_two_point_params()
   - travel time, s.
  */
 {
+  if (g.error)
+    return;
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
@@ -254,6 +301,8 @@ void display_two_points()
  Display the positions (in mm) of two points: foreground, F, and background, B.
  */
 {
+  if (g.error)
+    return;
   //  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP * (float)g.point1, MM_PER_MICROSTEP * (float)g.point2);
   float p1 = MM_PER_MICROSTEP * (float)g.point1;
   float p2 = MM_PER_MICROSTEP * (float)g.point2;
@@ -274,6 +323,8 @@ void display_current_position()
  Display the current position on the transient line
  */
 {
+  if (g.error)
+    return;
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
   float p = MM_PER_MICROSTEP * g.pos;
   sprintf(g.buffer, "   P=%2d.%2dmm", (int)p, (int)(100.0 * (p - (int)p)));
@@ -308,6 +359,8 @@ void display_comment_line(char *l)
  Display a comment line briefly (then it should be replaced with display_current_positio() output)
  */
 {
+  if (g.error)
+    return;
 #ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(l);

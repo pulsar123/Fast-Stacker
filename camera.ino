@@ -4,6 +4,9 @@ void camera()
  */
 {
 
+  if (g.error > 0)
+    return;
+
   if (g.stacker_mode >= 2)
   {
 #ifdef DEBUG
@@ -29,7 +32,7 @@ void camera()
       g.t_shutter = g.t;
       g.frame_counter++;
       // Position at which to shoot the next shot:
-      g.pos_to_shoot = g.first_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+      g.pos_to_shoot = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])
       {
         // End of one-point stacking

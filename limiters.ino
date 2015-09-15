@@ -5,7 +5,7 @@ void limiters()
 {
   short dx, dx_break;
 
-  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5)
+  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error == 1)
     return;
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
@@ -14,11 +14,11 @@ void limiters()
     return;
 
   // Priority action: read the input from the limiting switches:
-  g.limit_on = digitalRead(PIN_LIMITERS);
+  unsigned char limit_on = digitalRead(PIN_LIMITERS);
 
   //////// Hard limits //////
   // If a limiter is on:
-  if (g.limit_on == HIGH)
+  if (limit_on == HIGH)
     // Triggering the limiter is an exceptional event, should rarely happen, and will
     // trigger an automatic re-calibration of the rail
   {
@@ -29,7 +29,7 @@ void limiters()
 
 #ifdef DEBUG
     Serial.print(" limiter=");
-    Serial.println(g.limit_on);
+    Serial.println(limit_on);
 #endif
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed

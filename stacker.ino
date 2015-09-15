@@ -1,11 +1,21 @@
 /* Sergey Mashchenko 2015
 
-   To be used with automated macro rail for focus stacking
+   Automated macro rail for focus stacking
+
+   The hardware used:
+    - Velbon Mag Slider manual macro rail, with some customization
+    - Ultrathin 2-Phase 4-Wire 42 Stepper Motor 1.8 Degree 0.7A (http://www.ebay.ca/itm/Ultrathin-2-Phase-4-Wire-42-Stepper-Motor-1-8-Degree-0-7A-e-/261826922341?pt=LH_DefaultDomain_0&hash=item3cf619c765 )
+    - Arduino Uno R3
+    - EasyDriver stepping Stepper Motor Driver V4.4
+    - 4x4 keys keypad (http://www.ebay.ca/itm/4x4-Matrix-high-quality-Keyboard-Keypad-Use-Key-PIC-AVR-Stamp-Sml-/141687830020?pt=LH_DefaultDomain_0&hash=item20fd40b604 )
+    - Nokia 5110 LCD display + four 10 kOhm resistors + 1 kOhm + 330 Ohm (https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide)
+    - 5V Relay SIP-1A05 + 1N4004 diode + 33 Ohm resistor; to operate camera shutter (http://www.forward.com.au/pfod/HomeAutomation/OnOffAddRelay/index.html)
 
    I am using the following libraries:
 
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
     - Keypad library: http://playground.arduino.cc/Code/Keypad
+
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -16,6 +26,9 @@
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void setup() {
+
+  g.error = 0;
+  g.calibrate_warning = 0;
 
   // Setting pins for EasyDriver to OUTPUT:
   pinMode(PIN_DIR, OUTPUT);
@@ -64,15 +77,11 @@ void setup() {
   g.key_old = '=';
 
   // Limiting switches should not be on when powering up:
-  g.limit_on = digitalRead(PIN_LIMITERS);
-  if (g.limit_on == HIGH)
+  unsigned char limit_on = digitalRead(PIN_LIMITERS);
+  if (limit_on == HIGH)
   {
-    // Give intsructions to power down arduino, remove the controller cable, and manually rewind
-    // the focusing knob until the switch is off. This should follow by limiter calibration.
-    g.abortMy = 1;
+    g.error = 1;
   }
-  //!!!
-  g.abortMy = 0;
 
   // Initializing program parameters:
   g.moving = 0;
@@ -87,7 +96,7 @@ void setup() {
   g.comment_flag = 0;
 
   // Uncomment to emulate the very first run:
-//  EEPROM.write(0, 255);  EEPROM.write(1, 255);
+  //  EEPROM.write(0, 255);  EEPROM.write(1, 255);
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
@@ -97,9 +106,9 @@ void setup() {
     g.calibrate = 3;
     g.limit1 = -30000;
     g.limit2 = 30000;
-    g.i_n_shots = 7;
-    g.i_mm_per_frame = 7;
-    g.i_fps = 7;
+    g.i_n_shots = 9;
+    g.i_mm_per_frame = 5;
+    g.i_fps = 16;
     g.point1 = -3000;
     g.point2 = 3000;
     g.points_byte = 0;
@@ -146,8 +155,6 @@ void setup() {
   g.calibrate_flag = 0;
   if (g.calibrate == 3)
     g.calibrate_warning = 1;
-  else
-    g.calibrate_warning = 0;
   // Memorizing the initial value of g.calibrate:
   g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
@@ -176,18 +183,14 @@ void setup() {
   g.i_timing = 0;
 #endif
 
-  // Testing !!!!:
-//    g.calibrate = 0;
-//    g.limit1 = -30000;
-//    g.limit2 = 30000;
-  g.flag = 0;
-  //  g.pos = 0;
-  //  g.point1 = -10000;
-  //  g.point2 = 10000;
 #ifdef DEBUG
   Serial.print("Initial g.limit1=");
   Serial.println(g.limit1);
 #endif
+#ifdef MOTOR_DEBUG
+  g.calibrate = 0;
+#endif
+
 }
 
 
@@ -199,7 +202,9 @@ void loop()
   process_keypad();
 
   // All the processing related to the two extreme limits for the macro rail movements:
+#ifndef MOTOR_DEBUG
   limiters();
+#endif
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
   calibration();
@@ -210,27 +215,9 @@ void loop()
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
 
-
 #ifdef TIMING
-  g.i_timing++;
-  if (g.i_timing == N_TIMING)
-  {
-    float dt_loop = (float)(g.t - g.t_old) / (float)N_TIMING;
-    // Inverse speed_limit is us/ustep:
-    float loops_per_step = 1.0 / SPEED_LIMIT / dt_loop;
-    // Displaying the average loop time (us), and number of loops per motor step (at maximum allowed speed)
-    //    sprintf(g.buffer, "%5fus, %5.1f", dt_loop, dt_step / dt_loop);
-    sprintf(g.buffer, "%5dus, %3d.%1d", (int)dt_loop, (int)loops_per_step, (int)(10.0 * (loops_per_step - (int)loops_per_step)));
-#ifdef DEBUG
-    Serial.println(g.buffer);
+  timing();
 #endif
-#ifdef LCD
-    lcd.setCursor(0, 4);
-    lcd.print(g.buffer);
-#endif
-    g.i_timing = 0;
-    g.t_old = g.t;
-  }
-#endif
+
 }
 

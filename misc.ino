@@ -191,6 +191,14 @@ void stop_now()
 {
   g.moving = 0;
 
+  if (g.error == 1)
+  {    
+    unsigned char limit_on = digitalRead(PIN_LIMITERS);
+    // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
+    if (limit_on == LOW)
+      g.error = 0;
+  }
+
 #ifdef SAVE_ENERGY
   digitalWrite(PIN_ENABLE, HIGH);
   delay(ENABLE_DELAY_MS);

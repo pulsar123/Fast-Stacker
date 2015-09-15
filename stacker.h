@@ -4,6 +4,26 @@
 
    To be used with automated macro rail for focus stacking
 
+Basic functionality to implement:
+ - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the 
+ motor cable is not attached) at the start, give a warning, and ability to rewind to a safe area
+ (only after checking that the cable is attached!). 
+ - Same if the battery level is below acceptable.
+
+Optional features to implement (require multi-touch keypad handling: # + another key):
+ # + 0: request full calibration
+ # + 1: multi-page help section
+ # + 4: change backlighting
+ # + 3: manually enter a custom value for the parameter N_SHOTS
+ # + 6: manually enter a custom value for the parameter MM_PER_FRAME
+ # + 9: manually enter a custom value for the parameter FPS
+ # + 2: save current parameter values to permanent memory, copy #1
+ # + A: read parameter values, copy #1
+ # + 5: save current parameter values to permanent memory, copy #2
+ # + B: read parameter values, copy #2
+ # + 8: save current parameter values to permanent memory, copy #3
+ # + C: read parameter values, copy #3
+
 Issues to address:
  - Position accuracy after turning off/on again: the motor will likely move to the
  nearest (or in a certain direction?) full stop, creating an error of that size.
@@ -26,14 +46,18 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-
 #define VERSION "0.03"
-// For debugging (motor doesn't work when debug is on!):
+
+// For debugging with serial monitor (motor doesn't work when debug is on!):
 //#define DEBUG
+
 // For timing the main loop:
 //#define TIMING
 // Compute and display timing results every that many loops:
 const unsigned long N_TIMING = 10000;
+
+// Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current etc.)
+//#define MOTOR_DEBUG
 
 // If undefined, lcd will not be used
 //#define LCD
@@ -41,13 +65,16 @@ const unsigned long N_TIMING = 10000;
 // Options controlling compilation:
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
-// I think it makes sense to only use full stops when at rest in saving mode
 #define SAVE_ENERGY
+
+// The option is currently not usable!
 // If defined, each go_to() operation will move the rail slighly shorter distance (by DELTA_POS),
 // and when at the end the low speed SPEED_SMALL is reached, deceleration stops, and motion proceeds
 // at that low speed until the exact  target position is reached, at which point the rail stops
 // instantly (SPEED_SMALL is small enough to ensure that deceleration stays within ACCEL_LIMIT)
 //#define HIGH_ACCURACY
+
+//////// Parameters to be set only once //////////
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -68,18 +95,36 @@ const short PIN_SHUTTER = 3;
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 
-//////// Parameters to be set only once //////////
+// Keypad stuff:
+const byte rows = 4; //four rows
+const byte cols = 4; //three columns
+char keys[rows][cols] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
+byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
+
+// LCD stuff
+// Create a pcd8544 object.
+// Hardware SPI will be used.
+// sdin (MOSI) is on pin 11 and sclk on pin 13.
+// The LCD has 6 lines (rows) and 14 columns
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
 const short N_MICROSTEPS = 8;
-// Macro rail parameter: travel distance per one rotation, in mm:
+// Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-// MM per microstep:
-const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 
-//////// Parameters which might need to be changed occasionally ////////
-// Speed limiter, in mm/s
+//////// Parameters which might need to be changed ////////
+// Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
+// between the limiting switches and the physical limits of the rail. 5 mm/s seems to be a reasonable compromize.
 const float SPEED_LIMIT_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
@@ -88,35 +133,34 @@ const float SPEED_LIMIT_MM_S = 5;
 const float BREAKING_DISTANCE_MM = 2.0;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
-// A bit of extra padding when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
+// A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
 const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
-// Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees accuracy for >=3)
+// Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
 const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
 
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 1000000; // time in us to key a parameter change key pressed before it will start repeating
-const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating for parameter change keys
+const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
-const short N_PARAMS = 16;
+const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
-const float MM_PER_FRAME[] = {0.005, 0.0075, 0.01, 0.015, 0.02, 0.03, 0.04, 0.06, 0.08, 0.12, 0.16, 0.25, 0.38, 0.5, 0.75, 1.0};
-//const float MM_PER_FRAME[N_PARAMS];
+const float MM_PER_FRAME[] = {0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
 // Frame per second parameter:
-const float FPS[] = {0.038, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.2, 1.6, 2.5, 3.8, 5.0, 6.3};
-//const float FPS[N_PARAMS];
+const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6.3};
 // Number of shots parameter (to be used in 1-point stacking):
-const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 12, 16, 25, 38, 50, 75, 100, 150, 200, 300};
-//const short N_SHOTS[N_PARAMS];
+const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 
 //////// Don't modify these /////////
+// MM per microstep:
+const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
 const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
@@ -132,12 +176,11 @@ const float ACCEL_LIMIT = SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE);
 const float SPEED_SMALL = 2*sqrt(2.0*ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-3*SPEED_SMALL;
-const float SPEED1 = SPEED_LIMIT/sqrt(2.0);
 
 // EEPROM addresses:
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
-const int ADDR_CALIBRATE = ADDR_POS+4;  // If =1, limiter calibration will be done at the beginning (1 byte)
-//!!! +1
+const int ADDR_CALIBRATE = ADDR_POS+4;  // If =3, full limiter calibration will be done at the beginning (1 byte)
+//!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
 const int ADDR_LIMIT1 = ADDR_CALIBRATE+2; // pos_short for the foreground limiter; should be 0? (2 bytes)
 const int ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
 const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
@@ -165,39 +208,35 @@ float speed_old; // speed at the previous step
 float pos_stop; // Current stop position if breaked
 float pos_stop_old; // Previously computed stop position if breaked
 short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
-unsigned long t_key_pressed; // Last time when a key as pressed
-unsigned long int t_last_repeat; // Last time when a key was repeating (for parameter change keys)
+unsigned long t_key_pressed; // Last time when a key was pressed
+unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
 int N_repeats; // Counter of key repeats
 
-unsigned char abortMy=0; // immediately abort the loop if >0 (only if direction=0 - rail not moving)
-unsigned char calibrate=0; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
-unsigned char calibrate_init; // Initial value of g.calibrate (amtters only for the first calibration, calibrate=3)
-unsigned char calibrate_flag=0; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
+unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
+unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
+unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
 // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
 unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
-unsigned char limit_on; // =0/1 when the limiting switches are off/on
 short limit1; // pos_short for the foreground limiter
 short limit2; // pos_short for the background limiter
-short limit_tmp; // temporary value of a new limit when rail activates a limiter
-unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch)
-unsigned char travel_flag; // =1 when travle was initiated
+short limit_tmp; // temporary value of a new limit when rail hits a limiter
+unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch); disables the keypad
+unsigned char travel_flag; // =1 when travel was initiated
 short pos_goto_short; // position to go to
 short moving_mode; // =0 when using speed_change, =1 when using go_to
 short pos_stop_flag; // flag to detect when motor_control is run first time
-char key_old;  // peviously pressd key (can be NO_KEY); used in keypad()
+char key_old;  // peviously pressed key; used in keypad()
 short point1;  // foreground point for 2-point focus stacking
 short point2;  // background point for 2-point focus stacking
-short first_point; // The first point in the focus stacking with two points
-short second_point; // The second point in the focus stacking with two points
+short starting_point; // The starting point in the focus stacking with two points
+short destination_point; // The destination point in the focus stacking with two points
 short stacking_direction; // 1/-1 for direct/reverse stacking direction
 short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
-//float fps;  // Frames per second parameter
-//float mm_per_frame;  // Mm per shot parameter
 float msteps_per_frame; // Microsteps per frame for focus stacking
 short Nframes; // Number of frames for 2-point focus stacking
 short frame_counter; // Counter for shots
 short pos_to_shoot; // Position to shoot the next shot during focus stacking
-short shutter_on; // flag for camera shutter: 0/1 corresponds to off/on
+short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
 unsigned long t_shutter; // Time when the camera shutter was triggered
 short i_mm_per_frame; // counter for mm_per_frame parameter;
 short i_fps; // counter for fps parameter;
@@ -209,36 +248,15 @@ byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only
 unsigned long t_comment; // time when commment line was triggered
 byte comment_flag; // flag used to trigger the comment line briefly
 KeyState state_old;  // keeping old keypas state
-//short limiter_engaged;  // =1 when hitting a limiter
+short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained
 #ifdef TIMING
 unsigned long t_old;
 unsigned long i_timing;
 #endif
-
-unsigned char flag; // for testing
 };
 
 struct global g;
 
-// Keypad stuff:
-const byte rows = 4; //four rows
-const byte cols = 4; //three columns
-char keys[rows][cols] = {
-  {'1','2','3','A'},
-  {'4','5','6','B'},
-  {'7','8','9','C'},
-  {'*','0','#','D'}
-};
-byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
-byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
-Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
-
-// LCD stuff
-// Create a pcd8544 object.
-// Hardware SPI will be used.
-// sdin (MOSI) is on pin 11 and sclk on pin 13.
-// The LCD has 6 lines (rows) and 14 columns
-pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 
 #endif
 
