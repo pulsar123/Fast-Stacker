@@ -48,21 +48,23 @@ Cable 3: 2-way
 2a) Nokia 5110 LCD to Arduino:
 
 LCD pin | Arduino pin | Cable #
-1-VCC 	3.3V			4
-2-GND		GND			4
+6-VCC 	3.3V			4
+8-GND		GND			4
 
 Cable 4: 2-way
 
 
 2b) Nokia 5110 LCD to breadboard:
 
+Actual:
 LCD pin | Breadboard pin |  Via   | Arduino pin | Cable #
-3-SCE		1			1k		7		5
-4-RST		2			10k		6		5
-5-DC		3			10k		5		5
-6-DN		4			10k		11		6
-7-SCL		5			10k		13		6
-8-LED		6			330		9		6
+2-SCE           1                       1k              7               5
+1-RST           2                       10k             6               5
+3-DC            3                       10k             5               5
+4-DN            4                       10k             11              6
+5-SCL           5                       10k             13              6
+7-LED           6                       330             9               6
+
 
 Cable 5: 3-way
 Cable 6: 3-way

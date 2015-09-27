@@ -4,6 +4,9 @@
 
    To be used with automated macro rail for focus stacking
 
+BUGS:
+ - 2-point stacking doesn't work (no shutter) when initially outside of the interval.
+
 Basic functionality to implement:
  - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the 
  motor cable is not attached) at the start, give a warning, and ability to rewind to a safe area
@@ -48,7 +51,7 @@ Issues to address:
 
 #define VERSION "0.03"
 
-// For debugging with serial monitor (motor doesn't work when debug is on!):
+// For debugging with serial monitor:
 //#define DEBUG
 
 // For timing the main loop:
@@ -60,7 +63,7 @@ const unsigned long N_TIMING = 10000;
 //#define MOTOR_DEBUG
 
 // If undefined, lcd will not be used
-//#define LCD
+#define LCD
 
 // Options controlling compilation:
 
@@ -95,6 +98,11 @@ const short PIN_SHUTTER = 3;
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 
+// Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R1 and R2.
+// Assuming R2 is the one directly connected to "+" of the battery, the scaler is (R1+R2)/R2. R1+R2 should be ~0.5M)
+// The second factor is 5.0V/1024/8 (assuming 8 AA batteries)
+const float VOLTAGE_SCALER = 2.7273 * 0.0390625;
+
 // Keypad stuff:
 const byte rows = 4; //four rows
 const byte cols = 4; //three columns
@@ -113,7 +121,10 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 // Hardware SPI will be used.
 // sdin (MOSI) is on pin 11 and sclk on pin 13.
 // The LCD has 6 lines (rows) and 14 columns
-pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+// !!! For some reason, hardware SPI mode doesn't work:
+//pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+// I am using software SPI instead:
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
 
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
@@ -135,7 +146,7 @@ const float BREAKING_DISTANCE_MM = 2.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
+const unsigned long SHUTTER_TIME_US = 10000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
@@ -145,7 +156,7 @@ const short STEP_LOW_DT = 3;
 const short ENABLE_DELAY_MS = 3;
 
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
-const unsigned long T_KEY_LAG = 1000000; // time in us to key a parameter change key pressed before it will start repeating
+const unsigned long T_KEY_LAG = 500000; // time in us to key a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 
 // INPUT PARAMETERS:
@@ -153,8 +164,8 @@ const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating 
 const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
 const float MM_PER_FRAME[] = {0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
-// Frame per second parameter:
-const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6.3};
+// Frame per second parameter (Canon 50D can do up to 4 fps, for 10 shots):
+const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4, 4.5};
 // Number of shots parameter (to be used in 1-point stacking):
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 
@@ -189,6 +200,7 @@ const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
 const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
 const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
 const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
+const int ADDR_BACKLIGHT = ADDR_POINTS_BYTE + 2;  // backlight level
 
 // All global variables belong to one structure - global:
 struct global 
@@ -249,6 +261,7 @@ unsigned long t_comment; // time when commment line was triggered
 byte comment_flag; // flag used to trigger the comment line briefly
 KeyState state_old;  // keeping old keypas state
 short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained
+short backlight; // backlight level; 0,1,2 for now
 #ifdef TIMING
 unsigned long t_old;
 unsigned long i_timing;

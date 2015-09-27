@@ -36,6 +36,7 @@ void process_keypad()
     speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
     go_to(g.destination_point, speed);
     g.frame_counter = 0;
+    display_frame_counter();
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
 #ifdef DEBUG
@@ -59,22 +60,19 @@ void process_keypad()
   char key = keypad.getKey();
   KeyState state = keypad.getState();
 
+
   // Action is only needed if the kepad state changed since the last time,
   // or if one of the parameter change keys was pressed longer than T_KEY_LAG microseconds:
   if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
-      state == PRESSED && g.state_old == PRESSED && (key == '2' || key == '3' || key == '5'
-          || key == '6' || key == '8' || key == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
+      state == PRESSED && g.state_old == PRESSED && (g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
+          || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
   {
-#ifdef DEBUG
-    Serial.print(state);
-    Serial.print(", ");
-    Serial.println(key);
-#endif
 
     if (state == PRESSED)
     {
       if (g.state_old != PRESSED)
       {
+        g.key_old = key;
         // Memorizing the time when a key was pressed:
         g.t_key_pressed = g.t;
         if (g.calibrate_warning == 1)
@@ -91,12 +89,22 @@ void process_keypad()
       {
         if (g.N_repeats == 0)
           // Will be used for keys with repetition (parameter change keys):
+        {
           g.t_last_repeat = g.t;
+          g.N_repeats = 1;
+        }
+#ifdef DEBUG
+        Serial.print(state);
+        Serial.print(", ");
+        Serial.println(g.N_repeats);
+#endif
         // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
         if (g.t - g.t_last_repeat > T_KEY_REPEAT)
         {
           g.N_repeats++;
           g.t_last_repeat = g.t;
+          // ??? A trick, as "key" has only proper value when just pressed
+          key = g.key_old;
         }
         else
           // Too early for a repeated key, so returning now:
@@ -107,7 +115,7 @@ void process_keypad()
       if (g.stacker_mode == 0)
         // Mode 0: default; rewinding etc.
       {
-        // When error 1 (limiter on initially), the only commands accepted are reqind and fast forward:
+        // When error 1 (limiter on initially), the only commands accepted are rewind and fast forward:
         if (g.error == 1 && key != '1' && key != 'A')
           return;
 
@@ -228,6 +236,7 @@ void process_keypad()
               Serial.println(g.limit2);
 #endif
               g.frame_counter = 0;
+              display_frame_counter();
               g.pos_to_shoot = g.pos_short_old;
               g.starting_point = g.pos_short_old;
               g.stacking_direction = -1;
@@ -245,6 +254,7 @@ void process_keypad()
               speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
               go_to(g.limit2, speed);
               g.frame_counter = 0;
+              display_frame_counter();
               g.pos_to_shoot = g.pos_short_old;
               g.starting_point = g.pos_short_old;
               g.stacking_direction = 1;
@@ -317,6 +327,13 @@ void process_keypad()
             display_all(" ");
             break;
 
+          case '#':  // For now using to cycle through 3 backlight levels
+            g.backlight++;
+            if (g.backlight > 2)
+              g.backlight = 0;
+            set_backlight();
+            break;
+
         } // End of case
       }
       else if (g.stacker_mode > 0)
@@ -328,7 +345,6 @@ void process_keypad()
         display_comment_line("Stacking abort");
       }
 
-      g.key_old = key;
     }  // if (PRESSED)
     else
       // if a key was just released

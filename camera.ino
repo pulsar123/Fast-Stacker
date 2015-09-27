@@ -31,6 +31,7 @@ void camera()
       g.shutter_on = 1;
       g.t_shutter = g.t;
       g.frame_counter++;
+      display_frame_counter();
       // Position at which to shoot the next shot:
       g.pos_to_shoot = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])

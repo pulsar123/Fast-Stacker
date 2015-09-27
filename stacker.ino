@@ -39,8 +39,6 @@ void setup() {
   pinMode(PIN_SHUTTER, OUTPUT);
 
   pinMode(PIN_LCD_LED, OUTPUT);
-  // Change the LCD backlighting here (0...255). WIll be implemented as user-controlled later
-  analogWrite(PIN_LCD_LED, 255);
 
 #ifdef DEBUG
   Serial.begin(250000);
@@ -112,6 +110,7 @@ void setup() {
     g.point1 = -3000;
     g.point2 = 3000;
     g.points_byte = 0;
+    g.backlight = 2;
     // Saving these values in EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
@@ -123,6 +122,7 @@ void setup() {
     EEPROM.put( ADDR_POINT1, g.point1);
     EEPROM.put( ADDR_POINT2, g.point2);
     EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
+    EEPROM.put( ADDR_BACKLIGHT, g.backlight);
   }
   else
   {
@@ -137,6 +137,7 @@ void setup() {
     EEPROM.get( ADDR_POINT1, g.point1);
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
+    EEPROM.get( ADDR_BACKLIGHT, g.backlight);
 #ifdef DEBUG
     Serial.println("EEPROM values:");
     Serial.println(g.pos, 2);
@@ -151,6 +152,8 @@ void setup() {
     Serial.println(g.points_byte);
 #endif
   }
+
+  set_backlight();
 
   g.calibrate_flag = 0;
   if (g.calibrate == 3)

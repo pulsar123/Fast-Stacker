@@ -15,7 +15,7 @@
 5B <- 102 Fb ##
 
 -01234567890123
-01000us 0.025fs : Input parameters u/s, fps
+01000uf 0.025fs : Input parameters u/s, fps
 1 60 10.5m 550s : one-point settings: Nframes (input param), dx mm, dt s
 2120  5.4m  45s : two-point settings: Nframes, dx mm, dt s
 3F23.06  B29.15 : position for two points

@@ -26,15 +26,16 @@ void display_all(char* l)
 #ifdef LCD
       lcd.setCursor(0, 0);  lcd.print("  Calibration ");
       lcd.setCursor(0, 1);  lcd.print("  required!   ");
-      lcd.setCursor(0, 2);  lcd.print("Press any key ");
-      lcd.setCursor(0, 3);  lcd.print("to start      ");
-      lcd.setCursor(0, 4);  lcd.print("calibration.   ");
+      lcd.setCursor(0, 2);  lcd.print("              ");
+      lcd.setCursor(0, 3);  lcd.print("Press any key ");
+      lcd.setCursor(0, 4);  lcd.print("to start      ");
+      lcd.setCursor(0, 5);  lcd.print("calibration.   ");
 #endif
     }
   }
-  
+
   else
-  // Error code displaying:
+    // Error code displaying:
   {
     switch (g.error)
     {
@@ -51,7 +52,7 @@ void display_all(char* l)
         lcd.setCursor(0, 3);  lcd.print("Only if cable ");
         lcd.setCursor(0, 4);  lcd.print("is connected,  ");
         lcd.setCursor(0, 5);  lcd.print("rewind.        ");
-#endif        
+#endif
         break;
     } // case
   }
@@ -87,22 +88,22 @@ void motion_status()
   lcd.setCursor(2, 5);
 
   if (g.moving == 0)
-    lcd.print("  ");
+    lcd.print("   ");
   else
   {
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
-        lcd.print("<-");
+        lcd.print("<- ");
       else
-        lcd.print("< ");
+        lcd.print("<  ");
     }
     else
     {
       if (g.stacker_mode < 2)
-        lcd.print("->");
+        lcd.print("-> ");
       else
-        lcd.print(" >");
+        lcd.print(" > ");
     }
   }
 #endif
@@ -116,7 +117,7 @@ void display_frame_counter()
   if (g.error)
     return;
   // Printing frame counter:
-  sprintf (g.buffer, "%4u",  g.frame_counter);
+  sprintf (g.buffer, "%3u ",  g.frame_counter);
 #ifdef LCD
   lcd.setCursor(5, 5);
   lcd.print (g.buffer); // display line on buffer
@@ -144,30 +145,30 @@ void points_status()
   switch (g.points_byte)
   {
     case 0:
-      lcd.print("  ");
+      lcd.print("   ");
       break;
 
     case 1:
       if (g.pos_short_old == g.point1)
-        lcd.print("F ");
+        lcd.print("F  ");
       else
-        lcd.print("f ");
+        lcd.print("f  ");
       break;
 
     case 2:
       if (g.pos_short_old == g.point2)
-        lcd.print(" B");
+        lcd.print(" B ");
       else
-        lcd.print("b ");
+        lcd.print("b  ");
       break;
 
     case 3:
       if (g.pos_short_old == g.point1)
-        lcd.print("Fb");
+        lcd.print("Fb ");
       else if (g.pos_short_old == g.point2)
-        lcd.print("fB");
+        lcd.print("fB ");
       else
-        lcd.print("fb");
+        lcd.print("fb ");
       break;
   }
 #endif
@@ -182,10 +183,27 @@ void battery_status()
 {
   if (g.error)
     return;
+  // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
+  // (to reduce voltage from 12V -> 5V)
+  // Slow operation (100 us), so should be done infrequently
+  float V = (float)analogRead(PIN_BATTERY) * VOLTAGE_SCALER;
+#ifdef DEBUG
+  Serial.print("Voltage=");
+  sprintf(g.buffer, "%5d.%03d V", (int)V, (int)(1000.0 * (V - (int)V)));
+  Serial.println(g.buffer);
+#endif
 #ifdef LCD
   lcd.setCursor(12, 5);
-  // For now:
-  lcd.print("##");
+  // For now using a simple 3-level indication:
+  if (V > 1.25)
+    // >50% charge:
+    lcd.print("##");
+  else if (V > 1.1)
+    // Less than 50% charge:
+    lcd.print("#.");
+  else
+    // Critically low charge:
+    lcd.print("..");
 #endif
   return;
 }
@@ -214,7 +232,7 @@ void display_u_per_f()
 {
   if (g.error)
     return;
-  sprintf(g.buffer, "%4dus ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  sprintf(g.buffer, "%4duf ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
 #ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
@@ -234,7 +252,7 @@ void display_fps()
   if (g.error)
     return;
   //  sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
-  sprintf(g.buffer, "%5d.%3dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
+  sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
 #ifdef LCD
   lcd.setCursor(7, 0);
   lcd.print(g.buffer);
@@ -259,7 +277,7 @@ void display_one_point_params()
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
-  sprintf(g.buffer, "%3d %2d.%1dm %3ds", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  sprintf(g.buffer, "%3d %2d.%01dm %3ds", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt);
 #ifdef LCD
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
@@ -284,7 +302,7 @@ void display_two_point_params()
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
-  sprintf(g.buffer, "%3d %2d.%1dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
 #ifdef LCD
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
@@ -299,14 +317,15 @@ void display_two_point_params()
 void display_two_points()
 /*
  Display the positions (in mm) of two points: foreground, F, and background, B.
+ Positions are relative to g.limit1, so should be updated every time it's changes (after calibration).
  */
 {
   if (g.error)
     return;
   //  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP * (float)g.point1, MM_PER_MICROSTEP * (float)g.point2);
-  float p1 = MM_PER_MICROSTEP * (float)g.point1;
-  float p2 = MM_PER_MICROSTEP * (float)g.point2;
-  sprintf(g.buffer, "F%2d.%2df  B%2d.%2ds", (int)p1, (int)(100.0 * (p1 - (int)p1)), (int)p2, (int)(100.0 * (p2 - (int)p2)));
+  float p1 = MM_PER_MICROSTEP * (float)(g.point1-g.limit1);
+  float p2 = MM_PER_MICROSTEP * (float)(g.point2-g.limit1);
+  sprintf(g.buffer, "F%2d.%02d  B%2d.%02d", (int)p1, (int)(100.0 * (p1 - (int)p1)), (int)p2, (int)(100.0 * (p2 - (int)p2)));
 #ifdef LCD
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
@@ -321,13 +340,14 @@ void display_two_points()
 void display_current_position()
 /*
  Display the current position on the transient line
+ Positions are relative to g.limit1, so should be updated every time it's changes (after calibration).
  */
 {
   if (g.error)
     return;
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
-  float p = MM_PER_MICROSTEP * g.pos;
-  sprintf(g.buffer, "   P=%2d.%2dmm", (int)p, (int)(100.0 * (p - (int)p)));
+  float p = MM_PER_MICROSTEP * (float)(g.pos-g.limit1);
+  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
   // Do the slow display operation only if the number changed:
   if (strcmp(g.buffer, g.p_buffer) != 0)
   {

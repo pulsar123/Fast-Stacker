@@ -192,7 +192,7 @@ void stop_now()
   g.moving = 0;
 
   if (g.error == 1)
-  {    
+  {
     unsigned char limit_on = digitalRead(PIN_LIMITERS);
     // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
     if (limit_on == LOW)
@@ -252,3 +252,25 @@ void show_params()
   //  Serial.println(pos);
   return;
 }
+
+
+void set_backlight()
+// Setting the LCD backlight. 3 levels for now.
+{
+  switch (g.backlight)
+  {
+    case 0:
+      analogWrite(PIN_LCD_LED, 0);
+      break;
+
+    case 1:
+      analogWrite(PIN_LCD_LED, 127);
+      break;
+
+    case 2:
+      analogWrite(PIN_LCD_LED, 255);
+      break;
+  }
+  return;
+}
+
