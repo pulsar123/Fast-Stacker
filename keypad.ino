@@ -298,9 +298,19 @@ void process_keypad()
 
           case '6':  // Increase parameter mm_per_frame
             if (g.i_mm_per_frame < N_PARAMS - 1)
+            {
               g.i_mm_per_frame++;
+              // Estimating the required speed in microsteps per microsecond
+              speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+              // Reverting back if required speed > maximum allowed:
+              if (speed > SPEED_LIMIT)
+              {
+                g.i_mm_per_frame--;
+                break;
+              }
+            }
             else
-              g.i_mm_per_frame = N_PARAMS - 1;
+              break;
             // Required microsteps per frame:
             g.msteps_per_frame = Msteps_per_frame();
             // Using instead the simplest approach, which will result the last shot to always slightly undershoot
@@ -320,9 +330,19 @@ void process_keypad()
 
           case '9':  // Increase parameter fps
             if (g.i_fps < N_PARAMS - 1)
+            {
               g.i_fps++;
+              // Estimating the required speed in microsteps per microsecond
+              speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+              // Reverting back if required speed > maximum allowed:
+              if (speed > SPEED_LIMIT)
+              {
+                g.i_fps--;
+                break;
+              }
+            }
             else
-              g.i_fps = N_PARAMS - 1;
+              break;
             EEPROM.put( ADDR_I_FPS, g.i_fps);
             display_all(" ");
             break;

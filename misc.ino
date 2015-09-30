@@ -207,7 +207,7 @@ void stop_now()
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
 
-  // At this point any calibration should be done (we are in a safe zone, afyter calibrating both limiters):
+  // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
   if (g.calibrate_flag == 5)
   {
     g.calibrate_flag = 0;
@@ -224,7 +224,11 @@ void stop_now()
 
   // In the initial calibration, disable the warning flag after the first leg:
   if (g.calibrate_init == 3 && g.calibrate_warning == 1)
+  {
     g.calibrate_warning = 0;
+    //??? To clear garbage in the status line:
+    display_status_line("              ");
+  }
 
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;

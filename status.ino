@@ -178,7 +178,7 @@ void points_status()
 
 void battery_status()
 /*
- Just a placeholder for now.
+ Measuring the battery voltage and displaying it.
  */
 {
   if (g.error)
