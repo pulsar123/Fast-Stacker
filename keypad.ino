@@ -187,13 +187,15 @@ void process_keypad()
               // Using the simplest approach which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
               // Finding the closest point:
-              short d1 = (short)fabs(g.pos_short_old - g.point1);
-              short d2 = (short)fabs(g.pos_short_old - g.point2);
+              // Need to compute delta separately because of the limitations of arduino abs():
+              short delta = g.pos_short_old - g.point1;
+              short d1 = (short)abs(delta);
+              delta = g.pos_short_old - g.point2;
+              short d2 = (short)abs(delta);
               if (d1 < d2)
               {
                 go_to(g.point1, SPEED_LIMIT);
                 g.starting_point = g.point1;
-                // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
                 g.destination_point = g.point2;
                 g.stacking_direction = 1;
               }
@@ -201,7 +203,6 @@ void process_keypad()
               {
                 go_to(g.point2, SPEED_LIMIT);
                 g.starting_point = g.point2;
-                // The additional microstep is needed because camera() shutter is lagging by 1/2 microstep by design:
                 g.destination_point = g.point1;
                 g.stacking_direction = -1;
               }
@@ -267,7 +268,7 @@ void process_keypad()
             if (g.i_n_shots > 0)
               g.i_n_shots--;
             else
-              g.i_n_shots = 0;
+              break;
             EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
             //!!!
             //            display_one_point_params();
@@ -278,7 +279,7 @@ void process_keypad()
             if (g.i_n_shots < N_PARAMS - 1)
               g.i_n_shots++;
             else
-              g.i_n_shots = N_PARAMS - 1;
+              break;
             EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
             display_one_point_params();
             break;
@@ -287,7 +288,7 @@ void process_keypad()
             if (g.i_mm_per_frame > 0)
               g.i_mm_per_frame--;
             else
-              g.i_mm_per_frame = 0;
+              break;
             // Required microsteps per frame:
             g.msteps_per_frame = Msteps_per_frame();
             // Using instead the simplest approach, which will result the last shot to always slightly undershoot
@@ -323,7 +324,7 @@ void process_keypad()
             if (g.i_fps > 0)
               g.i_fps--;
             else
-              g.i_fps = 0;
+              break;
             EEPROM.put( ADDR_I_FPS, g.i_fps);
             display_all(" ");
             break;
