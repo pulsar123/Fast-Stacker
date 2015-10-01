@@ -111,6 +111,9 @@ void setup() {
     g.point2 = 3000;
     g.points_byte = 0;
     g.backlight = 2;
+    g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+    g.reg2 = g.reg1;
+    g.reg3 = g.reg1;
     // Saving these values in EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
@@ -123,6 +126,9 @@ void setup() {
     EEPROM.put( ADDR_POINT2, g.point2);
     EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+    EEPROM.put( ADDR_REG1, g.reg1);
+    EEPROM.put( ADDR_REG2, g.reg2);
+    EEPROM.put( ADDR_REG3, g.reg3);
   }
   else
   {
@@ -138,6 +144,9 @@ void setup() {
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
+    EEPROM.get( ADDR_REG1, g.reg1);
+    EEPROM.get( ADDR_REG2, g.reg2);
+    EEPROM.get( ADDR_REG3, g.reg3);
 #ifdef DEBUG
     Serial.println("EEPROM values:");
     Serial.println(g.pos, 2);

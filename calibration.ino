@@ -6,6 +6,7 @@ void calibration()
  */
 {
 
+// This module only works when not moving:
   if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.calibrate_warning == 1 || g.error == 1)
     return;
 

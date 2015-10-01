@@ -8,9 +8,9 @@ BUGS:
  - 2-point stacking doesn't work (no shutter) when initially outside of the interval.
 
 Basic functionality to implement:
- - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the 
+ - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the
  motor cable is not attached) at the start, give a warning, and ability to rewind to a safe area
- (only after checking that the cable is attached!). 
+ (only after checking that the cable is attached!).
  - Same if the battery level is below acceptable.
 
 Optional features to implement (require multi-touch keypad handling: # + another key):
@@ -37,13 +37,13 @@ Issues to address:
  - Apparently stepper motors can't change direction at atarbitrary microsteps, perhaps not
  even at all full steps - needs to be figured out and implemented.
  - [DONE] Very good chance that go_to() will not be accurate to a microstep level (and that is
- required for correct stacking). Possible solution: always travel slightly shorter distance 
+ required for correct stacking). Possible solution: always travel slightly shorter distance
  (can be tricky if has to reverse direction), and switch to travelling at constant low
  speed (low enough that instant stopping - withing a single microstep - will be
  within ACCEL_LIMIT) when almost at the destionation. Then instantly stop when hitting the exact
  position.
  - [DONE] Change camera() to only trigger shutter between microsteps (to minimize vibrations).
-   
+
 */
 
 #ifndef STACKER_H
@@ -107,10 +107,10 @@ const float VOLTAGE_SCALER = 2.7273 * 0.0390625;
 const byte rows = 4; //four rows
 const byte cols = 4; //three columns
 char keys[rows][cols] = {
-  {'1','2','3','A'},
-  {'4','5','6','B'},
-  {'7','8','9','C'},
-  {'*','0','#','D'}
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
 };
 byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
 byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
@@ -173,27 +173,38 @@ const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 1
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
-const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS*N_MICROSTEPS;
+const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
-const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION*BREAKING_DISTANCE_MM/(1.0*MM_PER_ROTATION);
-const float SPEED_SCALE = MICROSTEPS_PER_ROTATION/(1.0e6*MM_PER_ROTATION);  // Conversion factor from mm/s to usteps/usecond
+const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
+const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
-const float SPEED_LIMIT = SPEED_SCALE*SPEED_LIMIT_MM_S;
+const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // This is a limiter, to minimize damage to the rail and motor
-const float ACCEL_LIMIT = SPEED_LIMIT*SPEED_LIMIT/(2.0*BREAKING_DISTANCE);
+const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
 //!!! 2* - to make goto accurate, but with higher decelerations at the end
-const float SPEED_SMALL = 2*sqrt(2.0*ACCEL_LIMIT);
+const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
-const float SPEED_TINY = 1e-3*SPEED_SMALL;
+const float SPEED_TINY = 1e-3 * SPEED_SMALL;
+
+// Structure to have custom parameters saved to EEPROM
+struct regist
+{
+  short i_n_shots;
+  short i_mm_per_frame;
+  short i_fps;
+  short point1;
+  short point2;
+};
+short SIZE_REG=sizeof(regist);
 
 // EEPROM addresses:
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
-const int ADDR_CALIBRATE = ADDR_POS+4;  // If =3, full limiter calibration will be done at the beginning (1 byte)
+const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will be done at the beginning (1 byte)
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
-const int ADDR_LIMIT1 = ADDR_CALIBRATE+2; // pos_short for the foreground limiter; should be 0? (2 bytes)
-const int ADDR_LIMIT2 = ADDR_LIMIT1+2; // pos_short for the background limiter (2 bytes)
+const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter; should be 0? (2 bytes)
+const int ADDR_LIMIT2 = ADDR_LIMIT1 + 2; // pos_short for the background limiter (2 bytes)
 const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
 const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
 const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
@@ -201,70 +212,76 @@ const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
 const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
 const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
 const int ADDR_BACKLIGHT = ADDR_POINTS_BYTE + 2;  // backlight level
+const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
+const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
+const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
 
 // All global variables belong to one structure - global:
-struct global 
+struct global
 {
-// Variables used to communicate between modules:
-unsigned long t;  // Time in us measured at the beginning of motor_control() module
-short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
-float speed1; // Target speed, in microsteps per microsecond (
-float speed;  // Current speed (negative, 0 or positive)
-short accel; // Current acceleration, in ACCEL_LIMIT units. Allowed values: -1,0,1
-float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
-short pos_short_old;  // Previously computed position
-float pos0;  // Last position when accel changed
-unsigned long t0; // Last time when accel changed
-float speed0; // Last speed when accel changed
-float speed_old; // speed at the previous step
-float pos_stop; // Current stop position if breaked
-float pos_stop_old; // Previously computed stop position if breaked
-short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
-unsigned long t_key_pressed; // Last time when a key was pressed
-unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
-int N_repeats; // Counter of key repeats
+  // Variables used to communicate between modules:
+  unsigned long t;  // Time in us measured at the beginning of motor_control() module
+  short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
+  float speed1; // Target speed, in microsteps per microsecond (
+  float speed;  // Current speed (negative, 0 or positive)
+  short accel; // Current acceleration, in ACCEL_LIMIT units. Allowed values: -1,0,1
+  float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
+  short pos_short_old;  // Previously computed position
+  float pos0;  // Last position when accel changed
+  unsigned long t0; // Last time when accel changed
+  float speed0; // Last speed when accel changed
+  float speed_old; // speed at the previous step
+  float pos_stop; // Current stop position if breaked
+  float pos_stop_old; // Previously computed stop position if breaked
+  short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
+  unsigned long t_key_pressed; // Last time when a key was pressed
+  unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
+  int N_repeats; // Counter of key repeats
 
-unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
-unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
-unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on); 
-// 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
-unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
-short limit1; // pos_short for the foreground limiter
-short limit2; // pos_short for the background limiter
-short limit_tmp; // temporary value of a new limit when rail hits a limiter
-unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch); disables the keypad
-unsigned char travel_flag; // =1 when travel was initiated
-short pos_goto_short; // position to go to
-short moving_mode; // =0 when using speed_change, =1 when using go_to
-short pos_stop_flag; // flag to detect when motor_control is run first time
-char key_old;  // peviously pressed key; used in keypad()
-short point1;  // foreground point for 2-point focus stacking
-short point2;  // background point for 2-point focus stacking
-short starting_point; // The starting point in the focus stacking with two points
-short destination_point; // The destination point in the focus stacking with two points
-short stacking_direction; // 1/-1 for direct/reverse stacking direction
-short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
-float msteps_per_frame; // Microsteps per frame for focus stacking
-short Nframes; // Number of frames for 2-point focus stacking
-short frame_counter; // Counter for shots
-short pos_to_shoot; // Position to shoot the next shot during focus stacking
-short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
-unsigned long t_shutter; // Time when the camera shutter was triggered
-short i_mm_per_frame; // counter for mm_per_frame parameter;
-short i_fps; // counter for fps parameter;
-short i_n_shots; // counter for n_shots parameter;
-short direction; // -1/1 for reverse/forward directions of moving
-char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
-char p_buffer[16]; // keeps a copy of the buffer used to print position on display
-byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
-unsigned long t_comment; // time when commment line was triggered
-byte comment_flag; // flag used to trigger the comment line briefly
-KeyState state_old;  // keeping old keypas state
-short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained
-short backlight; // backlight level; 0,1,2 for now
+  unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
+  unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
+  unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
+  // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
+  unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
+  short limit1; // pos_short for the foreground limiter
+  short limit2; // pos_short for the background limiter
+  short limit_tmp; // temporary value of a new limit when rail hits a limiter
+  unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch); disables the keypad
+  unsigned char travel_flag; // =1 when travel was initiated
+  short pos_goto_short; // position to go to
+  short moving_mode; // =0 when using speed_change, =1 when using go_to
+  short pos_stop_flag; // flag to detect when motor_control is run first time
+  char key_old;  // peviously pressed key; used in keypad()
+  short point1;  // foreground point for 2-point focus stacking
+  short point2;  // background point for 2-point focus stacking
+  short starting_point; // The starting point in the focus stacking with two points
+  short destination_point; // The destination point in the focus stacking with two points
+  short stacking_direction; // 1/-1 for direct/reverse stacking direction
+  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
+  float msteps_per_frame; // Microsteps per frame for focus stacking
+  short Nframes; // Number of frames for 2-point focus stacking
+  short frame_counter; // Counter for shots
+  short pos_to_shoot; // Position to shoot the next shot during focus stacking
+  short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
+  unsigned long t_shutter; // Time when the camera shutter was triggered
+  short i_mm_per_frame; // counter for mm_per_frame parameter;
+  short i_fps; // counter for fps parameter;
+  short i_n_shots; // counter for n_shots parameter;
+  short direction; // -1/1 for reverse/forward directions of moving
+  char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
+  char p_buffer[16]; // keeps a copy of the buffer used to print position on display
+  byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
+  unsigned long t_comment; // time when commment line was triggered
+  byte comment_flag; // flag used to trigger the comment line briefly
+  KeyState state_old;  // keeping old keypas state
+  short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained
+  short backlight; // backlight level; 0,1,2 for now
+  struct regist reg1; // Custom parameters saved in register1
+  struct regist reg2; // Custom parameters saved in register2
+  struct regist reg3; // Custom parameters saved in register3
 #ifdef TIMING
-unsigned long t_old;
-unsigned long i_timing;
+  unsigned long t_old;
+  unsigned long i_timing;
 #endif
 };
 
