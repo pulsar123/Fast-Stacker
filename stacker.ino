@@ -25,6 +25,40 @@
 #include "stdio.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void factory_reset()
+{
+  g.pos = 0.0;
+  g.calibrate = 3;
+  g.limit1 = -30000;
+  g.limit2 = 30000;
+  g.i_n_shots = 9;
+  g.i_mm_per_frame = 5;
+  g.i_fps = 16;
+  g.point1 = -3000;
+  g.point2 = 3000;
+  g.points_byte = 0;
+  g.backlight = 2;
+  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+  g.reg2 = g.reg1;
+  g.reg3 = g.reg1;
+  // Saving these values in EEPROM:
+  EEPROM.put( ADDR_POS, g.pos );
+  EEPROM.put( ADDR_CALIBRATE, g.calibrate );
+  EEPROM.put( ADDR_LIMIT1, g.limit1);
+  EEPROM.put( ADDR_LIMIT2, g.limit2);
+  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+  EEPROM.put( ADDR_I_FPS, g.i_fps);
+  EEPROM.put( ADDR_POINT1, g.point1);
+  EEPROM.put( ADDR_POINT2, g.point2);
+  EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
+  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+  EEPROM.put( ADDR_REG1, g.reg1);
+  EEPROM.put( ADDR_REG2, g.reg2);
+  EEPROM.put( ADDR_REG3, g.reg3);
+  return;
+}
+
 void setup() {
 
   g.error = 0;
@@ -100,35 +134,7 @@ void setup() {
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
   {
     // Values for the very first run:
-    g.pos = 0.0;
-    g.calibrate = 3;
-    g.limit1 = -30000;
-    g.limit2 = 30000;
-    g.i_n_shots = 9;
-    g.i_mm_per_frame = 5;
-    g.i_fps = 16;
-    g.point1 = -3000;
-    g.point2 = 3000;
-    g.points_byte = 0;
-    g.backlight = 2;
-    g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
-    g.reg2 = g.reg1;
-    g.reg3 = g.reg1;
-    // Saving these values in EEPROM:
-    EEPROM.put( ADDR_POS, g.pos );
-    EEPROM.put( ADDR_CALIBRATE, g.calibrate );
-    EEPROM.put( ADDR_LIMIT1, g.limit1);
-    EEPROM.put( ADDR_LIMIT2, g.limit2);
-    EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-    EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-    EEPROM.put( ADDR_I_FPS, g.i_fps);
-    EEPROM.put( ADDR_POINT1, g.point1);
-    EEPROM.put( ADDR_POINT2, g.point2);
-    EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
-    EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.put( ADDR_REG1, g.reg1);
-    EEPROM.put( ADDR_REG2, g.reg2);
-    EEPROM.put( ADDR_REG3, g.reg3);
+    factory_reset();
   }
   else
   {

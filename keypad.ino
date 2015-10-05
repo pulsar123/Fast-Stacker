@@ -21,6 +21,7 @@ void process_keypad()
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
   {
     g.comment_flag == 0;
+    // !!! This should only be done occasionally?
     //    display_current_position();
   }
 
@@ -61,18 +62,12 @@ void process_keypad()
   KeyState state = keypad.getState();
 
 
-  // Experimental: trying to add some two-key combinations
-  if (keypad.key[0].stateChanged && (keypad.key[0].kstate == PRESSED) && keypad.key[1].stateChanged && (keypad.key[1].kstate == PRESSED) && (keypad.key[0].kchar == '#' || keypad.key[0].kchar == '#'))
+  // Experimental: trying to add some two-key combinations. Assuming the Ctrl key (#) is pressed first
+  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && keypad.key[1].stateChanged && (keypad.key[1].kstate == PRESSED))
     // Two-key commands (they all involve the "Ctrl" key - "#")
   {
-    // ind2 is the index of the other (non-#) key
-    short ind2;
-    if (keypad.key[0].kchar == '#')
-      ind2 = 1;
-    else
-      ind2 = 0;
-
-    switch (keypad.key[ind2].kchar)
+    // ??? Not sure if the second key is always in [1]:
+    switch (keypad.key[1].kchar)
     {
       case 'C': // Initiate a full calibration
         // Ignore if moving:
@@ -100,6 +95,7 @@ void process_keypad()
       case '2': // Save parameters to first memory bank
         g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
         EEPROM.put( ADDR_REG1, g.reg1);
+        display_comment_line("Saved to Reg1 ");
         break;
 
       case '3': // Read parameters from first memory bank
@@ -109,11 +105,21 @@ void process_keypad()
         g.i_fps = g.reg1.i_fps;
         g.point1 = g.reg1.point1;
         g.point2 = g.reg1.point2;
+        g.msteps_per_frame = Msteps_per_frame();
+        g.Nframes = Nframes();
+        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+        EEPROM.put( ADDR_I_FPS, g.i_fps);
+        EEPROM.put( ADDR_POINT1, g.point1);
+        EEPROM.put( ADDR_POINT2, g.point2);
+        display_all("");
+        display_comment_line("Read from Reg1");
         break;
 
       case '5': // Save parameters to second memory bank
         g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
         EEPROM.put( ADDR_REG2, g.reg2);
+        display_comment_line("Saved to Reg2 ");
         break;
 
       case '6': // Read parameters from second memory bank
@@ -123,11 +129,21 @@ void process_keypad()
         g.i_fps = g.reg2.i_fps;
         g.point1 = g.reg2.point1;
         g.point2 = g.reg2.point2;
+        g.msteps_per_frame = Msteps_per_frame();
+        g.Nframes = Nframes();
+        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+        EEPROM.put( ADDR_I_FPS, g.i_fps);
+        EEPROM.put( ADDR_POINT1, g.point1);
+        EEPROM.put( ADDR_POINT2, g.point2);
+        display_all("");
+        display_comment_line("Read from Reg2");
         break;
 
       case '8': // Save parameters to third memory bank
         g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
         EEPROM.put( ADDR_REG3, g.reg3);
+        display_comment_line("Saved to Reg3 ");
         break;
 
       case '9': // Read parameters from third memory bank
@@ -137,6 +153,30 @@ void process_keypad()
         g.i_fps = g.reg3.i_fps;
         g.point1 = g.reg3.point1;
         g.point2 = g.reg3.point2;
+        g.msteps_per_frame = Msteps_per_frame();
+        g.Nframes = Nframes();
+        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+        EEPROM.put( ADDR_I_FPS, g.i_fps);
+        EEPROM.put( ADDR_POINT1, g.point1);
+        EEPROM.put( ADDR_POINT2, g.point2);
+        display_all("");
+        display_comment_line("Read from Reg3");
+        break;
+
+      case '4': // Backlighting control
+        g.backlight++;
+        if (g.backlight > 2)
+          g.backlight = 0;
+        set_backlight();
+        break;
+
+      case '1': // Factory reset
+        factory_reset();
+        g.calibrate_flag = 0;
+        if (g.calibrate == 3)
+          g.calibrate_warning = 1;
+        g.calibrate_init = g.calibrate;
         break;
     }
   }
@@ -430,13 +470,6 @@ void process_keypad()
                 break;
               EEPROM.put( ADDR_I_FPS, g.i_fps);
               display_all(" ");
-              break;
-
-            case '#':  // For now using to cycle through 3 backlight levels
-              g.backlight++;
-              if (g.backlight > 2)
-                g.backlight = 0;
-              set_backlight();
               break;
 
           } // End of case
