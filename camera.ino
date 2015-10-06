@@ -10,22 +10,27 @@ void camera()
   if (g.stacker_mode >= 2)
   {
 #ifdef DEBUG
-/*
-        Serial.print(" g.pos_to_shoot=");
-        Serial.print(g.pos_to_shoot);
-        Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
-        Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
-        Serial.print(", g.shutter_on=");
-        Serial.println(g.shutter_on);
-        */
-#endif  
+   if (flag == 0)
+    {
+      Serial.print(" g.pos_to_shoot=");
+      Serial.print(g.pos_to_shoot);
+      Serial.print(" stacking_direction=");
+      Serial.print(g.stacking_direction);
+      Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
+      Serial.print(floorMy(g.pos - 0.5 * g.stacking_direction));
+      Serial.print(", g.shutter_on=");
+      Serial.println(g.shutter_on);
+      flag = 1;
+    }
+#endif
     // The additional factor -0.5*g.stacking_direction is to ensure that shutter always triggeres between microsteps:
     // (Make sure that in 2-points mode we always travel one more microstep, to allow the last shot to happen)
-    if (floorMy(g.pos-0.5*g.stacking_direction) == g.pos_to_shoot && g.shutter_on == 0)
+//    if (floorMy(g.pos - 0.5 * g.stacking_direction) == g.pos_to_shoot && g.shutter_on == 0)
+    if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0)
     {
 #ifdef DEBUG
-  Serial.println("Shutter ON");      
-#endif  
+      Serial.println("Shutter ON");
+#endif
       // Setting the shutter on:
       digitalWrite(PIN_SHUTTER, HIGH);
       g.shutter_on = 1;
@@ -44,11 +49,11 @@ void camera()
   }
 
   // Making sure that the shutter is pressed for at least SHUTTER_TIME microseconds
-  if (g.shutter_on==1 && g.t-g.t_shutter>=SHUTTER_TIME_US)
+  if (g.shutter_on == 1 && g.t - g.t_shutter >= SHUTTER_TIME_US)
   {
 #ifdef DEBUG
-  Serial.println("Shutter OFF");      
-#endif  
+    Serial.println("Shutter OFF");
+#endif
     // Releasing the shutter:
     digitalWrite(PIN_SHUTTER, LOW);
     g.shutter_on = 0;

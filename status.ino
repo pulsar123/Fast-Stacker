@@ -234,7 +234,7 @@ void display_u_per_f()
     return;
   sprintf(g.buffer, "%4duf ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
 #ifdef LCD
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 2);
   lcd.print(g.buffer);
 #endif
 #ifdef DEBUG
@@ -254,7 +254,7 @@ void display_fps()
   //  sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
   sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
 #ifdef LCD
-  lcd.setCursor(7, 0);
+  lcd.setCursor(7, 2);
   lcd.print(g.buffer);
 #endif
 #ifdef DEBUG
@@ -279,7 +279,7 @@ void display_one_point_params()
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
   sprintf(g.buffer, "%3d %2d.%01dm %3ds", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt);
 #ifdef LCD
-  lcd.setCursor(0, 1);
+  lcd.setCursor(0, 0);
   lcd.print(g.buffer);
 #endif
 #ifdef DEBUG
@@ -304,7 +304,7 @@ void display_two_point_params()
   //  sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
   sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
 #ifdef LCD
-  lcd.setCursor(0, 2);
+  lcd.setCursor(0, 1);
   lcd.print(g.buffer);
 #endif
 #ifdef DEBUG
@@ -357,6 +357,7 @@ void display_current_position()
 #endif
 #ifdef DEBUG
     //  Serial.println(g.buffer);
+    /*
     Serial.print("pos=");
     Serial.print(g.pos_short_old);
     Serial.print("; g.point1=");
@@ -367,6 +368,7 @@ void display_current_position()
     Serial.print(g.limit1);
     Serial.print("; g.limit2=");
     Serial.println(g.limit2);
+    */
 #endif
   }
   return;

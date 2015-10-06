@@ -22,7 +22,8 @@ void process_keypad()
   {
     g.comment_flag == 0;
     // !!! This should only be done occasionally?
-    //    display_current_position();
+    if (g.moving == 0)
+      display_current_position();
   }
 
 
@@ -52,6 +53,7 @@ void process_keypad()
             Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
             Serial.print(", g.shutter_on=");
             Serial.println(g.shutter_on);
+            delay(10000);
             */
 #endif
   }
@@ -78,14 +80,14 @@ void process_keypad()
         g.calibrate_warning = 1;
         g.calibrate_init = g.calibrate;
         // Displaying the calibrate warning:
-        display_all(" ");
+        display_all("  ");
         break;
 
       case 'B':  // Initiate emergency breaking
         change_speed(0.0, 0);
         // This should be after change_speed(0.0):
         g.breaking = 1;
-        letter_status("B");
+        letter_status("B ");
         g.calibrate = 0;
         g.calibrate_flag = 0;
         g.calibrate_warning = 0;
@@ -112,7 +114,7 @@ void process_keypad()
         EEPROM.put( ADDR_I_FPS, g.i_fps);
         EEPROM.put( ADDR_POINT1, g.point1);
         EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("");
+        display_all("  ");
         display_comment_line("Read from Reg1");
         break;
 
@@ -136,7 +138,7 @@ void process_keypad()
         EEPROM.put( ADDR_I_FPS, g.i_fps);
         EEPROM.put( ADDR_POINT1, g.point1);
         EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("");
+        display_all("  ");
         display_comment_line("Read from Reg2");
         break;
 
@@ -160,7 +162,7 @@ void process_keypad()
         EEPROM.put( ADDR_I_FPS, g.i_fps);
         EEPROM.put( ADDR_POINT1, g.point1);
         EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("");
+        display_all("  ");
         display_comment_line("Read from Reg3");
         break;
 
@@ -173,10 +175,16 @@ void process_keypad()
 
       case '1': // Factory reset
         factory_reset();
-        g.calibrate_flag = 0;
-        if (g.calibrate == 3)
-          g.calibrate_warning = 1;
+        g.calibrate_warning = 1;
         g.calibrate_init = g.calibrate;
+        display_all("  ");
+        break;
+
+      case '7': // Manual camera shutter triggering
+        // Setting the shutter on:
+        digitalWrite(PIN_SHUTTER, HIGH);
+        g.shutter_on = 1;
+        g.t_shutter = g.t;
         break;
     }
   }
@@ -203,7 +211,7 @@ void process_keypad()
             // Any key pressed when calibrate_warning=1 will initiate calibration:
           {
             g.calibrate_warning = 0;
-            display_all(" ");
+            display_all("  ");
             return;
           }
         }
@@ -396,7 +404,7 @@ void process_keypad()
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
               //!!!
               //            display_one_point_params();
-              display_all(" ");
+              display_all("  ");
               break;
 
             case '3':  // Increase parameter n_shots
@@ -417,7 +425,7 @@ void process_keypad()
               g.msteps_per_frame = Msteps_per_frame();
               // Using instead the simplest approach, which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
-              display_all(" ");
+              display_all("  ");
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
               break;
 
@@ -441,7 +449,7 @@ void process_keypad()
               // Using instead the simplest approach, which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-              display_all(" ");
+              display_all("  ");
               break;
 
             case '8':  // Decrease parameter fps
@@ -450,7 +458,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_FPS, g.i_fps);
-              display_all(" ");
+              display_all("  ");
               break;
 
             case '9':  // Increase parameter fps
@@ -469,7 +477,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_FPS, g.i_fps);
-              display_all(" ");
+              display_all("  ");
               break;
 
           } // End of case

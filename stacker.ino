@@ -91,7 +91,7 @@ void setup() {
   lcd.println("Mashchenko");
   lcd.print("  2015");
 #endif
-  //  delay(500);
+  delay(1000);
 
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
@@ -194,7 +194,7 @@ void setup() {
 #ifdef LCD
   lcd.clear();
 #endif
-  display_all(" ");
+  display_all("  ");
 
 #ifdef TIMING
   g.t_old = g.t0;

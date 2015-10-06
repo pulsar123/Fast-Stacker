@@ -36,7 +36,7 @@ void limiters()
     change_speed(0.0, 0);
     // This should be after change_speed(0.0):
     g.breaking = 1;
-    letter_status("B");
+    letter_status("B ");
     display_comment_line("Hit a limiter ");
 
     if (g.calibrate_flag == 0)
@@ -134,7 +134,7 @@ void limiters()
         {
           change_speed(0.0, 0);
           g.breaking = 1;
-          letter_status("B");
+          letter_status("B ");
         }
       }
     }

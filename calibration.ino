@@ -15,7 +15,7 @@ void calibration()
   {
     // Moving towards switch 2 for its calibration:
     change_speed(SPEED_LIMIT, 0);
-    letter_status("C");
+    letter_status("C ");
   }
 
   if (g.calibrate == 1 && g.calibrate_flag == 1)
@@ -30,7 +30,7 @@ void calibration()
     change_speed(-SPEED_LIMIT, 0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;
-    letter_status("C");
+    letter_status("C ");
   }
 
   if (g.calibrate == 2 && g.calibrate_flag == 1)
@@ -49,7 +49,7 @@ void calibration()
     change_speed(SPEED_LIMIT, 0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;
-    letter_status("C");
+    letter_status("C ");
   }
 
   // Cleanup after a single limiter (emergency) calibration is done
@@ -75,7 +75,7 @@ void calibration()
       go_to(g.limit1 + DELTA_LIMITER, SPEED_LIMIT);
     }
     g.calibrate = 0;
-    letter_status(" ");
+    letter_status("  ");
   }
 
   return;

@@ -239,7 +239,7 @@ void stop_now()
     g.stacker_mode = 0;
   }
   // Refresh the whole display:
-  display_all(" ");
+  display_all("  ");
 #ifdef DEBUG
   Serial.println(444);
   Serial.print(" g.moving=");

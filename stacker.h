@@ -49,7 +49,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.03"
+#define VERSION "0.04"
 
 // For debugging with serial monitor:
 //#define DEBUG
@@ -279,6 +279,7 @@ struct global
   struct regist reg1; // Custom parameters saved in register1
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
+  short internal_point; // a hack for 2-point shooting
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;
@@ -287,6 +288,9 @@ struct global
 
 struct global g;
 
+#ifdef DEBUG
+  short flag=0;
+#endif
 
 #endif
 
