@@ -4,16 +4,13 @@
 
    To be used with automated macro rail for focus stacking
 
-BUGS:
- - 2-point stacking doesn't work (no shutter) when initially outside of the interval.
-
 Basic functionality to implement:
  - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the
  motor cable is not attached) at the start, give a warning, and ability to rewind to a safe area
  (only after checking that the cable is attached!).
  - Same if the battery level is below acceptable.
 
-Optional features to implement (require multi-touch keypad handling: # + another key):
+[DONE] Optional features to implement (require multi-touch keypad handling: # + another key):
  # + 0: request full calibration
  # + 1: multi-page help section
  # + 4: change backlighting
@@ -49,7 +46,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.04"
+#define VERSION "0.05"
 
 // For debugging with serial monitor:
 //#define DEBUG

@@ -41,21 +41,6 @@ void process_keypad()
     display_frame_counter();
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
-#ifdef DEBUG
-    /*
-            Serial.print("STACKER2: g.destination_point=");
-            Serial.print(g.destination_point);
-            Serial.print(", g.pos_to_shoot=");
-            Serial.print(g.pos_to_shoot);
-            Serial.print(", g.stacking_direction=");
-            Serial.print(g.stacking_direction);
-            Serial.print(", floorMy(g.pos-0.5*g.stacking_direction)=");
-            Serial.print(floorMy(g.pos-0.5*g.stacking_direction));
-            Serial.print(", g.shutter_on=");
-            Serial.println(g.shutter_on);
-            delay(10000);
-            */
-#endif
   }
 
 
@@ -225,11 +210,6 @@ void process_keypad()
             g.t_last_repeat = g.t;
             g.N_repeats = 1;
           }
-#ifdef DEBUG
-          Serial.print(state);
-          Serial.print(", ");
-          Serial.println(g.N_repeats);
-#endif
           // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
           if (g.t - g.t_last_repeat > T_KEY_REPEAT)
           {
@@ -263,13 +243,6 @@ void process_keypad()
               g.direction = 1;
               motion_status();
               change_speed(SPEED_LIMIT, (short)0);
-#ifdef DEBUG
-              Serial.print(" g.moving=");
-              Serial.println(g.moving);
-              Serial.print(" speed1=");
-              Serial.println(g.speed1, 6);
-#endif
-
               break;
 
             case '4':  // Set foreground point
@@ -358,16 +331,6 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
                 go_to(g.limit1, speed);
-#ifdef DEBUG
-                Serial.print("msteps_per_frame=");
-                Serial.println(g.msteps_per_frame);
-                Serial.print("speed=");
-                Serial.println(speed, 6);
-                Serial.print("g.limit1=");
-                Serial.println(g.limit1);
-                Serial.print("g.limit2=");
-                Serial.println(g.limit2);
-#endif
                 g.frame_counter = 0;
                 display_frame_counter();
                 g.pos_to_shoot = g.pos_short_old;
@@ -501,10 +464,6 @@ void process_keypad()
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED)
         {
           change_speed(0.0, 0);
-#ifdef DEBUG
-          Serial.print(" g.moving=");
-          Serial.println(g.moving);
-#endif
         }
       }
 

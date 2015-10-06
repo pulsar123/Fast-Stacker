@@ -27,12 +27,6 @@ void motor_control()
   new_accel = g.accel;
   instant_stop = 0;
 
-#ifdef DEBUG
-  dt_a = 0;
-  dV = 0;
-  float p1, p2, p3, pp;
-#endif
-
   if (g.accel != 0)
     // Accelerating/decelerating cases
   {
@@ -124,9 +118,6 @@ void motor_control()
     if ((g.speed1 >= 0.0 && g.speed >= 0.0 && pos_short >= g.pos_goto_short || g.speed1 <= 0.0 && g.speed <= 0.0 && pos_short <= g.pos_goto_short)
         && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
     {
-#ifdef DEBUG
-      Serial.println(666);
-#endif
       new_accel = 0;
       instant_stop = 1;
       stop_now();

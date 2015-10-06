@@ -317,14 +317,13 @@ void display_two_point_params()
 void display_two_points()
 /*
  Display the positions (in mm) of two points: foreground, F, and background, B.
- Positions are relative to g.limit1, so should be updated every time it's changes (after calibration).
  */
 {
   if (g.error)
     return;
   //  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP * (float)g.point1, MM_PER_MICROSTEP * (float)g.point2);
-  float p1 = MM_PER_MICROSTEP * (float)(g.point1-g.limit1);
-  float p2 = MM_PER_MICROSTEP * (float)(g.point2-g.limit1);
+  float p1 = MM_PER_MICROSTEP * (float)g.point1;
+  float p2 = MM_PER_MICROSTEP * (float)g.point2;
   sprintf(g.buffer, "F%2d.%02d  B%2d.%02d", (int)p1, (int)(100.0 * (p1 - (int)p1)), (int)p2, (int)(100.0 * (p2 - (int)p2)));
 #ifdef LCD
   lcd.setCursor(0, 3);
@@ -340,13 +339,12 @@ void display_two_points()
 void display_current_position()
 /*
  Display the current position on the transient line
- Positions are relative to g.limit1, so should be updated every time it's changes (after calibration).
  */
 {
   if (g.error)
     return;
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
-  float p = MM_PER_MICROSTEP * (float)(g.pos-g.limit1);
+  float p = MM_PER_MICROSTEP * (float)g.pos;
   sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
   // Do the slow display operation only if the number changed:
   if (strcmp(g.buffer, g.p_buffer) != 0)

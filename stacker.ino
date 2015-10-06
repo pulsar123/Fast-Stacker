@@ -29,12 +29,12 @@ void factory_reset()
 {
   g.pos = 0.0;
   g.calibrate = 3;
-  g.limit1 = -30000;
+  g.limit1 = 0;
   g.limit2 = 30000;
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
-  g.point1 = -3000;
+  g.point1 = 1000;
   g.point2 = 3000;
   g.points_byte = 0;
   g.backlight = 2;
@@ -91,7 +91,7 @@ void setup() {
   lcd.println("Mashchenko");
   lcd.print("  2015");
 #endif
-  delay(1000);
+  delay(500);
 
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
@@ -201,10 +201,6 @@ void setup() {
   g.i_timing = 0;
 #endif
 
-#ifdef DEBUG
-  Serial.print("Initial g.limit1=");
-  Serial.println(g.limit1);
-#endif
 #ifdef MOTOR_DEBUG
   g.calibrate = 0;
 #endif

@@ -70,12 +70,6 @@ void change_speed(float speed1_loc, short moving_mode1)
   if (g.breaking || g.calibrate_flag == 2)
     return;
 
-#ifdef DEBUG
-  Serial.println(111);
-  Serial.print(" speed1_loc=");
-  Serial.println(speed1_loc, 6);
-#endif
-
   g.moving_mode = moving_mode1;
 
   if (speed1_loc >= g.speed)
@@ -108,13 +102,6 @@ void change_speed(float speed1_loc, short moving_mode1)
 
   // Updating the target speed:
   g.speed1 = speed1_loc;
-#ifdef DEBUG
-  Serial.println(222);
-  Serial.print(" speed1=");
-  Serial.print(g.speed1, 6);
-  Serial.print(" g.speed=");
-  Serial.println(g.speed, 6);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -240,11 +227,6 @@ void stop_now()
   }
   // Refresh the whole display:
   display_all("  ");
-#ifdef DEBUG
-  Serial.println(444);
-  Serial.print(" g.moving=");
-  Serial.println(g.moving);
-#endif
 
   return;
 }
@@ -275,6 +257,29 @@ void set_backlight()
       analogWrite(PIN_LCD_LED, 255);
       break;
   }
+  return;
+}
+
+
+void coordinate_recalibration(short limit1_old)
+/*
+  Run this every time g.limit1 changes, to recalibrate all the coordinates, with g.limit1 set to zero.
+  It is assumed that g.limit1 already has the new value; the old one is provided via function argument.
+  Should only be run when g.moving=0.
+ */
+{
+  if (g.moving)
+    return;
+  g.pos = 0.0;
+  g.pos_short_old = 0;
+  g.t0 = g.t;
+  g.pos0 = g.pos;
+  EEPROM.put( ADDR_LIMIT1, g.limit1);
+  // Updating g.limit2 by the same factor:
+  g.limit2 = g.limit2 + (g.limit1 - limit1_old);
+  EEPROM.put( ADDR_LIMIT2, g.limit2);
+  display_all("  ");
+
   return;
 }
 

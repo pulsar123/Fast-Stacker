@@ -6,7 +6,7 @@ void calibration()
  */
 {
 
-// This module only works when not moving:
+  // This module only works when not moving:
   if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.calibrate_warning == 1 || g.error == 1)
     return;
 
@@ -38,12 +38,10 @@ void calibration()
   {
     // Calibration triggered by hitting a limiter
     // Saving the foreround limit:
+    short limit1_old = g.limit1;
     g.limit1 = g.limit_tmp + LIMITER_PAD;
-    EEPROM.put( ADDR_LIMIT1, g.limit1);
-#ifdef DEBUG
-  Serial.print("Writing 1 g.limit1=");
-  Serial.println(g.limit1);
-#endif
+    // Recalibration of all coordinates (setting limit1 to zero):
+    coordinate_recalibration(limit1_old);
 
     // Moving towards switch 2 for its calibration:
     change_speed(SPEED_LIMIT, 0);
@@ -65,12 +63,10 @@ void calibration()
     else if (g.calibrate == 1)
     {
       // Saving the foreround limit:
+      short limit1_old = g.limit1;
       g.limit1 = g.limit_tmp + LIMITER_PAD;
-      EEPROM.put( ADDR_LIMIT1, g.limit1);
-#ifdef DEBUG
-  Serial.print("Writing 2 g.limit1=");
-  Serial.println(g.limit1);
-#endif
+      // Recalibration of all coordinates (setting limit1 to zero):
+      coordinate_recalibration(limit1_old);
       // Travelling back into safe area:
       go_to(g.limit1 + DELTA_LIMITER, SPEED_LIMIT);
     }

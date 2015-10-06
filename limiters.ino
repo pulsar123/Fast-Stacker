@@ -103,18 +103,6 @@ void limiters()
           return;
       }
 
-      // Much simpler way ???:
-      /*
-      if (g.direction == 0)
-        dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
-      else
-        dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
-        */
-
-#ifdef DEBUG
-      //      Serial.print("dx=");
-      //      Serial.println(dx);
-#endif
       // Something wrong:
       if (dx < 0)
         return;
@@ -124,10 +112,6 @@ void limiters()
       {
         // Breaking distance at the current speed:
         dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
-#ifdef DEBUG
-        //        Serial.print("dx_break=");
-        //        Serial.println(dx_break);
-#endif
         // Accurate test (for the current speed):
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch
