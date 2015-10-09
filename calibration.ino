@@ -37,12 +37,11 @@ void calibration()
     // We need to calibrate the background switch (limit2)
   {
     // Calibration triggered by hitting a limiter
-    // Saving the foreround limit:
-    short limit1_old = g.limit1;
+    // Difference between new and old coordinates (to be applied after calibration is done):
+    //    g.coords_change = g.limit_tmp + LIMITER_PAD - g.limit1;
+    g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+    // Current foreground limit in old coordinates:
     g.limit1 = g.limit_tmp + LIMITER_PAD;
-    // Recalibration of all coordinates (setting limit1 to zero):
-    coordinate_recalibration(limit1_old);
-
     // Moving towards switch 2 for its calibration:
     change_speed(SPEED_LIMIT, 0);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
@@ -62,13 +61,13 @@ void calibration()
     }
     else if (g.calibrate == 1)
     {
-      // Saving the foreround limit:
-      short limit1_old = g.limit1;
+      // Difference between new and old coordinates (to be applied after calibration is done):
+      //      g.coords_change = g.limit_tmp + LIMITER_PAD - g.limit1;
+      g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+      // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
-      // Recalibration of all coordinates (setting limit1 to zero):
-      coordinate_recalibration(limit1_old);
       // Travelling back into safe area:
-      go_to(g.limit1 + DELTA_LIMITER, SPEED_LIMIT);
+      go_to(g.limit1 + 2 * BREAKING_DISTANCE, SPEED_LIMIT);
     }
     g.calibrate = 0;
     letter_status("  ");

@@ -227,6 +227,14 @@ void stop_now()
   }
   // Refresh the whole display:
   display_all("  ");
+  g.t_display = g.t;
+
+  if (g.calibrate_flag == 0 && g.coords_change != 0)
+  // We apply the coordinate change after doing calibration:
+  {
+    coordinate_recalibration();
+    g.coords_change = 0;
+  }
 
   return;
 }
@@ -261,24 +269,27 @@ void set_backlight()
 }
 
 
-void coordinate_recalibration(short limit1_old)
+void coordinate_recalibration()
 /*
   Run this every time g.limit1 changes, to recalibrate all the coordinates, with g.limit1 set to zero.
-  It is assumed that g.limit1 already has the new value; the old one is provided via function argument.
-  Should only be run when g.moving=0.
+  Should only be run when g.moving=0, after a calibration is done.
  */
 {
   if (g.moving)
     return;
-  g.pos = 0.0;
-  g.pos_short_old = 0;
-  g.t0 = g.t;
-  g.pos0 = g.pos;
-  EEPROM.put( ADDR_LIMIT1, g.limit1);
-  // Updating g.limit2 by the same factor:
-  g.limit2 = g.limit2 + (g.limit1 - limit1_old);
-  EEPROM.put( ADDR_LIMIT2, g.limit2);
-  display_all("  ");
+//  EEPROM.put( ADDR_LIMIT1, g.limit1);
+
+    g.pos = g.pos + (float)g.coords_change;
+    g.pos_short_old = g.pos_short_old + g.coords_change;
+    g.t0 = g.t;
+    g.pos0 = g.pos;
+    // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
+    g.limit2 = g.limit2 + g.coords_change;
+    EEPROM.put( ADDR_LIMIT2, g.limit2);
+    // In new coordinates, g.limit1 is always zero:
+    g.limit1 = g.limit1 + g.coords_change;
+    EEPROM.put( ADDR_LIMIT1, g.limit1);
+    display_all("  ");
 
   return;
 }

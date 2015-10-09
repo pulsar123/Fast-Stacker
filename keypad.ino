@@ -26,12 +26,18 @@ void process_keypad()
       display_current_position();
   }
 
+  // Refreshing the whole display regularly (only when not moving, as it is slow):
+  if (g.moving==0 && g.t-g.t_display > DISPLAY_REFRESH_TIME)
+  {
+    g.t_display = g.t;
+    display_all("  ");
+  }
+
 
   // ?? Ignore keypad during emergency breaking
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0))
     return;
 
-  // Stuff to do at every call to keypad()
   if (g.stacker_mode == 1 && g.moving == 0)
   {
     // Estimating the required speed in microsteps per microsecond

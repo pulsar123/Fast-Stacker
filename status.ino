@@ -50,8 +50,8 @@ void display_all(char* l)
         lcd.setCursor(0, 1);  lcd.print("nected, or    ");
         lcd.setCursor(0, 2);  lcd.print("limiter is on!");
         lcd.setCursor(0, 3);  lcd.print("Only if cable ");
-        lcd.setCursor(0, 4);  lcd.print("is connected,  ");
-        lcd.setCursor(0, 5);  lcd.print("rewind.        ");
+        lcd.setCursor(0, 4);  lcd.print("is connected, ");
+        lcd.setCursor(0, 5);  lcd.print("rewind.       ");
 #endif
         break;
     } // case

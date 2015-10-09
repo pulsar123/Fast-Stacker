@@ -143,7 +143,7 @@ const float BREAKING_DISTANCE_MM = 2.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const unsigned long SHUTTER_TIME_US = 10000; // Time to keep the shutter button pressed (us)
+const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
@@ -155,6 +155,7 @@ const short ENABLE_DELAY_MS = 3;
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to key a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
+const unsigned long DISPLAY_REFRESH_TIME = 250000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
@@ -234,6 +235,7 @@ struct global
   unsigned long t_key_pressed; // Last time when a key was pressed
   unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   int N_repeats; // Counter of key repeats
+  unsigned long int t_display; // time since the last display refresh (only when not moving)
 
   unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
   unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
@@ -276,7 +278,8 @@ struct global
   struct regist reg1; // Custom parameters saved in register1
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
-  short internal_point; // a hack for 2-point shooting
+//  short internal_point; // a hack for 2-point shooting
+  short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;
