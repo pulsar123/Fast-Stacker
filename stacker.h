@@ -22,7 +22,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.05"
+#define VERSION "0.06"
 
 // For debugging with serial monitor:
 //#define DEBUG
@@ -132,6 +132,8 @@ const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment l
 const unsigned long T_KEY_LAG = 500000; // time in us to key a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const unsigned long DISPLAY_REFRESH_TIME = 250000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
+// If you focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D
+const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
@@ -256,6 +258,8 @@ struct global
   struct regist reg3; // Custom parameters saved in register3
 //  short internal_point; // a hack for 2-point shooting
   short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
+  short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
+  unsigned long int t0_stacking; // time when stacking was initiated;
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;

@@ -34,7 +34,7 @@ void factory_reset()
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
-  g.point1 = 1000;
+  g.point1 = 2000;
   g.point2 = 3000;
   g.points_byte = 0;
   g.backlight = 2;
@@ -188,6 +188,7 @@ void setup() {
   g.frame_counter = 0;
   g.state_old = (KeyState)0;
   g.coords_change = 0;
+  g.start_stacking = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

@@ -265,6 +265,8 @@ void set_backlight()
       analogWrite(PIN_LCD_LED, 255);
       break;
   }
+  // Adds stability to backlight change commands:
+//  delay(100);
   return;
 }
 
@@ -279,6 +281,7 @@ void coordinate_recalibration()
     return;
 //  EEPROM.put( ADDR_LIMIT1, g.limit1);
 
+/*
     g.pos = g.pos + (float)g.coords_change;
     g.pos_short_old = g.pos_short_old + g.coords_change;
     g.t0 = g.t;
@@ -288,6 +291,17 @@ void coordinate_recalibration()
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     // In new coordinates, g.limit1 is always zero:
     g.limit1 = g.limit1 + g.coords_change;
+    */
+    g.pos = g.pos + (float)g.coords_change;
+    g.pos_short_old = g.pos_short_old + g.coords_change;
+    g.t0 = g.t;
+    g.pos0 = g.pos;
+    // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
+    g.limit2 = g.limit2 + g.coords_change;
+    EEPROM.put( ADDR_LIMIT2, g.limit2);
+    // In new coordinates, g.limit1 is always zero:
+    g.limit1 = g.limit1 + g.coords_change;
+    
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     display_all("  ");
 

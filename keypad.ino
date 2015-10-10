@@ -21,13 +21,12 @@ void process_keypad()
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
   {
     g.comment_flag == 0;
-    // !!! This should only be done occasionally?
     if (g.moving == 0)
       display_current_position();
   }
 
-  // Refreshing the whole display regularly (only when not moving, as it is slow):
-  if (g.moving==0 && g.t-g.t_display > DISPLAY_REFRESH_TIME)
+  // Refreshing whole display regularly (only when not moving, as it is slow):
+  if (g.moving == 0 && g.calibrate_warning == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
   {
     g.t_display = g.t;
     display_all("  ");
@@ -40,9 +39,10 @@ void process_keypad()
 
   if (g.stacker_mode == 1 && g.moving == 0)
   {
-    // Estimating the required speed in microsteps per microsecond
-    speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-    go_to(g.destination_point, speed);
+    // The flag means we just initiated stacking:
+    g.start_stacking = 1;
+    // Time when stacking was initiated:
+    g.t0_stacking = g.t;
     g.frame_counter = 0;
     display_frame_counter();
     g.pos_to_shoot = g.pos_short_old;
@@ -293,8 +293,6 @@ void process_keypad()
               // Checking the correctness of point1/2
               if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
               {
-                // Required microsteps per frame:
-                g.msteps_per_frame = Msteps_per_frame();
                 // Using the simplest approach which will result the last shot to always slightly undershoot
                 g.Nframes = Nframes();
                 // Finding the closest point:
@@ -332,11 +330,10 @@ void process_keypad()
               // (better solution would be to stop first)
               if (!g.moving)
               {
-                // Required microsteps per frame:
-                g.msteps_per_frame = Msteps_per_frame();
-                // Estimating the required speed in microsteps per microsecond
-                speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-                go_to(g.limit1, speed);
+                // The flag means we just initiated stacking:
+                g.start_stacking = 1;
+                // Time when stacking was initiated:
+                g.t0_stacking = g.t;
                 g.frame_counter = 0;
                 display_frame_counter();
                 g.pos_to_shoot = g.pos_short_old;
@@ -350,11 +347,10 @@ void process_keypad()
             case 'D':  // Initiate one-point focus stacking forward
               if (!g.moving)
               {
-                // Required microsteps per frame:
-                g.msteps_per_frame = Msteps_per_frame();
-                // Estimating the required speed in microsteps per microsecond
-                speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
-                go_to(g.limit2, speed);
+                // The flag means we just initiated stacking:
+                g.start_stacking = 1;
+                // Time when stacking was initiated:
+                g.t0_stacking = g.t;
                 g.frame_counter = 0;
                 display_frame_counter();
                 g.pos_to_shoot = g.pos_short_old;
