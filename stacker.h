@@ -5,24 +5,7 @@
    To be used with automated macro rail for focus stacking
 
 Basic functionality to implement:
- - [DONE] Emergency handling, at startup and elsewhere. E.g., if a limiter is on (or alternatively, the
- motor cable is not attached) at the start, give a warning, and ability to rewind to a safe area
- (only after checking that the cable is attached!).
- - Same if the battery level is below acceptable.
-
-[DONE] Optional features to implement (require multi-touch keypad handling: # + another key):
- # + 0: request full calibration
- # + 1: multi-page help section
- # + 4: change backlighting
- # + 3: manually enter a custom value for the parameter N_SHOTS
- # + 6: manually enter a custom value for the parameter MM_PER_FRAME
- # + 9: manually enter a custom value for the parameter FPS
- # + 2: save current parameter values to permanent memory, copy #1
- # + A: read parameter values, copy #1
- # + 5: save current parameter values to permanent memory, copy #2
- # + B: read parameter values, copy #2
- # + 8: save current parameter values to permanent memory, copy #3
- # + C: read parameter values, copy #3
+ - Error message if the battery level is below acceptable.
 
 Issues to address:
  - Position accuracy after turning off/on again: the motor will likely move to the
@@ -33,13 +16,6 @@ Issues to address:
  accumulate every time I stop.
  - Apparently stepper motors can't change direction at atarbitrary microsteps, perhaps not
  even at all full steps - needs to be figured out and implemented.
- - [DONE] Very good chance that go_to() will not be accurate to a microstep level (and that is
- required for correct stacking). Possible solution: always travel slightly shorter distance
- (can be tricky if has to reverse direction), and switch to travelling at constant low
- speed (low enough that instant stopping - withing a single microstep - will be
- within ACCEL_LIMIT) when almost at the destionation. Then instantly stop when hitting the exact
- position.
- - [DONE] Change camera() to only trigger shutter between microsteps (to minimize vibrations).
 
 */
 
@@ -143,7 +119,7 @@ const float BREAKING_DISTANCE_MM = 2.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
+const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
 const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
@@ -162,8 +138,8 @@ const unsigned long DISPLAY_REFRESH_TIME = 250000; // time interval in us for re
 const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
 const float MM_PER_FRAME[] = {0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
-// Frame per second parameter (Canon 50D can do up to 4 fps, for 10 shots):
-const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4, 4.5};
+// Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
+const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 

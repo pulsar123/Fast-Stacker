@@ -302,7 +302,10 @@ void display_two_point_params()
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
-  sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  if (g.Nframes < 1000)
+    sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  else
+    sprintf(g.buffer, "*** %2d.%01dm %3ds", (int)dx, (int)((dx - (int)dx) * 10.0), dt);
 #ifdef LCD
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
