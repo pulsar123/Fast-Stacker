@@ -164,7 +164,7 @@ void process_keypad()
         set_backlight();
         break;
 
-      case '1': // Factory reset
+      case '*': // Factory reset
         factory_reset();
         g.calibrate_warning = 1;
         g.calibrate_init = g.calibrate;
@@ -176,6 +176,22 @@ void process_keypad()
         digitalWrite(PIN_SHUTTER, HIGH);
         g.shutter_on = 1;
         g.t_shutter = g.t;
+        break;
+
+      case '1': // Rewind a single frame step
+        // Required microsteps per frame:
+        g.msteps_per_frame = Msteps_per_frame();
+        go_to((short)(g.pos - g.msteps_per_frame), SPEED_LIMIT);
+        g.frame_counter--;
+        display_frame_counter();
+        break;
+
+      case 'D': // Fast-forward a single frame step
+        // Required microsteps per frame:
+        g.msteps_per_frame = Msteps_per_frame();
+        go_to((short)(g.pos + g.msteps_per_frame), SPEED_LIMIT);
+        g.frame_counter++;
+        display_frame_counter();
         break;
     }
   }

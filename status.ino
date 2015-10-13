@@ -113,11 +113,18 @@ void motion_status()
 
 
 void display_frame_counter()
+/*
+ Printing the current stacking frame number in the status line. Allowing for negative (>-100) and
+ positive <1000 numbers.
+ */
 {
   if (g.error)
     return;
   // Printing frame counter:
-  sprintf (g.buffer, "%3u ",  g.frame_counter);
+  if (g.frame_counter > -100 && g.frame_counter < 1000)
+    sprintf (g.buffer, "%3u ",  g.frame_counter);
+  else
+    sprintf (g.buffer, "*** ");
 #ifdef LCD
   lcd.setCursor(5, 5);
   lcd.print (g.buffer); // display line on buffer
