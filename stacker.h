@@ -35,6 +35,9 @@ const unsigned long N_TIMING = 10000;
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current etc.)
 //#define MOTOR_DEBUG
 
+// Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
+#define BATTERY_DEBUG
+
 // If undefined, lcd will not be used
 #define LCD
 
@@ -43,12 +46,6 @@ const unsigned long N_TIMING = 10000;
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
 
-// The option is currently not usable!
-// If defined, each go_to() operation will move the rail slighly shorter distance (by DELTA_POS),
-// and when at the end the low speed SPEED_SMALL is reached, deceleration stops, and motion proceeds
-// at that low speed until the exact  target position is reached, at which point the rail stops
-// instantly (SPEED_SMALL is small enough to ensure that deceleration stays within ACCEL_LIMIT)
-//#define HIGH_ACCURACY
 
 //////// Parameters to be set only once //////////
 
@@ -73,8 +70,12 @@ const short PIN_SHUTTER = 3;
 
 // Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R1 and R2.
 // Assuming R2 is the one directly connected to "+" of the battery, the scaler is (R1+R2)/R2. R1+R2 should be ~0.5M)
-// The second factor is 5.0V/1024/8 (assuming 8 AA batteries)
+// To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R1.
+// The second factor is 5.0V/1024/8 (assumes 8 AA batteries) - don't change it.
 const float VOLTAGE_SCALER = 2.7273 * 0.0390625;
+// Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
+// Set it slightly above the value when the rail with camera starts skipping steps
+const float V_LOW = 1.1;
 
 // Keypad stuff:
 const byte rows = 4; //four rows
@@ -225,7 +226,7 @@ struct global
   short limit_tmp; // temporary value of a new limit when rail hits a limiter
   unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
-  short pos_goto_short; // position to go to
+  float pos_goto; // position to go to
   short moving_mode; // =0 when using speed_change, =1 when using go_to
   short pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
@@ -251,7 +252,7 @@ struct global
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   KeyState state_old;  // keeping old keypas state
-  short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained
+  short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   short backlight; // backlight level; 0,1,2 for now
   struct regist reg1; // Custom parameters saved in register1
   struct regist reg2; // Custom parameters saved in register2

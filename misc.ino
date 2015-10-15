@@ -107,17 +107,19 @@ void change_speed(float speed1_loc, short moving_mode1)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void go_to(short pos1_short, float speed)
+void go_to(float pos1, float speed)
 /* Initiating a travel to pos1 at maximum acceleration and given speed (positive number)
  */
 {
   float speed1_loc;
 
+  short pos1_short = floorMy(pos1);
+
   // We are already there:
   if (g.moving == 0 && pos1_short == g.pos_short_old)
     return;
 
-  if (pos1_short > g.pos_short_old)
+  if (pos1 > g.pos)
     g.direction = 1;
   else
     g.direction = -1;
@@ -125,7 +127,7 @@ void go_to(short pos1_short, float speed)
 
   // Stopping distance in the current direction:
   float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
-  short dx_short = pos1_short - g.pos_short_old;
+  float dx = pos1 - g.pos;
 #ifdef HIGH_ACCURACY
   // Reducing the required travel distance by DELTA_POS (for precise position stopping in motor_control()):
   // The 10* factor is pretty arbitrary - need a better handle on this

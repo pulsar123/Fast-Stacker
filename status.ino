@@ -1,5 +1,5 @@
 /*
- Functions used to print the bottom (status) line on LCD
+ All LCD related functions
 */
 
 void display_all(char* l)
@@ -54,6 +54,18 @@ void display_all(char* l)
         lcd.setCursor(0, 5);  lcd.print("rewind.       ");
 #endif
         break;
+
+      case 2: // Critically low battery level; not used when debugging
+#ifdef LCD
+        lcd.setCursor(0, 0);  lcd.print("Critically low");
+        lcd.setCursor(0, 1);  lcd.print("battery level!");
+        lcd.setCursor(0, 2);  lcd.print("              ");
+        lcd.setCursor(0, 3);  lcd.print("Replace the   ");
+        lcd.setCursor(0, 4);  lcd.print("batteries.    ");
+        lcd.setCursor(0, 5);  lcd.print("              ");
+#endif
+        break;
+
     } // case
   }
 
@@ -188,7 +200,7 @@ void battery_status()
  Measuring the battery voltage and displaying it.
  */
 {
-  if (g.error)
+  if (g.error || g.moving == 1)
     return;
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
   // (to reduce voltage from 12V -> 5V)
@@ -199,19 +211,34 @@ void battery_status()
   sprintf(g.buffer, "%5d.%03d V", (int)V, (int)(1000.0 * (V - (int)V)));
   Serial.println(g.buffer);
 #endif
+
 #ifdef LCD
+#ifdef BATTERY_DEBUG
+  // Printing actual voltage per AA battery (times 100)
+  lcd.setCursor(11, 5);
+  int Vint = (int)(100.0 * V);
+  lcd.print(Vint);
+#else
   lcd.setCursor(12, 5);
   // For now using a simple 3-level indication:
   if (V > 1.25)
     // >50% charge:
     lcd.print("##");
-  else if (V > 1.1)
+  else if (V > V_LOW)
     // Less than 50% charge:
     lcd.print("#.");
   else
     // Critically low charge:
     lcd.print("..");
+#endif // BATTERY_DEBUG
+#endif  // LCD
+
+  // Disabling the rail once V goes below the critical V_LOW voltage
+#ifndef DEBUG
+  if (V < V_LOW)
+    g.error = 2;
 #endif
+
   return;
 }
 
@@ -362,21 +389,6 @@ void display_current_position()
 #ifdef LCD
     lcd.setCursor(0, 4);
     lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-    //  Serial.println(g.buffer);
-    /*
-    Serial.print("pos=");
-    Serial.print(g.pos_short_old);
-    Serial.print("; g.point1=");
-    Serial.print(g.point1);
-    Serial.print("; g.point2=");
-    Serial.print(g.point2);
-    Serial.print("; g.limit1=");
-    Serial.print(g.limit1);
-    Serial.print("; g.limit2=");
-    Serial.println(g.limit2);
-    */
 #endif
   }
   return;

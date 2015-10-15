@@ -34,7 +34,7 @@ void process_keypad()
 
 
   // ?? Ignore keypad during emergency breaking
-  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0))
+  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
 
   if (g.stacker_mode == 1 && g.moving == 0)
@@ -178,18 +178,18 @@ void process_keypad()
         g.t_shutter = g.t;
         break;
 
-      case '1': // Rewind a single frame step
+      case '1': // Rewind a single frame step (no shooting)
         // Required microsteps per frame:
         g.msteps_per_frame = Msteps_per_frame();
-        go_to((short)(g.pos - g.msteps_per_frame), SPEED_LIMIT);
+        go_to(g.pos - g.msteps_per_frame, SPEED_LIMIT);
         g.frame_counter--;
         display_frame_counter();
         break;
 
-      case 'D': // Fast-forward a single frame step
+      case 'D': // Fast-forward a single frame step (no shooting)
         // Required microsteps per frame:
         g.msteps_per_frame = Msteps_per_frame();
-        go_to((short)(g.pos + g.msteps_per_frame), SPEED_LIMIT);
+        go_to(g.pos + g.msteps_per_frame, SPEED_LIMIT);
         g.frame_counter++;
         display_frame_counter();
         break;
