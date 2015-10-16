@@ -310,12 +310,12 @@ void process_keypad()
               break;
 
             case '7':  // Go to the foreground point
-              go_to(g.point1, SPEED_LIMIT);
+              go_to((float)g.point1+0.5, SPEED_LIMIT);
               display_comment_line(" Going to P1  ");
               break;
 
             case 'C':  // Go to the background point
-              go_to(g.point2, SPEED_LIMIT);
+              go_to((float)g.point2+0.5, SPEED_LIMIT);
               display_comment_line(" Going to P2  ");
               break;
 
@@ -333,14 +333,14 @@ void process_keypad()
                 short d2 = (short)abs(delta);
                 if (d1 < d2)
                 {
-                  go_to(g.point1, SPEED_LIMIT);
+                  go_to((float)g.point1+0.5, SPEED_LIMIT);
                   g.starting_point = g.point1;
                   g.destination_point = g.point2;
                   g.stacking_direction = 1;
                 }
                 else
                 {
-                  go_to(g.point2, SPEED_LIMIT);
+                  go_to((float)g.point2+0.5, SPEED_LIMIT);
                   g.starting_point = g.point2;
                   g.destination_point = g.point1;
                   g.stacking_direction = -1;

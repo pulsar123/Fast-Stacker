@@ -57,7 +57,7 @@ void calibration()
       g.limit2 = g.limit_tmp - LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       // Travelling back into safe area:
-      go_to(g.limit2 - DELTA_LIMITER, SPEED_LIMIT);
+      go_to((float)(g.limit2 - DELTA_LIMITER)+0.5, SPEED_LIMIT);
     }
     else if (g.calibrate == 1)
     {
@@ -67,7 +67,7 @@ void calibration()
       // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       // Travelling back into safe area:
-      go_to(g.limit1 + 2 * BREAKING_DISTANCE, SPEED_LIMIT);
+      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE)+0.5, SPEED_LIMIT);
     }
     g.calibrate = 0;
     letter_status("  ");
