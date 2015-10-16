@@ -134,7 +134,7 @@ void display_frame_counter()
     return;
   // Printing frame counter:
   if (g.frame_counter > -100 && g.frame_counter < 1000)
-    sprintf (g.buffer, "%3u ",  g.frame_counter);
+    sprintf (g.buffer, "%3d ",  g.frame_counter);
   else
     sprintf (g.buffer, "*** ");
 #ifdef LCD
@@ -217,7 +217,8 @@ void battery_status()
   // Printing actual voltage per AA battery (times 100)
   lcd.setCursor(11, 5);
   int Vint = (int)(100.0 * V);
-  lcd.print(Vint);
+  sprintf(g.buffer, "%3d", Vint);
+  lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
   // For now using a simple 3-level indication:
@@ -378,7 +379,7 @@ void display_current_position()
  Display the current position on the transient line
  */
 {
-  if (g.error)
+  if (g.error || g.calibrate_warning)
     return;
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
   float p = MM_PER_MICROSTEP * (float)g.pos;

@@ -187,6 +187,7 @@ void setup() {
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
   g.state_old = (KeyState)0;
+  g.state1_old = (KeyState)0;
   g.coords_change = 0;
   g.start_stacking = 0;
 

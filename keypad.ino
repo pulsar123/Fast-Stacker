@@ -53,147 +53,161 @@ void process_keypad()
   // Reading a keypad key if any:
   char key = keypad.getKey();
   KeyState state = keypad.getState();
+  KeyState state1 = keypad.key[1].kstate;
 
 
   // Experimental: trying to add some two-key combinations. Assuming the Ctrl key (#) is pressed first
-  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && keypad.key[1].stateChanged && (keypad.key[1].kstate == PRESSED))
+  //  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && keypad.key[1].stateChanged && (state1 == PRESSED))
+  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
     // Two-key commands (they all involve the "Ctrl" key - "#")
   {
     // ??? Not sure if the second key is always in [1]:
-    switch (keypad.key[1].kchar)
+    if (state1 == PRESSED)
     {
-      case 'C': // Initiate a full calibration
-        // Ignore if moving:
-        if (g.moving == 1)
+      switch (keypad.key[1].kchar)
+      {
+        case 'C': // Initiate a full calibration
+          // Ignore if moving:
+          if (g.moving == 1)
+            break;
+          g.calibrate = 3;
+          g.calibrate_flag = 0;
+          g.calibrate_warning = 1;
+          g.calibrate_init = g.calibrate;
+          // Displaying the calibrate warning:
+          display_all("  ");
           break;
-        g.calibrate = 3;
-        g.calibrate_flag = 0;
-        g.calibrate_warning = 1;
-        g.calibrate_init = g.calibrate;
-        // Displaying the calibrate warning:
-        display_all("  ");
-        break;
 
-      case 'B':  // Initiate emergency breaking
-        change_speed(0.0, 0);
-        // This should be after change_speed(0.0):
-        g.breaking = 1;
-        letter_status("B ");
-        g.calibrate = 0;
-        g.calibrate_flag = 0;
-        g.calibrate_warning = 0;
-        g.calibrate_init = g.calibrate;
-        break;
+        case 'B':  // Initiate emergency breaking
+          change_speed(0.0, 0);
+          // This should be after change_speed(0.0):
+          g.breaking = 1;
+          letter_status("B ");
+          g.calibrate = 0;
+          g.calibrate_flag = 0;
+          g.calibrate_warning = 0;
+          g.calibrate_init = g.calibrate;
+          break;
 
-      case '2': // Save parameters to first memory bank
-        g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
-        EEPROM.put( ADDR_REG1, g.reg1);
-        display_comment_line("Saved to Reg1 ");
-        break;
+        case '2': // Save parameters to first memory bank
+          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+          EEPROM.put( ADDR_REG1, g.reg1);
+          display_comment_line("Saved to Reg1 ");
+          break;
 
-      case '3': // Read parameters from first memory bank
-        EEPROM.get( ADDR_REG1, g.reg1);
-        g.i_n_shots = g.reg1.i_n_shots;
-        g.i_mm_per_frame = g.reg1.i_mm_per_frame;
-        g.i_fps = g.reg1.i_fps;
-        g.point1 = g.reg1.point1;
-        g.point2 = g.reg1.point2;
-        g.msteps_per_frame = Msteps_per_frame();
-        g.Nframes = Nframes();
-        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-        EEPROM.put( ADDR_I_FPS, g.i_fps);
-        EEPROM.put( ADDR_POINT1, g.point1);
-        EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("  ");
-        display_comment_line("Read from Reg1");
-        break;
+        case '3': // Read parameters from first memory bank
+          EEPROM.get( ADDR_REG1, g.reg1);
+          g.i_n_shots = g.reg1.i_n_shots;
+          g.i_mm_per_frame = g.reg1.i_mm_per_frame;
+          g.i_fps = g.reg1.i_fps;
+          g.point1 = g.reg1.point1;
+          g.point2 = g.reg1.point2;
+          g.msteps_per_frame = Msteps_per_frame();
+          g.Nframes = Nframes();
+          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+          EEPROM.put( ADDR_I_FPS, g.i_fps);
+          EEPROM.put( ADDR_POINT1, g.point1);
+          EEPROM.put( ADDR_POINT2, g.point2);
+          display_all("  ");
+          display_comment_line("Read from Reg1");
+          break;
 
-      case '5': // Save parameters to second memory bank
-        g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
-        EEPROM.put( ADDR_REG2, g.reg2);
-        display_comment_line("Saved to Reg2 ");
-        break;
+        case '5': // Save parameters to second memory bank
+          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+          EEPROM.put( ADDR_REG2, g.reg2);
+          display_comment_line("Saved to Reg2 ");
+          break;
 
-      case '6': // Read parameters from second memory bank
-        EEPROM.get( ADDR_REG2, g.reg2);
-        g.i_n_shots = g.reg2.i_n_shots;
-        g.i_mm_per_frame = g.reg2.i_mm_per_frame;
-        g.i_fps = g.reg2.i_fps;
-        g.point1 = g.reg2.point1;
-        g.point2 = g.reg2.point2;
-        g.msteps_per_frame = Msteps_per_frame();
-        g.Nframes = Nframes();
-        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-        EEPROM.put( ADDR_I_FPS, g.i_fps);
-        EEPROM.put( ADDR_POINT1, g.point1);
-        EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("  ");
-        display_comment_line("Read from Reg2");
-        break;
+        case '6': // Read parameters from second memory bank
+          EEPROM.get( ADDR_REG2, g.reg2);
+          g.i_n_shots = g.reg2.i_n_shots;
+          g.i_mm_per_frame = g.reg2.i_mm_per_frame;
+          g.i_fps = g.reg2.i_fps;
+          g.point1 = g.reg2.point1;
+          g.point2 = g.reg2.point2;
+          g.msteps_per_frame = Msteps_per_frame();
+          g.Nframes = Nframes();
+          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+          EEPROM.put( ADDR_I_FPS, g.i_fps);
+          EEPROM.put( ADDR_POINT1, g.point1);
+          EEPROM.put( ADDR_POINT2, g.point2);
+          display_all("  ");
+          display_comment_line("Read from Reg2");
+          break;
 
-      case '8': // Save parameters to third memory bank
-        g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
-        EEPROM.put( ADDR_REG3, g.reg3);
-        display_comment_line("Saved to Reg3 ");
-        break;
+        case '8': // Save parameters to third memory bank
+          g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+          EEPROM.put( ADDR_REG3, g.reg3);
+          display_comment_line("Saved to Reg3 ");
+          break;
 
-      case '9': // Read parameters from third memory bank
-        EEPROM.get( ADDR_REG3, g.reg3);
-        g.i_n_shots = g.reg3.i_n_shots;
-        g.i_mm_per_frame = g.reg3.i_mm_per_frame;
-        g.i_fps = g.reg3.i_fps;
-        g.point1 = g.reg3.point1;
-        g.point2 = g.reg3.point2;
-        g.msteps_per_frame = Msteps_per_frame();
-        g.Nframes = Nframes();
-        EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-        EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-        EEPROM.put( ADDR_I_FPS, g.i_fps);
-        EEPROM.put( ADDR_POINT1, g.point1);
-        EEPROM.put( ADDR_POINT2, g.point2);
-        display_all("  ");
-        display_comment_line("Read from Reg3");
-        break;
+        case '9': // Read parameters from third memory bank
+          EEPROM.get( ADDR_REG3, g.reg3);
+          g.i_n_shots = g.reg3.i_n_shots;
+          g.i_mm_per_frame = g.reg3.i_mm_per_frame;
+          g.i_fps = g.reg3.i_fps;
+          g.point1 = g.reg3.point1;
+          g.point2 = g.reg3.point2;
+          g.msteps_per_frame = Msteps_per_frame();
+          g.Nframes = Nframes();
+          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+          EEPROM.put( ADDR_I_FPS, g.i_fps);
+          EEPROM.put( ADDR_POINT1, g.point1);
+          EEPROM.put( ADDR_POINT2, g.point2);
+          display_all("  ");
+          display_comment_line("Read from Reg3");
+          break;
 
-      case '4': // Backlighting control
-        g.backlight++;
-        if (g.backlight > 2)
-          g.backlight = 0;
-        set_backlight();
-        break;
+        case '4': // Backlighting control
+          g.backlight++;
+          if (g.backlight > 2)
+            g.backlight = 0;
+          set_backlight();
+          break;
 
-      case '*': // Factory reset
-        factory_reset();
-        g.calibrate_warning = 1;
-        g.calibrate_init = g.calibrate;
-        display_all("  ");
-        break;
+        case '*': // Factory reset
+          factory_reset();
+          g.calibrate_warning = 1;
+          g.calibrate_init = g.calibrate;
+          display_all("  ");
+          break;
 
-      case '7': // Manual camera shutter triggering
-        // Setting the shutter on:
-        digitalWrite(PIN_SHUTTER, HIGH);
-        g.shutter_on = 1;
-        g.t_shutter = g.t;
-        break;
+        case '7': // Manual camera shutter triggering
+          // Setting the shutter on:
+          digitalWrite(PIN_SHUTTER, HIGH);
+          g.shutter_on = 1;
+          g.t_shutter = g.t;
+          break;
 
-      case '1': // Rewind a single frame step (no shooting)
-        // Required microsteps per frame:
-        g.msteps_per_frame = Msteps_per_frame();
-        go_to(g.pos - g.msteps_per_frame, SPEED_LIMIT);
-        g.frame_counter--;
-        display_frame_counter();
-        break;
+        case '1': // Rewind a single frame step (no shooting)
+          if (g.moving)
+            break;
+          // Required microsteps per frame:
+          g.msteps_per_frame = Msteps_per_frame();
+          if (g.pos - g.msteps_per_frame < (float)g.limit1)
+            break;
+          go_to(g.pos - g.msteps_per_frame, SPEED_LIMIT);
+          g.frame_counter--;
+          display_frame_counter();
+          break;
 
-      case 'D': // Fast-forward a single frame step (no shooting)
-        // Required microsteps per frame:
-        g.msteps_per_frame = Msteps_per_frame();
-        go_to(g.pos + g.msteps_per_frame, SPEED_LIMIT);
-        g.frame_counter++;
-        display_frame_counter();
-        break;
+        case 'A': // Fast-forward a single frame step (no shooting)
+          if (g.moving)
+            break;
+          // Required microsteps per frame:
+          g.msteps_per_frame = Msteps_per_frame();
+          if (g.pos + g.msteps_per_frame > (float)g.limit2)
+            break;
+          go_to(g.pos + g.msteps_per_frame, SPEED_LIMIT);
+          g.frame_counter++;
+          display_frame_counter();
+          break;
+      } // switch
     }
+    g.state1_old = state1;
   }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

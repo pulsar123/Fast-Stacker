@@ -128,34 +128,26 @@ void go_to(float pos1, float speed)
   // Stopping distance in the current direction:
   float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
   float dx = pos1 - g.pos;
-#ifdef HIGH_ACCURACY
-  // Reducing the required travel distance by DELTA_POS (for precise position stopping in motor_control()):
-  // The 10* factor is pretty arbitrary - need a better handle on this
-  if (dx_short > 10 * DELTA_POS)
-    dx_short = dx_short - DELTA_POS;
-  else if (dx_short < -10 * DELTA_POS)
-    dx_short = dx_short + DELTA_POS;
-#endif
-  if (dx_short > 0 && g.speed >= 0.0)
+  if (dx >= 0.0 && g.speed >= 0.0)
     //  Target in the same direction as the current speed, positive speed
-    if (dx_stop <= (float)dx_short)
+    if (dx_stop <= dx)
       // We can make it by just breaking (no speed change involved):
       speed1_loc = speed;
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
       speed1_loc = -speed;
-  else if (dx_short < 0 && g.speed < 0.0)
+  else if (dx < 0.0 && g.speed < 0.0)
     //  Target in the same direction as the current speed, negative speed
-    if (dx_stop >= (float)dx_short)
+    if (dx >= dx)
       // We can make it by just breaking (no speed change involved):
       speed1_loc = -speed;
     else
       // We can't make it, so will approach the target from the opposite direction (speed change involved):
       speed1_loc = speed;
-  else if (dx_short > 0 && g.speed < 0.0)
+  else if (dx >= 0.0 && g.speed < 0.0)
     // Moving in the wrong direction, have to change direction (negative speed)
     speed1_loc = speed;
-  else if (dx_short < 0 && g.speed >= 0.0)
+  else if (dx < 0.0 && g.speed >= 0.0)
     // Moving in the wrong direction, have to change direction (positive speed)
     speed1_loc = -speed;
 
@@ -165,7 +157,7 @@ void go_to(float pos1, float speed)
   g.pos_stop_flag = 0;
 
   // Global parameter to be used in motor_control():
-  g.pos_goto_short = pos1_short;
+  g.pos_goto = pos1;
 
   return;
 

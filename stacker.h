@@ -72,10 +72,10 @@ const short PIN_SHUTTER = 3;
 // Assuming R2 is the one directly connected to "+" of the battery, the scaler is (R1+R2)/R2. R1+R2 should be ~0.5M)
 // To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R1.
 // The second factor is 5.0V/1024/8 (assumes 8 AA batteries) - don't change it.
-const float VOLTAGE_SCALER = 2.7273 * 0.0390625;
+const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = 1.1;
+const float V_LOW = -1.0;
 
 // Keypad stuff:
 const byte rows = 4; //four rows
@@ -132,7 +132,7 @@ const short ENABLE_DELAY_MS = 3;
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to key a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
-const unsigned long DISPLAY_REFRESH_TIME = 250000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
+const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
 // If you focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D
 const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
 
@@ -251,7 +251,8 @@ struct global
   byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
-  KeyState state_old;  // keeping old keypas state
+  KeyState state_old;  // keeping old key[0] state
+  KeyState state1_old;  // keeping old key[1] state
   short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   short backlight; // backlight level; 0,1,2 for now
   struct regist reg1; // Custom parameters saved in register1
