@@ -22,7 +22,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.07"
+#define VERSION "0.08"
 
 // For debugging with serial monitor:
 //#define DEBUG

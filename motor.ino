@@ -114,8 +114,8 @@ void motor_control()
     // Used in go_to mode
   {
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
-    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && g.pos >= g.pos_goto || g.speed1 <= 0.0 && g.speed <= 0.0 && g.pos <= g.pos_goto)
-        && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
+    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && g.pos >= g.pos_goto || g.speed1 <= 0.0 && g.speed <= 0.0 && g.pos <= g.pos_goto))
+//        && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
     {
       new_accel = 0;
       instant_stop = 1;
@@ -126,9 +126,10 @@ void motor_control()
     {
       // Final position  if a full break were enabled now:
       if (g.speed >= 0.0)
-        g.pos_stop = g.pos + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
+      //The additional -/+1.0 factor is to make the rail stop 1 step later on average, to deal with round-off errors
+        g.pos_stop = g.pos-1.0 + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
       else
-        g.pos_stop = g.pos - 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
+        g.pos_stop = g.pos+1.0 - 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
 
       // Checking if pos_goto is bracketed between pos_stop_old and pos_stop (not checked first time):
       if (g.pos_stop_flag == 1 && ((g.pos_goto > g.pos_stop && g.pos_goto < g.pos_stop_old) || (g.pos_goto < g.pos_stop && g.pos_goto > g.pos_stop_old)))
