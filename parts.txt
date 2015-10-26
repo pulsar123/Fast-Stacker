@@ -25,7 +25,6 @@
 #2.75 23 30 S-video connectors  http://www.ebay.ca/itm/3-Pcs-Mini-DIN-4-Pin-Female-Jack-S-video-Connector-Adapter-Sockets-/321257446741?pt=LH_DefaultDomain_0&hash=item4acc6f9d55
 #0.99 25 14 8 batteries holder fat http://www.ebay.ca/itm/1-PC-New-8-AA-2A-Battery-12V-Clip-Holder-Box-Case-with-6inch-Wire-Leads-Black-SU-/221572055783?pt=LH_DefaultDomain_0&hash=item3396b$
 #1.39 26 14 8 batteries holder long http://www.ebay.ca/itm/1-PC-New-8-AA-2A-Battery-12V-Clip-Holder-Box-Case-with-6-Inches-Wire-Leads-Black-/301571612907?pt=LH_DefaultDomain_0&hash=item4637$
-#3.81 22 - 135x80x32mm enclosure  http://www.ebay.ca/itm/New-Plastic-Project-Box-Electronic-Case-DIY-125-80-32mm-/121251836099?pt=LH_DefaultDomain_0&hash=item1c3b2c30c3
 #10.45 21 - large enclosure http://www.ebay.ca/itm/261752875209
 #3.68 20/21 07/- LCD shield with buttons http://www.ebay.ca/itm/1602-LCD-Board-Keypad-Shield-Blue-Backlight-For-Arduino-Duemilanove-Robot-/321441407279?pt=LH_DefaultDomain_0&hash=item4ad766a12f
 #3.95 20 07 twin wire 5m 24awg  http://www.ebay.com/itm/2-PIN-Wire-Cable-Cord-20AWG-22AWG-24AWG-20-22-24-GAUGE-Black-Red-Wire-New-/170979213641?ssPageName=ADME:L:OU:CA:3160
@@ -48,3 +47,5 @@
 3.48 19 31 ten M3x35 bolts http://www.ebay.com/itm/10Pcs-50pcs-Metric-Thread-M3-304-Stainless-Steel-Hex-Socket-Head-Screw-Bolt-Nut-/321762484601?ssPageName=ADME:L:OU:CA:1120
 2.50 22 - Nokia 5110 display http://www.ebay.ca/itm/291356564507
 3.00 19 - Fifty M3 x 12mm countersunk machine screws http://www.ebay.ca/itm/M3-x-12mm-Slot-Flat-Countersunk-head-Stainless-Steel-Machine-Screws-50-pcs-/171864291058?hash=item2803e8f6f2
+3.81 22 - 135x80x32mm enclosure  http://www.ebay.ca/itm/New-Plastic-Project-Box-Electronic-Case-DIY-125-80-32mm-/121251836099?pt=LH_DefaultDomain_0&hash=item1c3b2c30c3
+

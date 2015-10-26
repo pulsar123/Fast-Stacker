@@ -1,12 +1,22 @@
 == Flash continuous shooting ==
 * Yongnuo 560 with external battery pack
 ** 125 shots at 1/16 power at 1fps
+** >150 shots at 1/16 power at 0.5 fps
+** >30 shots at 1/8 power at 4 fps
+* YN-560 without external pack
+** 15 shots at 4 fps and 1/16
 
- == Schneider Kreuznach Componon 28 mm f/4 reveresed on three extension tubes ==
+== Schneider Kreuznach Componon 28 mm f/4 reveresed on three extension tubes ==
 * Sharpest aperture: f/4 (f/5.6 slightly worse; f/8 much worse)
 * Required step for f/4: 50 um.
 
 == Processing ==
 * Sharper result if zero sharpening before stacking, and then sharpening
 * White balance (Yongnuo 560 at 1/16): 6900K, +38
+
+== Wiki ==
+Use this format to have an external clickable image (first link is to the original image,
+second link - to the small version):
+
+<span class="plainlinks">[https://farm6.staticflickr.com/5675/21490797273_bfcc884ec9_o.jpg https://c2.staticflickr.com/6/5675/21490797273_1ac3411a60_m_d.jpg]</span>
 

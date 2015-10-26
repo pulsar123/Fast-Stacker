@@ -115,6 +115,7 @@ void motor_control()
   {
     // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
     if ((g.speed1 >= 0.0 && g.speed >= 0.0 && g.pos >= g.pos_goto || g.speed1 <= 0.0 && g.speed <= 0.0 && g.pos <= g.pos_goto))
+// !!! Just a hack for now (to fix a rare bug when rail keeps moving and not stopping)    
 //        && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
     {
       new_accel = 0;

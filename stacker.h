@@ -22,7 +22,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.08"
+#define VERSION "0.09"
 
 // For debugging with serial monitor:
 //#define DEBUG
@@ -36,7 +36,7 @@ const unsigned long N_TIMING = 10000;
 //#define MOTOR_DEBUG
 
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
-#define BATTERY_DEBUG
+//#define BATTERY_DEBUG
 
 // If undefined, lcd will not be used
 #define LCD
