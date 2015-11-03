@@ -33,9 +33,6 @@ void camera()
 
   if (g.stacker_mode >= 2)
   {
-    // The additional factor -0.5*g.stacking_direction is to ensure that shutter always triggeres between microsteps:
-    // (Make sure that in 2-points mode we always travel one more microstep, to allow the last shot to happen)
-    //    if (floorMy(g.pos - 0.5 * g.stacking_direction) == g.pos_to_shoot && g.shutter_on == 0)
     if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0)
     {
       // Setting the shutter on:

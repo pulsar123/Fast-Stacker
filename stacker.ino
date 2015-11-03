@@ -2,6 +2,8 @@
 
    Automated macro rail for focus stacking
 
+   Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
+
    The hardware used:
     - Velbon Mag Slider manual macro rail, with some customization
     - Ultrathin 2-Phase 4-Wire 42 Stepper Motor 1.8 Degree 0.7A (http://www.ebay.ca/itm/Ultrathin-2-Phase-4-Wire-42-Stepper-Motor-1-8-Degree-0-7A-e-/261826922341?pt=LH_DefaultDomain_0&hash=item3cf619c765 )
@@ -190,6 +192,7 @@ void setup() {
   g.state1_old = (KeyState)0;
   g.coords_change = 0;
   g.start_stacking = 0;
+  g.paused = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

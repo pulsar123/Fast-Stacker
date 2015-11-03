@@ -235,7 +235,7 @@ struct global
   short starting_point; // The starting point in the focus stacking with two points
   short destination_point; // The destination point in the focus stacking with two points
   short stacking_direction; // 1/-1 for direct/reverse stacking direction
-  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself
+  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself; 3: single-point stacking
   float msteps_per_frame; // Microsteps per frame for focus stacking
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
@@ -258,10 +258,10 @@ struct global
   struct regist reg1; // Custom parameters saved in register1
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
-//  short internal_point; // a hack for 2-point shooting
   short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
   unsigned long int t0_stacking; // time when stacking was initiated;
+  short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;

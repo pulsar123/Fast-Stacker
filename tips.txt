@@ -7,7 +7,11 @@
 ** 15 shots at 4 fps and 1/16
 
 == Schneider Kreuznach Componon 28 mm f/4 reveresed on three extension tubes ==
-* Sharpest aperture: f/4 (f/5.6 slightly worse; f/8 much worse)
+* Aperture:
+** f/4.5 best overall (contrast and sharpness from center to corner)
+** Up to f/7.1: acceptable
+** Full image appearance: f/7.1 looks the best (least amount of halos)
+** f/8.0 and up: bad
 * Required step for f/4: 50 um.
 
 == Processing ==

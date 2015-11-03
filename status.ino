@@ -78,7 +78,7 @@ void letter_status(char* l)
  Display a letter code "l" at the beginning of the status line
  */
 {
-  if (g.error)
+  if (g.error || g.paused)
     return;
 #ifdef LCD
   lcd.setCursor(0, 5);

@@ -15,7 +15,7 @@ void process_keypad()
  All the keypad runtime stuff goes here
  */
 {
-  float speed;
+  float speed, pos_target;
 
   // Disabling the last comment line displaying after COMMENT_DELAY interval:
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
@@ -33,7 +33,7 @@ void process_keypad()
   }
 
 
-  // ?? Ignore keypad during emergency breaking
+  // Ignore keypad during emergency breaking
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
 
@@ -56,19 +56,16 @@ void process_keypad()
   KeyState state1 = keypad.key[1].kstate;
 
 
-  // Experimental: trying to add some two-key combinations. Assuming the Ctrl key (#) is pressed first
-  //  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && keypad.key[1].stateChanged && (state1 == PRESSED))
   if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
     // Two-key commands (they all involve the "Ctrl" key - "#")
   {
-    // ??? Not sure if the second key is always in [1]:
     if (state1 == PRESSED)
     {
       switch (keypad.key[1].kchar)
       {
         case 'C': // Initiate a full calibration
           // Ignore if moving:
-          if (g.moving == 1)
+          if (g.moving == 1 || g.paused)
             break;
           g.calibrate = 3;
           g.calibrate_flag = 0;
@@ -90,12 +87,16 @@ void process_keypad()
           break;
 
         case '2': // Save parameters to first memory bank
+          if (g.paused)
+            break;
           g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
           EEPROM.put( ADDR_REG1, g.reg1);
           display_comment_line("Saved to Reg1 ");
           break;
 
         case '3': // Read parameters from first memory bank
+          if (g.paused)
+            break;
           EEPROM.get( ADDR_REG1, g.reg1);
           g.i_n_shots = g.reg1.i_n_shots;
           g.i_mm_per_frame = g.reg1.i_mm_per_frame;
@@ -114,12 +115,16 @@ void process_keypad()
           break;
 
         case '5': // Save parameters to second memory bank
+          if (g.paused)
+            break;
           g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
           EEPROM.put( ADDR_REG2, g.reg2);
           display_comment_line("Saved to Reg2 ");
           break;
 
         case '6': // Read parameters from second memory bank
+          if (g.paused)
+            break;
           EEPROM.get( ADDR_REG2, g.reg2);
           g.i_n_shots = g.reg2.i_n_shots;
           g.i_mm_per_frame = g.reg2.i_mm_per_frame;
@@ -138,12 +143,16 @@ void process_keypad()
           break;
 
         case '8': // Save parameters to third memory bank
+          if (g.paused)
+            break;
           g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
           EEPROM.put( ADDR_REG3, g.reg3);
           display_comment_line("Saved to Reg3 ");
           break;
 
         case '9': // Read parameters from third memory bank
+          if (g.paused)
+            break;
           EEPROM.get( ADDR_REG3, g.reg3);
           g.i_n_shots = g.reg3.i_n_shots;
           g.i_mm_per_frame = g.reg3.i_mm_per_frame;
@@ -169,6 +178,8 @@ void process_keypad()
           break;
 
         case '*': // Factory reset
+          if (g.paused)
+            break;
           factory_reset();
           g.calibrate_warning = 1;
           g.calibrate_init = g.calibrate;
@@ -189,9 +200,10 @@ void process_keypad()
           g.msteps_per_frame = Msteps_per_frame();
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (g.pos - g.msteps_per_frame < (float)g.limit1 + 100.0)
+          pos_target = g.pos - g.stacking_direction * g.msteps_per_frame;
+          if (pos_target < (float)g.limit1 + 100.0)
             break;
-          go_to(g.pos - g.msteps_per_frame, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT);
           g.frame_counter--;
           display_frame_counter();
           break;
@@ -203,9 +215,10 @@ void process_keypad()
           g.msteps_per_frame = Msteps_per_frame();
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (g.pos + g.msteps_per_frame > (float)g.limit2 - 100.0)
+          pos_target = g.pos + g.stacking_direction * g.msteps_per_frame;
+          if (pos_target > (float)g.limit2 - 100.0)
             break;
-          go_to(g.pos + g.msteps_per_frame, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT);
           g.frame_counter++;
           display_frame_counter();
           break;
@@ -273,23 +286,53 @@ void process_keypad()
 
           switch (key)
           {
-            case '1':  // Rewinding
+            case '1':  // Rewinding, or moving 10 frames back (if paused)
               if (g.pos_short_old <= g.limit1)
                 break;
-              g.direction = -1;
-              motion_status();
-              change_speed(-SPEED_LIMIT, 0);
+              if (g.paused)
+              {
+                if (g.moving)
+                  break;
+                pos_target = g.pos - 10.0 * g.stacking_direction * g.msteps_per_frame;
+                if (pos_target < (float)g.limit1 + 100.0)
+                  break;
+                go_to(pos_target, SPEED_LIMIT);
+                g.frame_counter = g.frame_counter - 10;
+                display_frame_counter();
+              }
+              else
+              {
+                g.direction = -1;
+                motion_status();
+                change_speed(-SPEED_LIMIT, 0);
+              }
               break;
 
-            case 'A':  // Fast forwarding
+            case 'A':  // Fast forwarding, or moving 10 frames forward (if paused)
               if (g.pos_short_old >= g.limit2)
                 break;
-              g.direction = 1;
-              motion_status();
-              change_speed(SPEED_LIMIT, (short)0);
+              if (g.paused)
+              {
+                if (g.moving)
+                  break;
+                pos_target = g.pos + 10.0 * g.stacking_direction * g.msteps_per_frame;
+                if (pos_target > (float)g.limit1 - 100.0)
+                  break;
+                go_to(pos_target, SPEED_LIMIT);
+                g.frame_counter = g.frame_counter + 10;
+                display_frame_counter();
+              }
+              else
+              {
+                g.direction = 1;
+                motion_status();
+                change_speed(SPEED_LIMIT, (short)0);
+              }
               break;
 
             case '4':  // Set foreground point
+              if (g.paused || g.moving)
+                break;
               g.point1 = g.pos_short_old;
               if (g.points_byte == 0 || g.points_byte == 2)
                 g.points_byte = g.points_byte + 1;
@@ -304,6 +347,8 @@ void process_keypad()
               break;
 
             case 'B':  // Set background point
+              if (g.paused || g.moving)
+                break;
               g.point2 = g.pos_short_old;
               if (g.points_byte == 0 || g.points_byte == 1)
                 g.points_byte = g.points_byte + 2;
@@ -318,11 +363,15 @@ void process_keypad()
               break;
 
             case '7':  // Go to the foreground point
+              if (g.paused)
+                break;
               go_to((float)g.point1 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P1  ");
               break;
 
             case 'C':  // Go to the background point
+              if (g.paused)
+                break;
               go_to((float)g.point2 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P2  ");
               break;
@@ -331,30 +380,48 @@ void process_keypad()
               // Checking the correctness of point1/2
               if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
               {
-                // Using the simplest approach which will result the last shot to always slightly undershoot
-                g.Nframes = Nframes();
-                // Finding the closest point:
-                // Need to compute delta separately because of the limitations of arduino abs():
-                short delta = g.pos_short_old - g.point1;
-                short d1 = (short)abs(delta);
-                delta = g.pos_short_old - g.point2;
-                short d2 = (short)abs(delta);
-                if (d1 < d2)
+                if (g.paused)
+                  // Resuming 2-point stacking from a paused state
                 {
-                  go_to((float)g.point1 + 0.5, SPEED_LIMIT);
-                  g.starting_point = g.point1;
-                  g.destination_point = g.point2;
-                  g.stacking_direction = 1;
+                  if (g.moving)
+                    break;
+                  // The flag means we just initiated stacking (used to make the first shot longer):
+                  g.start_stacking = 1;
+                  // Time when stacking was initiated:
+                  g.t0_stacking = g.t;
+                  // To make sure that a shot is taken at the current position:
+                  g.pos_to_shoot = g.pos_short_old;
+                  g.stacker_mode = 2;
+                  g.paused = 0;
+                  letter_status("  ");
                 }
                 else
                 {
-                  go_to((float)g.point2 + 0.5, SPEED_LIMIT);
-                  g.starting_point = g.point2;
-                  g.destination_point = g.point1;
-                  g.stacking_direction = -1;
+                  // Using the simplest approach which will result the last shot to always slightly undershoot
+                  g.Nframes = Nframes();
+                  // Finding the closest point:
+                  // Need to compute delta separately because of the limitations of arduino abs():
+                  short delta = g.pos_short_old - g.point1;
+                  short d1 = (short)abs(delta);
+                  delta = g.pos_short_old - g.point2;
+                  short d2 = (short)abs(delta);
+                  if (d1 < d2)
+                  {
+                    go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+                    g.starting_point = g.point1;
+                    g.destination_point = g.point2;
+                    g.stacking_direction = 1;
+                  }
+                  else
+                  {
+                    go_to((float)g.point2 + 0.5, SPEED_LIMIT);
+                    g.starting_point = g.point2;
+                    g.destination_point = g.point1;
+                    g.stacking_direction = -1;
+                  }
+                  g.stacker_mode = 1;
+                  display_comment_line("2-points stack");
                 }
-                g.stacker_mode = 1;
-                display_comment_line("2-points stack");
               }
               else
               {
@@ -366,6 +433,8 @@ void process_keypad()
             case '*':  // Initiate one-point focus stacking backwards
               // Simplest workaround: ignore the command if currently moving
               // (better solution would be to stop first)
+              if (g.paused)
+                break;
               if (!g.moving)
               {
                 // The flag means we just initiated stacking:
@@ -383,6 +452,8 @@ void process_keypad()
               break;
 
             case 'D':  // Initiate one-point focus stacking forward
+              if (g.paused)
+                break;
               if (!g.moving)
               {
                 // The flag means we just initiated stacking:
@@ -400,6 +471,8 @@ void process_keypad()
               break;
 
             case '2':  // Decrease parameter n_shots
+              if (g.paused)
+                break;
               if (g.i_n_shots > 0)
                 g.i_n_shots--;
               else
@@ -411,6 +484,8 @@ void process_keypad()
               break;
 
             case '3':  // Increase parameter n_shots
+              if (g.paused)
+                break;
               if (g.i_n_shots < N_PARAMS - 1)
                 g.i_n_shots++;
               else
@@ -420,6 +495,8 @@ void process_keypad()
               break;
 
             case '5':  // Decrease parameter mm_per_frame
+              if (g.paused)
+                break;
               if (g.i_mm_per_frame > 0)
                 g.i_mm_per_frame--;
               else
@@ -433,6 +510,8 @@ void process_keypad()
               break;
 
             case '6':  // Increase parameter mm_per_frame
+              if (g.paused)
+                break;
               if (g.i_mm_per_frame < N_PARAMS - 1)
               {
                 g.i_mm_per_frame++;
@@ -456,6 +535,8 @@ void process_keypad()
               break;
 
             case '8':  // Decrease parameter fps
+              if (g.paused)
+                break;
               if (g.i_fps > 0)
                 g.i_fps--;
               else
@@ -465,6 +546,8 @@ void process_keypad()
               break;
 
             case '9':  // Increase parameter fps
+              if (g.paused)
+                break;
               if (g.i_fps < N_PARAMS - 1)
               {
                 g.i_fps++;
@@ -491,7 +574,18 @@ void process_keypad()
           // Any key press in stacking mode interrupts stacking
           g.stacker_mode = 0;
           change_speed(0.0, 0);
-          display_comment_line("Stacking abort");
+          if (g.stacker_mode == 2)
+            // In 2-point stacking, we pause
+          {
+            display_comment_line("    Paused    ");
+            letter_status("P ");
+            g.paused = 1;
+          }
+          else
+            // In 1-point stacking, we abort
+          {
+            display_comment_line("Stacking abort");
+          }
         }
 
       }  // if (PRESSED)
