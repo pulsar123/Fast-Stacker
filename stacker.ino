@@ -193,6 +193,7 @@ void setup() {
   g.coords_change = 0;
   g.start_stacking = 0;
   g.paused = 0;
+  g.starting_point = g.point1;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

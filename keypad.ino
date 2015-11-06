@@ -16,6 +16,7 @@ void process_keypad()
  */
 {
   float speed, pos_target;
+  short frame_counter0;
 
   // Disabling the last comment line displaying after COMMENT_DELAY interval:
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
@@ -206,20 +207,23 @@ void process_keypad()
             break;
           // Required microsteps per frame:
           g.msteps_per_frame = Msteps_per_frame();
-          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
-          // move the rail beyond g.limit1
-          g.frame_counter--;
+          frame_counter0 = g.frame_counter;
           if (g.paused)
           {
+            g.frame_counter = g.frame_counter - g.stacking_direction;
             pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
           else
           {
+            g.frame_counter--;
             pos_target = g.pos - g.msteps_per_frame;
           }
+          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
+          // move the rail beyond g.limit1
           if (pos_target < (float)g.limit1 + 100.0)
           {
-            g.frame_counter++;
+            // Recovering the original frame counter if aborting:
+            g.frame_counter = frame_counter0;
             break;
           }
           go_to(pos_target, SPEED_LIMIT);
@@ -231,25 +235,35 @@ void process_keypad()
             break;
           // Required microsteps per frame:
           g.msteps_per_frame = Msteps_per_frame();
-          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
-          // move the rail beyond g.limit1
-          g.frame_counter++;
+          frame_counter0 = g.frame_counter;
           if (g.paused)
           {
+            g.frame_counter = g.frame_counter + g.stacking_direction;
             pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
           else
           {
+            g.frame_counter++;
             pos_target = g.pos + g.msteps_per_frame;
           }
+          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
+          // move the rail beyond g.limit1
           if (pos_target > (float)g.limit1 - 100.0)
           {
-            g.frame_counter--;
+            g.frame_counter = frame_counter0;
             break;
           }
           go_to(pos_target, SPEED_LIMIT);
           display_frame_counter();
           break;
+
+        case 'D':  // Go to the last starting point (for both 1- and 2-point shooting)
+          if (g.paused)
+            break;
+          go_to((float)g.starting_point + 0.5, SPEED_LIMIT);
+          display_comment_line(" Going to P0  ");
+          break;
+
       } // switch
     }
     g.state1_old = state1;
@@ -321,11 +335,12 @@ void process_keypad()
               {
                 if (g.moving)
                   break;
-                g.frame_counter = g.frame_counter - 10;
+                frame_counter0 = g.frame_counter;
+                g.frame_counter = g.frame_counter - 10 * g.stacking_direction;
                 pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
                 if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit1 - 100.0)
                 {
-                  g.frame_counter = g.frame_counter + 10;
+                  g.frame_counter = frame_counter0;
                   break;
                 }
                 go_to(pos_target, SPEED_LIMIT);
@@ -346,11 +361,12 @@ void process_keypad()
               {
                 if (g.moving)
                   break;
-                g.frame_counter = g.frame_counter + 10;
+                frame_counter0 = g.frame_counter;
+                g.frame_counter = g.frame_counter + 10 * g.stacking_direction;
                 pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
                 if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit1 - 100.0)
                 {
-                  g.frame_counter = g.frame_counter - 10;
+                  g.frame_counter = frame_counter0;
                   break;
                 }
                 go_to(pos_target, SPEED_LIMIT);
@@ -599,6 +615,7 @@ void process_keypad()
               EEPROM.put( ADDR_I_FPS, g.i_fps);
               display_all("  ");
               break;
+
 
           } // End of case
         }

@@ -16,6 +16,7 @@
 
 == Processing ==
 * Sharper result if zero sharpening before stacking, and then sharpening
+* Smart sharpening: 2.5-3 pix, 200%, lens blur
 * White balance (Yongnuo 560 at 1/16): 6900K, +38
 
 == Wiki ==
