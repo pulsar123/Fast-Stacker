@@ -179,6 +179,7 @@ void setup() {
   g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
   g.pos_short_old = floorMy(g.pos);
+  g.pos_dir_change_short = g.pos_short_old;
   g.t0 = micros();
   g.t = g.t0;
   g.t_key_pressed = g.t0;
@@ -194,6 +195,7 @@ void setup() {
   g.start_stacking = 0;
   g.paused = 0;
   g.starting_point = g.point1;
+  g.backlash_step = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

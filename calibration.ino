@@ -23,7 +23,7 @@ void calibration()
   {
     // Calibration triggered by hitting the background limiter
     // Saving the backround limit, minus a constant:
-    g.limit2 = g.limit_tmp - LIMITER_PAD;
+    g.limit2 = g.limit_tmp - LIMITER_PAD - BACKLASH;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
 
     // Moving towards switch 1 for its calibration:

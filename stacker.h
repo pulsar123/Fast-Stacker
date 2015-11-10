@@ -75,7 +75,7 @@ const short PIN_SHUTTER = 3;
 const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = -1.0;
+const float V_LOW = 1.125;
 
 // Keypad stuff:
 const byte rows = 4; //four rows
@@ -106,6 +106,11 @@ const short MOTOR_STEPS = 200;
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
+// Backlash compensation (in mm); all goto commands moving forward (positive speed) will travel that much extra distance, and then travel
+// in the backwards direction to the destionation point.
+// Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
+// sequence will look alsmost identical)
+const float BACKLASH_MM = 0.05;
 
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
@@ -164,6 +169,8 @@ const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-3 * SPEED_SMALL;
+// Backlash in microsteps:
+const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP);
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -262,6 +269,9 @@ struct global
   short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
+  short backlash_step; // =0 in a single-step go_to; =1 when doing the first go_to call (to target minus BACKLASH); =2 when doing the second go_to call (to the target)
+  float actual_target; // the actual position target for go_to
+  short pos_dir_change_short; // The last position (since the power-up) when the rail direction changed. To be used for backlash compensation
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;
