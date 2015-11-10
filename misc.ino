@@ -134,7 +134,7 @@ void go_to(float pos1, float speed)
   float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
   float dx = pos1 - g.pos;
 
-  // Determining whether the speed will have to change to arrive at the destination:
+  // Determining whether the speed will have to change to arrive at the destination (no backlash compensation accounted for yet):
   short speed_changes = 0;
   if (dx >= 0.0 && g.speed >= 0.0)
     //  Target in the same direction as the current speed, positive speed
@@ -146,7 +146,7 @@ void go_to(float pos1, float speed)
       speed_changes = 1;
   else if (dx < 0.0 && g.speed < 0.0)
     //  Target in the same direction as the current speed, negative speed
-    if (dx >= dx)
+    if (dx_stop <= -dx)
       // We can make it by just breaking (no speed change involved):
       speed_changes = 0;
     else
@@ -161,7 +161,7 @@ void go_to(float pos1, float speed)
 
   // Backlash is only compensated for non-stacking moves (rewind etc.):
   if (g.backlash_step == 0 && g.stacker_mode < 2 &&
-      // Identifying all the cases when to achieve full backlash compensation we need to use goto twice: first goto pos1+BACKLASH, then goto pos1
+      // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1+BACKLASH, then goto pos1
       (g.speed > 0.0 && !speed_changes ||
        g.speed <= 0.0 && !speed_changes && del_dir1 < BACKLASH ||
        g.speed > 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
@@ -172,7 +172,6 @@ void go_to(float pos1, float speed)
     g.actual_target = pos1;
     // Current target position (to be achieved in the current go_to call):
     pos1 = pos1 + (float)BACKLASH;
-    // ??? A spot to fix the potential issue of going over g.limit2 - probably not needed as we already use a smaller (by LIMITER_PAD) value for g.limit2
     // In all of these cases, speed1>0.0 in the first go_to
     speed1_loc = speed;
     g.backlash_step = 1;
