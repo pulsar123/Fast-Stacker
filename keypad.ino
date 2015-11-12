@@ -257,7 +257,7 @@ void process_keypad()
           display_frame_counter();
           break;
 
-        case 'D':  // Go to the last starting point (for both 1- and 2-point shooting)
+        case 'D':  // Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
           if (g.paused)
             break;
           go_to((float)g.starting_point + 0.5, SPEED_LIMIT);

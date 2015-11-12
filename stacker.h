@@ -33,7 +33,8 @@ Issues to address:
 const unsigned long N_TIMING = 10000;
 
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current etc.)
-//#define MOTOR_DEBUG
+//!!!!
+#define MOTOR_DEBUG
 
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
@@ -110,7 +111,7 @@ const float MM_PER_ROTATION = 3.98;
 // in the backwards direction to the destionation point.
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical)
-const float BACKLASH_MM = 0.05;
+const float BACKLASH_MM = 1.0;
 
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
@@ -269,9 +270,8 @@ struct global
   short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
-  short backlash_step; // =0 in a single-step go_to; =1 when doing the first go_to call (to target minus BACKLASH); =2 when doing the second go_to call (to the target)
-  float actual_target; // the actual position target for go_to
-  short pos_dir_change_short; // The last position (since the power-up) when the rail direction changed. To be used for backlash compensation
+  short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
+  short first_loop; // =1 during the first loop, 0 after that
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;

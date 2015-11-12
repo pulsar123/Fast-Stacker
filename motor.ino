@@ -80,8 +80,6 @@ void motor_control()
     digitalWrite(PIN_DIR, HIGH);
 #endif
     delayMicroseconds(STEP_LOW_DT);
-    // Memorizing the position of the last direction change (to be used for backlash compensation)
-    g.pos_dir_change_short = pos_short;
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
@@ -89,8 +87,6 @@ void motor_control()
     digitalWrite(PIN_DIR, LOW);
 #endif
     delayMicroseconds(STEP_LOW_DT);
-    // Memorizing the position of the last direction change (to be used for backlash compensation)
-    g.pos_dir_change_short = pos_short;
   }
 
   // If the pos_short changed since the last step, do another step
@@ -107,6 +103,20 @@ void motor_control()
 #ifndef DEBUG
     digitalWrite(PIN_STEP, HIGH);
 #endif
+    // Measuring backlash compensation:
+    if (pos_short > g.pos_short_old)
+      // Going to good (+) direction, so BL_counter should be decreasing:
+    {
+      if (g.BL_counter > 0)
+        g.BL_counter--;
+    }
+    else
+      // Going to bad (-) direction, so BL_counter should be increasing:
+    {
+      if (g.BL_counter < BACKLASH)
+        g.BL_counter++;
+    }
+
 
     // Saving the current position as old:
     g.pos_short_old = pos_short;

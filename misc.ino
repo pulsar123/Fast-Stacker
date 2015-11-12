@@ -110,91 +110,95 @@ void change_speed(float speed1_loc, short moving_mode1)
 
 void go_to(float pos1, float speed)
 /* Initiating a travel to pos1 at maximum acceleration and given speed (positive number)
-   Now, with backlash compensation, this function needs to be called once - first explicitely, it will initiate
-   travelling to pos1-BACKLASH, then automatically, to the original (actual) target. The automatic part is triggered
-   inside stop_now().
  */
 {
   float speed1_loc;
+  short speed_changes;
 
-  short pos1_short = floorMy(pos1);
-  short del_dir1 = g.pos_dir_change_short - pos1_short;
-
-  // We are already there, and no need for backlash compensation:
-  if (g.moving == 0 && pos1_short == g.pos_short_old && del_dir1 >= BACKLASH)
+  if (g.breaking)
     return;
 
+  short pos1_short = floorMy(pos1);
+
+  // We are already there, and no need for backlash compensation, so just returning:
+  if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == 0)
+    return;
+
+  // The "ideal" direction, if there was no acceleration limit and no need for backlash compensation:
   if (pos1 > g.pos)
     g.direction = 1;
   else
     g.direction = -1;
   motion_status();
 
-  // Stopping distance in the current direction:
-  float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
-  float dx = pos1 - g.pos;
-
-  // Determining whether the speed will have to change to arrive at the destination (no backlash compensation accounted for yet):
-  short speed_changes = 0;
-  if (dx >= 0.0 && g.speed >= 0.0)
-    //  Target in the same direction as the current speed, positive speed
-    if (dx_stop <= dx)
-      // We can make it by just breaking (no speed change involved):
-      speed_changes = 0;
-    else
-      // We can't make it, so will approach the target from the opposite direction (speed change involved):
-      speed_changes = 1;
-  else if (dx < 0.0 && g.speed < 0.0)
-    //  Target in the same direction as the current speed, negative speed
-    if (dx_stop <= -dx)
-      // We can make it by just breaking (no speed change involved):
-      speed_changes = 0;
-    else
-      // We can't make it, so will approach the target from the opposite direction (speed change involved):
-      speed_changes = 1;
-  else if (dx >= 0.0 && g.speed < 0.0)
-    // Moving in the wrong direction, have to change direction (negative speed)
-    speed_changes = 1;
-  else if (dx < 0.0 && g.speed >= 0.0)
-    // Moving in the wrong direction, have to change direction (positive speed)
-    speed_changes = 1;
-
-  // Backlash is only compensated for non-stacking moves (rewind etc.):
-  if (g.backlash_step == 0 && g.stacker_mode < 2 &&
-      // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1+BACKLASH, then goto pos1
-      (g.speed > 0.0 && !speed_changes ||
-       g.speed <= 0.0 && !speed_changes && del_dir1 < BACKLASH ||
-       g.speed > 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
-       g.speed <= 0.0 && speed_changes ||
-       g.moving == 0 && pos1_short == g.pos_short_old && del_dir1 < BACKLASH))
+  // Considering separately the cases when we are at rest, and when we are currently moving
+  if (g.moving == 0)
+    // We are at rest
   {
-    // Actual target position (to be achieved in the second go_to call, when backlash_step=1):
-    g.actual_target = pos1;
-    // Current target position (to be achieved in the current go_to call):
-    pos1 = pos1 + (float)BACKLASH;
-    // In all of these cases, speed1>0.0 in the first go_to
-    speed1_loc = speed;
-    g.backlash_step = 1;
-  }
-  else
-    // Either single-step go_to operations, or second go_to in a two-step procedure - for backlash compensation
-  {
-    if (g.speed >= 0.0 && !speed_changes || g.speed < 0.0 && speed_changes)
+    if (g.direction > 0)
+      // Will be moving in the good (positive) direction (no need for backlash compensation):
+    {
       speed1_loc = speed;
+    }
     else
+      // Will be moving in the bad (negative) direction (have to overshoot, for backlash compensation):
+    {
+      // Overshooting by BACKLASH microsteps (this will be compenstaed in backlash() function after we stop):
+      pos1 = pos1 - (float)BACKLASH;
       speed1_loc = -speed;
+    }
   }
 
-  if (g.backlash_step == 2)
-    g.backlash_step = 0;
+  else
+    // We are currently moving
+  {
+    // Stopping distance in the current direction:
+    float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
+    // Travel vector (ignoring acceleration limit and backlash compensation):
+    float dx_vec = pos1 - g.pos;
+    float dx = fabs(dx_vec);
+    // Number of whole steps to take if going straight to the target:
+    short dx_steps = pos1_short - g.pos_short_old;
+
+    // All the cases when speed sign will change while traveling to the target:
+    // When we move in the correct direction, but cannot stop in time because of the acceleration limit
+    if (dx < dx_stop && (g.direction > 0 && g.speed > 0.0 || g.direction < 0 && g.speed <= 0.0) ||
+        // When we are moving in the wrong direction
+        g.direction > 0 && g.speed <= 0.0 || g.direction < 0 && g.speed > 0.0)
+      speed_changes = 1;
+    else
+      // In all other cases speed sign will be constant:
+      speed_changes = 0;
+
+    // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1-BACKLASH, then goto pos1
+    // (The second goto is initiated in backlash() )
+    if (
+      // Moving towards the target, in the bad (negative) direction:
+      g.speed <= 0.0 && !speed_changes ||
+      // Moving towards the target, in the good direction, but not far enough to compensate for the current backlash:
+      g.speed > 0.0 && !speed_changes && g.BL_counter > 0 ||
+      g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
+      g.speed > 0.0 && speed_changes)
+    {
+      // Current target position (to be achieved in the current go_to call):
+      pos1 = pos1 - (float)BACKLASH;
+      // In all of these cases, speed1<0.0 in the first go_to
+      speed1_loc = -speed;
+    }
+    else
+      // In all other cases we will approach the target with the good (positive) speed sign
+    {
+      speed1_loc = speed;
+    }
+  }
+
+  // Global parameter to be used in motor_control():
+  g.pos_goto = pos1;
 
   // Setting the target speed and moving_mode=1:
   change_speed(speed1_loc, 1);
 
   g.pos_stop_flag = 0;
-
-  // Global parameter to be used in motor_control():
-  g.pos_goto = pos1;
 
   return;
 
@@ -265,14 +269,6 @@ void stop_now()
   {
     coordinate_recalibration();
     g.coords_change = 0;
-  }
-
-  // Second (small) go_to travel, to enable backlash compensation
-  if (g.backlash_step == 1)
-  {
-    g.backlash_step == 2;
-    // Using maximum spped for the second (usually smaller) go_to in backlash compensation sequence, as it is never used during stacking:
-    go_to(g.actual_target, SPEED_LIMIT);
   }
 
   return;
