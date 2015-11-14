@@ -131,6 +131,7 @@ void display_frame_counter()
 /*
  Printing the current stacking frame number in the status line. Allowing for negative (>-100) and
  positive <1000 numbers.
+ Very expensive (time-wise)! Can result in up to 0.5% of microsteps skipped.
  */
 {
   if (g.error)
@@ -241,8 +242,10 @@ void battery_status()
 
   // Disabling the rail once V goes below the critical V_LOW voltage
 #ifndef DEBUG
+#ifndef MOTOR_DEBUG
   if (V < V_LOW)
     g.error = 2;
+#endif
 #endif
 
   return;
@@ -391,18 +394,29 @@ void display_current_position()
  Display the current position on the transient line
  */
 {
+  // Displaying the line only every Nth loop, for better efficiency:
+  /*
+  g.display4_counter++;
+  if (g.display4_counter < 1000)
+    return;
+  g.display4_counter = 0;
+  */
+
   if (g.error || g.calibrate_warning)
     return;
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
   float p = MM_PER_MICROSTEP * (float)g.pos;
-  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
+  //  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
+  //  sprintf(g.buffer, "%2d.%02dmm %4d  ", (int)p, (int)(100.0 * (p - (int)p)), g.BL_counter);
+  sprintf(g.buffer, "%4d %2d %2d %3d", cplus1, cplus2, cmax, imax);
   // Do the slow display operation only if the number changed:
-  if (strcmp(g.buffer, g.p_buffer) != 0)
+//  if (strcmp(g.buffer, g.p_buffer) != 0)
   {
 #ifdef LCD
     lcd.setCursor(0, 4);
     lcd.print(g.buffer);
 #endif
+//    strcpy(g.p_buffer, g.buffer);
   }
   return;
 }

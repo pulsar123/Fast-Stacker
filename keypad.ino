@@ -331,6 +331,10 @@ void process_keypad()
             case '1':  // Rewinding, or moving 10 frames back for the current stacking direction (if paused)
               if (g.pos_short_old <= g.limit1)
                 break;
+#ifdef MOTOR_DEBUG
+              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cmax = 0;  istep = 0;
+#endif
               if (g.paused)
               {
                 if (g.moving)
@@ -357,6 +361,10 @@ void process_keypad()
             case 'A':  // Fast forwarding, or moving 10 frames forward  for the current stacking direction (if paused)
               if (g.pos_short_old >= g.limit2)
                 break;
+#ifdef MOTOR_DEBUG
+              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cmax = 0;  istep = 0;
+#endif
               if (g.paused)
               {
                 if (g.moving)
@@ -415,6 +423,10 @@ void process_keypad()
             case '7':  // Go to the foreground point
               if (g.paused)
                 break;
+#ifdef MOTOR_DEBUG
+              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cmax = 0;  istep = 0;
+#endif
               go_to((float)g.point1 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P1  ");
               break;
@@ -422,6 +434,10 @@ void process_keypad()
             case 'C':  // Go to the background point
               if (g.paused)
                 break;
+#ifdef MOTOR_DEBUG
+              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cmax = 0;  istep = 0;
+#endif
               go_to((float)g.point2 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P2  ");
               break;

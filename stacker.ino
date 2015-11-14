@@ -18,10 +18,17 @@
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
     - Keypad library: http://playground.arduino.cc/Code/Keypad
 
+   Hardware revisions [software versions supported]:
+
+   v1.0 [0.08]: Original public release design.
+   
+   v1.1 [0.09]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7. 
+                Instead, display SCE pin is soldered to the ground via 15k (pulldown) resistor.
 */
 #include <EEPROM.h>
 #include <math.h>
-#include <Keypad.h>
+#include <SPI.h>
+#include "Keypad.h"
 #include "pcd8544.h"
 #include "stacker.h"
 #include "stdio.h"
@@ -66,6 +73,7 @@ void setup() {
   g.error = 0;
   g.calibrate_warning = 0;
 
+
   // Setting pins for EasyDriver to OUTPUT:
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
@@ -82,6 +90,8 @@ void setup() {
 #endif
 
 #ifdef LCD
+  // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
+  SPI.setClockDivider(SPI_CLOCK_DIV16);
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -110,12 +120,14 @@ void setup() {
   keypad.setDebounceTime(50);
   g.key_old = '=';
 
+#ifndef MOTOR_DEBUG
   // Limiting switches should not be on when powering up:
   unsigned char limit_on = digitalRead(PIN_LIMITERS);
   if (limit_on == HIGH)
   {
     g.error = 1;
   }
+#endif
 
   // Initializing program parameters:
   g.moving = 0;
@@ -197,6 +209,9 @@ void setup() {
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
   g.BL_counter = BACKLASH;
   g.first_loop == 1;
+  g.started_moving = 0;
+  g.display4_counter = 0;
+//  sprintf(g.p_buffer, "=");
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

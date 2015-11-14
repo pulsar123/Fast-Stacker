@@ -58,7 +58,8 @@ const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save 
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
 const short PIN_LCD_RST = 6;  // Via 10 kOhm resistor
-const short PIN_LCD_SCE = 7;  // Via 1 kOhm resistor
+// Hardware v1.1: no longer used (pin 7 is re-assigned to keypas - in place of pin 10)
+const short PIN_LCD_SCE = 7;  // Via 1 kOhm resistor  Chip Select (7)
 const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
 const short PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
 const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
@@ -87,7 +88,8 @@ char keys[rows][cols] = {
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
-byte rowPins[rows] = {4, 10, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
+// Hardware v1.1: 4, 7, 12, A1 (was 4, 10, 12, A1; pin 10 was freed to be able to use hardware SPI for LCD)
+byte rowPins[rows] = {4, 7, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
 byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
@@ -97,9 +99,9 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 // sdin (MOSI) is on pin 11 and sclk on pin 13.
 // The LCD has 6 lines (rows) and 14 columns
 // !!! For some reason, hardware SPI mode doesn't work:
-//pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 // I am using software SPI instead:
-pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
+//pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
 
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
@@ -107,8 +109,7 @@ const short MOTOR_STEPS = 200;
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-// Backlash compensation (in mm); all goto commands moving forward (positive speed) will travel that much extra distance, and then travel
-// in the backwards direction to the destionation point.
+// Backlash compensation (in mm); 
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical)
 const float BACKLASH_MM = 1.0;
@@ -172,6 +173,8 @@ const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 const float SPEED_TINY = 1e-3 * SPEED_SMALL;
 // Backlash in microsteps:
 const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP);
+// Slightly smaller value of backlash, to be used in motor_control
+const short BACKLASH1 = (short)(0.9 * BACKLASH_MM / MM_PER_MICROSTEP);
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -272,6 +275,8 @@ struct global
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   short first_loop; // =1 during the first loop, 0 after that
+  short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
+  short display4_counter; // Loop counter, for displaying line 4
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;
@@ -280,6 +285,9 @@ struct global
 
 struct global g;
 
+#ifdef MOTOR_DEBUG
+  short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep;  
+#endif
 #ifdef DEBUG
   short flag=0;
 #endif
