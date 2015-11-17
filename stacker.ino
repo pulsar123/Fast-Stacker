@@ -18,6 +18,8 @@
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
     - Keypad library: http://playground.arduino.cc/Code/Keypad
 
+   I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
+
    Hardware revisions [software versions supported]:
 
    v1.0 [0.08]: Original public release design.
@@ -91,7 +93,7 @@ void setup() {
 
 #ifdef LCD
   // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  SPI.setClockDivider(SPI_CLOCK_DIV8);
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -211,7 +213,6 @@ void setup() {
   g.first_loop == 1;
   g.started_moving = 0;
   g.display4_counter = 0;
-//  sprintf(g.p_buffer, "=");
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

@@ -227,16 +227,16 @@ void battery_status()
   lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
-  // For now using a simple 3-level indication:
-  if (V > 1.25)
-    // >50% charge:
-    lcd.print("##");
-  else if (V > V_LOW)
-    // Less than 50% charge:
-    lcd.print("#.");
-  else
-    // Critically low charge:
-    lcd.print("..");
+  // A simple 4-level indication (between V_LOW and 1.4V):
+  short level = (short)((V - V_LOW) / (1.4 - V_LOW) * 4.0);
+  if (level < 0)
+    level = 0;
+  if (level > 3)
+    level = 3;
+  uint8_t i;
+  for (i = 0; i < 12; i++)
+    lcd.data(battery_char[level][i]);
+
 #endif // BATTERY_DEBUG
 #endif  // LCD
 
@@ -410,13 +410,13 @@ void display_current_position()
   //  sprintf(g.buffer, "%2d.%02dmm %4d  ", (int)p, (int)(100.0 * (p - (int)p)), g.BL_counter);
   sprintf(g.buffer, "%4d %2d %2d %3d", cplus1, cplus2, cmax, imax);
   // Do the slow display operation only if the number changed:
-//  if (strcmp(g.buffer, g.p_buffer) != 0)
+  //  if (strcmp(g.buffer, g.p_buffer) != 0)
   {
 #ifdef LCD
     lcd.setCursor(0, 4);
     lcd.print(g.buffer);
 #endif
-//    strcpy(g.p_buffer, g.buffer);
+    //    strcpy(g.p_buffer, g.buffer);
   }
   return;
 }
