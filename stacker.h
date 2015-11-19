@@ -33,7 +33,6 @@ Issues to address:
 const unsigned long N_TIMING = 10000;
 
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current etc.)
-//!!!!
 #define MOTOR_DEBUG
 
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
@@ -47,13 +46,13 @@ const unsigned long N_TIMING = 10000;
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
 
-// If defined, will be using my experimental module to make sure that my physical microsteps alway correspond to the program coordinates
+// If defined, will be using my experimental module to make sure that my physical microsteps always correspond to the program coordinates
 // (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
 // My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.delta_t) until the
 // point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
 // this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
 // speed might get slightly lower than what program thinks it is.
-// EDIT: It is on hold for now, as step skipping seems to be extremely rare now
+// EDIT: It is on hold for now, as step skipping seems to be extremely rare now, after code profiling and hardware SPI implemented
 #define PRECISE_STEPPING
 
 //////// Parameters to be set only once //////////
@@ -66,8 +65,9 @@ const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save 
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
 const short PIN_LCD_RST = 6;  // Via 10 kOhm resistor
-// Hardware v1.1: no longer used (pin 7 is re-assigned to keypas - in place of pin 10)
-const short PIN_LCD_SCE = 7;  // Via 1 kOhm resistor  Chip Select (7)
+// Hardware v1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
+// (I modified the pcd8544 library to disable the use of this pin)
+const short PIN_LCD_SCE = 100;
 const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
 const short PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
 const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
@@ -86,6 +86,8 @@ const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
 const float V_LOW = 1.125;
+// Highest voltage from a freshly charged AA battery:
+const float V_HIGH = 1.4;
 
 // Keypad stuff:
 const byte rows = 4; //four rows
@@ -106,10 +108,8 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 // Hardware SPI will be used.
 // sdin (MOSI) is on pin 11 and sclk on pin 13.
 // The LCD has 6 lines (rows) and 14 columns
-// !!! For some reason, hardware SPI mode doesn't work:
+// Pin 10 has to be unused (will be used internally)
 pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
-// I am using software SPI instead:
-//pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
 
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
@@ -117,10 +117,15 @@ const short MOTOR_STEPS = 200;
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-// Backlash compensation (in mm); 
+// Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
+// all motions moving in the bad (negative) direction at the end will need some BL compensation.
+// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
+// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
+// and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
+// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical)
-const float BACKLASH_MM = 1.0;
+const float BACKLASH_MM = 0.05;
 
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
@@ -136,7 +141,6 @@ const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
 const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
-const short DELTA_POS = 10; //In go_to, travel less than needed by this number of microsteps, to allow for precise positioning at the stop in motor_control()
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
@@ -145,7 +149,7 @@ const short STEP_LOW_DT = 3;
 const short ENABLE_DELAY_MS = 3;
 
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
-const unsigned long T_KEY_LAG = 500000; // time in us to key a parameter change key pressed before it will start repeating
+const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
 // If you focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D
@@ -213,16 +217,15 @@ const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
 const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
-
 uint8_t battery_char [][12] = {
 {0xfe, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 0 (empty)
 {0xfe, 0x82, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 1 (1/3 charge)
 {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0xfe, 0x38}, // level 2 (2/3 charge)
 {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0x82, 0xfe, 0x38}  // level 3 (full charge)
 };
-
-//uint8_t battery_char[] = {0xfe, 0x82, };
-
+// 2-char bitmaps to display rewind/fast-forward symbols:
+uint8_t rewind_char[] = {0x10, 0x38, 0x54, 0x92, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00};
+uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 0x54, 0x38, 0x10, 0x00};
 
 // All global variables belong to one structure - global:
 struct global

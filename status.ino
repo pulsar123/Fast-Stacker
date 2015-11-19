@@ -102,23 +102,30 @@ void motion_status()
   if (g.error)
     return;
 #ifdef LCD
+  uint8_t i;
   lcd.setCursor(2, 5);
 
-  if (g.moving == 0)
+  if (g.moving == 0 && g.started_moving == 0)
     lcd.print("   ");
   else
   {
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
-        lcd.print("<- ");
+        for (i = 0; i < 12; i++)
+          lcd.data(rewind_char[i]);
+      //        lcd.print("<- ");
       else
         lcd.print("<  ");
     }
     else
     {
       if (g.stacker_mode < 2)
-        lcd.print("-> ");
+//                lcd.print("-> ");
+        for (i = 0; i < 12; i++)
+          lcd.data(forward_char[i]);
+//        for (i = 11; i >= 0; i--)
+//          lcd.data(rewind_char[i]);
       else
         lcd.print(" > ");
     }
@@ -230,8 +237,8 @@ void battery_status()
   lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
-  // A simple 4-level indication (between V_LOW and 1.4V):
-  short level = (short)((V - V_LOW) / (1.4 - V_LOW) * 4.0);
+  // A simple 4-level indication (between V_LOW and V_HIGH):
+  short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
   if (level < 0)
     level = 0;
   if (level > 3)
@@ -430,12 +437,14 @@ void display_current_position()
 
   if (g.error || g.calibrate_warning)
     return;
-    
-  //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
-  //  float p = MM_PER_MICROSTEP * (float)g.pos;
-  //  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
-  //  sprintf(g.buffer, "%2d.%02dmm %4d  ", (int)p, (int)(100.0 * (p - (int)p)), g.BL_counter);
-  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, g.BL_counter);
+
+  float p = MM_PER_MICROSTEP * (float)g.pos;
+#ifdef MOTOR_DEBUG
+  sprintf(g.buffer, "P=%2d.%03dmm %3d", (int)p, (int)(1000.0 * (p - (int)p)), cplus2);
+#else
+  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
+#endif
+  //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, g.BL_counter);
   // Do the slow display operation only if the number changed:
 #ifdef LCD
   lcd.setCursor(0, 4);

@@ -150,12 +150,6 @@ void motor_control()
     }
     switch (d)
     {
-      case -2:
-        cminus2++;
-        break;
-      case -1:
-        cminus1++;
-        break;
       case 1:
         cplus1++;
         break;

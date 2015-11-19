@@ -93,7 +93,6 @@ void change_speed(float speed1_loc, short moving_mode1)
   if (g.accel != 0 && g.moving == 0 && g.started_moving == 0)
   {
     // Starting moving
-    //    g.moving = 1;
     g.started_moving = 1;
     motion_status();
 #ifdef SAVE_ENERGY
