@@ -7,7 +7,7 @@ void calibration()
 {
 
   // This module only works when not moving:
-  if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.calibrate_warning == 1 || g.error > 0)
+  if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.calibrate_warning == 1 || g.backlashing == 1 || g.error > 0)
     return;
 
   if (g.calibrate == 3 && g.calibrate_flag == 0)
@@ -23,7 +23,7 @@ void calibration()
   {
     // Calibration triggered by hitting the background limiter
     // Saving the backround limit, minus a constant:
-    g.limit2 = g.limit_tmp - LIMITER_PAD - BACKLASH;
+    g.limit2 = g.limit_tmp - LIMITER_PAD;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
 
     // Moving towards switch 1 for its calibration:

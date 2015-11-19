@@ -12,12 +12,15 @@ void motor_control()
   float dV;
   short new_accel, instant_stop;
 
+#ifdef TIMING
+  g.t_old = g.t;
+#endif
   // Current time in microseconds:
   g.t = micros();
 
-// If we initied a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
-// that the motion is only actually initiated here, skipping all the potential delays (especially when using
-// SAVE_ENERGY).
+  // If we initied a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
+  // that the motion is only actually initiated here, skipping all the potential delays (especially when using
+  // SAVE_ENERGY).
   if (g.started_moving == 1)
   {
     g.started_moving = 0;
@@ -26,7 +29,7 @@ void motor_control()
     // We skip this loop, as no point solving the equation of motion for the t=t0 point (dt=0)
     return;
   }
-  
+
   // moving=0 means no motion, so simply returning:
   if (g.moving == 0)
     return;
@@ -131,40 +134,39 @@ void motor_control()
         g.BL_counter++;
     }
     */
-    // !!!! Apparently I am doing more then a single step here, 17 steps per move ?!!
+// Backlash counter counts the model motor steps (which can sometimes become a bit less than the number of real motor steps)
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     if (g.BL_counter < 0)
-      g.BL_counter =0;
-// Using slightly smaller value of backlash here, to account for potential microsteps skipped (for extra long arduino loops):
-    if (g.BL_counter >BACKLASH1)
-      g.BL_counter =BACKLASH1;
+      g.BL_counter = 0;
+    if (g.BL_counter > BACKLASH)
+      g.BL_counter = BACKLASH;
 #ifdef MOTOR_DEBUG
-  istep++;
-  short d=pos_short-g.pos_short_old;
-  if (d>cmax)
-  {
+    istep++;
+    short d = abs(pos_short - g.pos_short_old);
+    if (d > cmax)
+    {
       imax = istep;
-      cmax=d;
-  }
-  switch (d)
-  {
-    case -2:
-    cminus2++;
-    break;
-    case -1:
-    cminus1++;
-    break;
-    case 1:
-    cplus1++;
-    break;
-    case 2:
-    cplus2++;
-    break;
-  }
+      cmax = d;
+    }
+    switch (d)
+    {
+      case -2:
+        cminus2++;
+        break;
+      case -1:
+        cminus1++;
+        break;
+      case 1:
+        cplus1++;
+        break;
+      case 2:
+        cplus2++;
+        break;
+    }
 #endif
 
-        // Saving the current position as old:
-        g.pos_short_old = pos_short;
+    // Saving the current position as old:
+    g.pos_short_old = pos_short;
     // Old speed (to use to detect when the dirtection has to change):
     g.speed_old = g.speed;
   }

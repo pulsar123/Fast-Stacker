@@ -7,6 +7,9 @@ void display_all(char* l)
  Refreshing the whole screen
  */
 {
+#ifdef TIMING
+  return;
+#endif
   if (g.error == 0)
   {
     if (g.calibrate_warning == 0)
@@ -402,22 +405,43 @@ void display_current_position()
   g.display4_counter = 0;
   */
 
+#ifdef TIMING
+  // Average loop length for the last motion, in shortest miscrostep length units *100:
+  short avr = (short)(100.0 * (float)(g.t - g.t0_timing) / (float)(g.i_timing - 1) * SPEED_LIMIT);
+  // Maximum/minimum loop lenght in the above units:
+  short max1 = (short)(100.0 * (float)(g.dt_max) * SPEED_LIMIT);
+  short min1 = (short)(100.0 * (float)(g.dt_min) * SPEED_LIMIT);
+  sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
+#ifdef LCD
+  lcd.setCursor(0, 4);
+  lcd.print(g.buffer);
+  // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
+  sprintf(g.buffer, "%4d %6ld   ", g.bad_timing_counter, g.i_timing);
+  lcd.setCursor(0, 5);
+  lcd.print(g.buffer);
+#ifdef MOTOR_DEBUG
+  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
+  lcd.setCursor(0, 3);
+  lcd.print(g.buffer);
+#endif
+#endif
+  return;
+#endif
+
   if (g.error || g.calibrate_warning)
     return;
+    
   //  sprintf(g.buffer, "   P=%5.2fmm", MM_PER_MICROSTEP * g.pos);
-  float p = MM_PER_MICROSTEP * (float)g.pos;
+  //  float p = MM_PER_MICROSTEP * (float)g.pos;
   //  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
   //  sprintf(g.buffer, "%2d.%02dmm %4d  ", (int)p, (int)(100.0 * (p - (int)p)), g.BL_counter);
-  sprintf(g.buffer, "%4d %2d %2d %3d", cplus1, cplus2, cmax, imax);
+  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, g.BL_counter);
   // Do the slow display operation only if the number changed:
-  //  if (strcmp(g.buffer, g.p_buffer) != 0)
-  {
 #ifdef LCD
-    lcd.setCursor(0, 4);
-    lcd.print(g.buffer);
+  lcd.setCursor(0, 4);
+  lcd.print(g.buffer);
 #endif
-    //    strcpy(g.p_buffer, g.buffer);
-  }
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -428,6 +452,9 @@ void display_comment_line(char *l)
  Display a comment line briefly (then it should be replaced with display_current_positio() output)
  */
 {
+#ifdef TIMING
+  return;
+#endif
   if (g.error)
     return;
 #ifdef LCD

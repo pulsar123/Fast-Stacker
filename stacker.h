@@ -47,6 +47,14 @@ const unsigned long N_TIMING = 10000;
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
 
+// If defined, will be using my experimental module to make sure that my physical microsteps alway correspond to the program coordinates
+// (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
+// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.delta_t) until the
+// point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
+// this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
+// speed might get slightly lower than what program thinks it is.
+// EDIT: It is on hold for now, as step skipping seems to be extremely rare now
+#define PRECISE_STEPPING
 
 //////// Parameters to be set only once //////////
 
@@ -288,10 +296,15 @@ struct global
   short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   short first_loop; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
-  short display4_counter; // Loop counter, for displaying line 4
+//  short display4_counter; // Loop counter, for displaying line 4
+  short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
 #ifdef TIMING
   unsigned long t_old;
   unsigned long i_timing;
+  unsigned long t0_timing;
+  short dt_max;
+  short dt_min;
+  short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
 };
 

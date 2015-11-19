@@ -23,8 +23,8 @@
    Hardware revisions [software versions supported]:
 
    v1.0 [0.08]: Original public release design.
-   
-   v1.1 [0.09]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7. 
+
+   v1.1 [0.09]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 15k (pulldown) resistor.
 */
 #include <EEPROM.h>
@@ -85,6 +85,9 @@ void setup() {
   pinMode(PIN_SHUTTER, OUTPUT);
 
   pinMode(PIN_LCD_LED, OUTPUT);
+  //!!!!  Testing to see if I can free up the RST pin on LCD, by permanently pulling it up:
+  pinMode(PIN_LCD_RST, OUTPUT);
+  digitalWrite(PIN_LCD_RST, HIGH);
 
 #ifdef DEBUG
   Serial.begin(250000);
@@ -200,6 +203,7 @@ void setup() {
   g.t_display = g.t0;
   g.N_repeats = 0;
   g.breaking = 0;
+  g.backlashing = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
   g.state_old = (KeyState)0;
@@ -212,7 +216,7 @@ void setup() {
   g.BL_counter = BACKLASH;
   g.first_loop == 1;
   g.started_moving = 0;
-  g.display4_counter = 0;
+//  g.display4_counter = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
@@ -223,21 +227,28 @@ void setup() {
 #endif
   display_all("  ");
 
-#ifdef TIMING
-  g.t_old = g.t0;
-  g.i_timing = 0;
-#endif
-
 #ifdef MOTOR_DEBUG
   g.calibrate = 0;
 #endif
 
+#ifdef TIMING
+  if (g.moving == 0)
+  {
+    g.t_old = g.t0;
+    g.i_timing = (unsigned long)0;
+    g.dt_max = (short)0;
+    g.dt_min = (short)10000;
+    g.bad_timing_counter = (short)0;
+  }
+#endif
 }
-
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void loop()
 {
+
+// Performing backlash compensation after bad direction moves:
+  backlash();
 
   // Processing the keypad:
   process_keypad();
@@ -255,8 +266,6 @@ void loop()
 
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
-
-  backlash();
 
 #ifdef TIMING
   timing();

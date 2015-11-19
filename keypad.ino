@@ -544,8 +544,6 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-              //!!!
-              //            display_one_point_params();
               display_all("  ");
               break;
 

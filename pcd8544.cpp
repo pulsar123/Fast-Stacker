@@ -200,7 +200,7 @@ void pcd8544::begin(void)
 {
 //!!!!
 //	pinMode(cs,   OUTPUT);
-	pinMode(reset, OUTPUT);
+//	pinMode(reset, OUTPUT);
 	pinMode(dc,    OUTPUT);
 	pinMode(sdin,  OUTPUT);
 	pinMode(sclk,  OUTPUT);
@@ -220,9 +220,10 @@ void pcd8544::begin(void)
 		SPCR |= (1<<SPE) | (1<<MSTR);
 #endif
 	}
-	digitalWrite(reset, LOW);
-	delay(1);
-	digitalWrite(reset, HIGH);
+ //!!!!
+//	digitalWrite(reset, LOW);
+//	delay(1);
+//	digitalWrite(reset, HIGH);
 
   
 	// Extenden instructions and !powerdown

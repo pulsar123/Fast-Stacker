@@ -93,7 +93,7 @@ void change_speed(float speed1_loc, short moving_mode1)
   if (g.accel != 0 && g.moving == 0 && g.started_moving == 0)
   {
     // Starting moving
-//    g.moving = 1;
+    //    g.moving = 1;
     g.started_moving = 1;
     motion_status();
 #ifdef SAVE_ENERGY
@@ -116,7 +116,7 @@ void go_to(float pos1, float speed)
   float speed1_loc;
   short speed_changes;
 
-  if (g.breaking)
+  if (g.breaking || g.backlashing)
     return;
 
   short pos1_short = floorMy(pos1);
@@ -125,7 +125,7 @@ void go_to(float pos1, float speed)
   if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == 0)
     return;
 
-  // The "ideal" direction, if there was no acceleration limit and no need for backlash compensation:
+  // The "shortcut" direction - if there was no acceleration limit and no need for backlash compensation:
   if (pos1 > g.pos)
     g.direction = 1;
   else
@@ -144,7 +144,7 @@ void go_to(float pos1, float speed)
     else
       // Will be moving in the bad (negative) direction (have to overshoot, for backlash compensation):
     {
-      // Overshooting by BACKLASH microsteps (this will be compenstaed in backlash() function after we stop):
+      // Overshooting by BACKLASH microsteps (this will be compensated in backlash() function after we stop):
       pos1 = pos1 - (float)BACKLASH;
       speed1_loc = -speed;
     }
@@ -173,12 +173,15 @@ void go_to(float pos1, float speed)
 
     // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1-BACKLASH, then goto pos1
     // (The second goto is initiated in backlash() )
+    // Doing an overkill here (shouldn't be an issue with go_to stuff): even if a small amount of BL is expected, we'll do a full BACKLASH overshoot and recovery.
     if (
       // Moving towards the target, in the bad (negative) direction:
       g.speed <= 0.0 && !speed_changes ||
-      // Moving towards the target, in the good direction, but not far enough to compensate for the current backlash:
+      // Moving towards the target, in the good direction, but might not far enough to compensate for the current backlash:
       g.speed > 0.0 && !speed_changes && g.BL_counter > 0 ||
+      // Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
       g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
+      // Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
       g.speed > 0.0 && speed_changes)
     {
       // Current target position (to be achieved in the current go_to call):
@@ -212,7 +215,23 @@ void stop_now()
  Things to do when we completely stop. Should only be called from motor_control()
  */
 {
+#ifdef TIMING
+  // Update timing stats for the very last loop in motion (before setting g.moving=0):
+  timing();
+#endif
+
   g.moving = 0;
+
+#ifdef TIMING
+  // Displaying the timing data from the last movement:
+  display_current_position();
+  delay(5000);
+  g.t_old = g.t0;
+  g.i_timing = (unsigned long)0;
+  g.dt_max = (short)0;
+  g.dt_min = (short)10000;
+  g.bad_timing_counter = (short)0;
+#endif
 
   if (g.error == 1)
   {
@@ -230,8 +249,8 @@ void stop_now()
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
 
-  // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
   if (g.calibrate_flag == 5)
+    // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
   {
     g.calibrate_flag = 0;
     g.calibrate_init = 0;
@@ -255,6 +274,7 @@ void stop_now()
 
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;
+  g.backlashing = 0;
   g.speed = 0.0;
   if (g.stacker_mode >= 2)
   {
