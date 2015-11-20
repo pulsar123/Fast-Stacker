@@ -296,6 +296,7 @@ struct global
   short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
+  short just_paused; // a "just paused" state - before making any movements (step a single frame etc.)
   short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   short first_loop; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
@@ -314,7 +315,7 @@ struct global
 struct global g;
 
 #ifdef MOTOR_DEBUG
-  short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep;  
+  short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;  
 #endif
 #ifdef DEBUG
   short flag=0;

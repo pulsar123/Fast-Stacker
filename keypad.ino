@@ -80,6 +80,7 @@ void process_keypad()
           if (g.paused && g.moving == 0)
           {
             g.paused = 0;
+            g.just_paused = 0;
             letter_status("  ");
           }
           else
@@ -210,8 +211,10 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            g.frame_counter = g.frame_counter - g.stacking_direction;
-            pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+            // This if condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
+            if (!g.just_paused || g.stacking_direction < 0)
+              g.frame_counter = g.frame_counter - g.stacking_direction;
+            pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
           else
           {
@@ -220,14 +223,16 @@ void process_keypad()
           }
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (pos_target < (float)g.limit1 + 100.0)
+          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+            //          if (pos_target < (float)g.limit1 + 100.0)
           {
             // Recovering the original frame counter if aborting:
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target + 0.5, SPEED_LIMIT);
           display_frame_counter();
+          g.just_paused = 0;
           break;
 
         case 'A': // Fast-forward a single frame step (no shooting)
@@ -238,23 +243,25 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            g.frame_counter = g.frame_counter + g.stacking_direction;
-            pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+            // This if condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
+            if (!g.just_paused || g.stacking_direction > 0)
+              g.frame_counter = g.frame_counter + g.stacking_direction;
+            pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
           else
           {
             g.frame_counter++;
             pos_target = g.pos + g.msteps_per_frame;
           }
-          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
-          // move the rail beyond g.limit1
-          if (pos_target > (float)g.limit1 - 100.0)
+          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+            //          if (pos_target > (float)g.limit2 - 100.0)
           {
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target + 0.5, SPEED_LIMIT);
           display_frame_counter();
+          g.just_paused = 0;
           break;
 
         case 'D':  // Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
@@ -332,7 +339,7 @@ void process_keypad()
               if (g.pos_short_old <= g.limit1)
                 break;
 #ifdef MOTOR_DEBUG
-              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
               if (g.paused)
@@ -341,13 +348,13 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10 * g.stacking_direction;
-                pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit1 - 100.0)
+                pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
                 {
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target + 0.5, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -356,13 +363,14 @@ void process_keypad()
                 motion_status();
                 change_speed(-SPEED_LIMIT, 0);
               }
+              g.just_paused = 0;
               break;
 
             case 'A':  // Fast forwarding, or moving 10 frames forward  for the current stacking direction (if paused)
               if (g.pos_short_old >= g.limit2)
                 break;
 #ifdef MOTOR_DEBUG
-              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
               if (g.paused)
@@ -371,13 +379,13 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10 * g.stacking_direction;
-                pos_target = 0.5 + g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit1 - 100.0)
+                pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
                 {
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target + 0.5, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -386,6 +394,7 @@ void process_keypad()
                 motion_status();
                 change_speed(SPEED_LIMIT, (short)0);
               }
+              g.just_paused = 0;
               break;
 
             case '4':  // Set foreground point
@@ -424,7 +433,7 @@ void process_keypad()
               if (g.paused)
                 break;
 #ifdef MOTOR_DEBUG
-              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
               go_to((float)g.point1 + 0.5, SPEED_LIMIT);
@@ -435,7 +444,7 @@ void process_keypad()
               if (g.paused)
                 break;
 #ifdef MOTOR_DEBUG
-              cplus1 = cminus1 = cplus2 = cminus2 = 0;
+              cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
               go_to((float)g.point2 + 0.5, SPEED_LIMIT);
@@ -494,6 +503,7 @@ void process_keypad()
                 // Should print error message
                 display_comment_line("Bad 2 points! ");
               }
+              g.just_paused = 0;
               break;
 
             case '*':  // Initiate one-point focus stacking backwards
@@ -644,6 +654,7 @@ void process_keypad()
             display_comment_line("    Paused    ");
             letter_status("P ");
             g.paused = 1;
+            g.just_paused = 1;
           }
           else
             // In 1-point stacking, we abort

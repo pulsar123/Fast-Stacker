@@ -134,7 +134,7 @@ void motor_control()
         g.BL_counter++;
     }
     */
-// Backlash counter counts the model motor steps (which can sometimes become a bit less than the number of real motor steps)
+    // Backlash counter counts the model motor steps (which can sometimes become a bit less than the number of real motor steps)
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     if (g.BL_counter < 0)
       g.BL_counter = 0;
@@ -148,14 +148,15 @@ void motor_control()
       imax = istep;
       cmax = d;
     }
-    switch (d)
+    if (pos_short > g.pos_short_old)
     {
-      case 1:
-        cplus1++;
-        break;
-      case 2:
-        cplus2++;
-        break;
+      skipped_current = skipped_current + (d - 1);
+      skipped_total = skipped_total + (d - 1);
+    }
+    else
+    {
+      skipped_current = skipped_current - (d - 1);
+      skipped_total = skipped_total - (d - 1);
     }
 #endif
 

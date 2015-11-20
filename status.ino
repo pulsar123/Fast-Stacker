@@ -440,7 +440,7 @@ void display_current_position()
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
-  sprintf(g.buffer, "P=%2d.%03dmm %3d", (int)p, (int)(1000.0 * (p - (int)p)), cplus2);
+  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #else
   sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
 #endif

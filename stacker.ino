@@ -211,6 +211,7 @@ void setup() {
   g.coords_change = 0;
   g.start_stacking = 0;
   g.paused = 0;
+  g.just_paused = 0;
   g.starting_point = g.point1;
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
   g.BL_counter = BACKLASH;
@@ -229,6 +230,7 @@ void setup() {
 
 #ifdef MOTOR_DEBUG
   g.calibrate = 0;
+  skipped_total = 0;
 #endif
 
 #ifdef TIMING
