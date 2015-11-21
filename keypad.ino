@@ -38,7 +38,8 @@ void process_keypad()
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
 
-  if (g.stacker_mode == 1 && g.moving == 0)
+//  if (g.stacker_mode == 1 && g.moving == 0)
+  if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
     // The flag means we just initiated stacking:
     g.start_stacking = 1;

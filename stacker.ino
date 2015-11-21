@@ -195,9 +195,11 @@ void setup() {
   // Memorizing the initial value of g.calibrate:
   g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
+  g.pos_old = g.pos;
   g.pos_short_old = floorMy(g.pos);
   g.t0 = micros();
   g.t = g.t0;
+  g.t_old = g.t0;
   g.t_key_pressed = g.t0;
   g.t_last_repeat = g.t0;
   g.t_display = g.t0;
@@ -217,7 +219,8 @@ void setup() {
   g.BL_counter = BACKLASH;
   g.first_loop == 1;
   g.started_moving = 0;
-//  g.display4_counter = 0;
+  //  g.display4_counter = 0;
+  g.dt_backlash = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
@@ -236,7 +239,6 @@ void setup() {
 #ifdef TIMING
   if (g.moving == 0)
   {
-    g.t_old = g.t0;
     g.i_timing = (unsigned long)0;
     g.dt_max = (short)0;
     g.dt_min = (short)10000;
@@ -249,7 +251,7 @@ void setup() {
 void loop()
 {
 
-// Performing backlash compensation after bad direction moves:
+  // Performing backlash compensation after bad direction moves:
   backlash();
 
   // Processing the keypad:

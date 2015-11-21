@@ -10,13 +10,16 @@ void motor_control()
 {
   unsigned long dt, dt_a;
   float dV;
-  short new_accel, instant_stop;
+  short new_accel, instant_stop, i_case;
 
-#ifdef TIMING
   g.t_old = g.t;
-#endif
   // Current time in microseconds:
+#ifdef PRECISE_STEPPING
+  // Moving the motor timer back in time if skipped steps were detected in this travel:
+  g.t = micros() - g.dt_backlash;
+#else
   g.t = micros();
+#endif
 
   // If we initied a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
   // that the motion is only actually initiated here, skipping all the potential delays (especially when using
@@ -56,6 +59,7 @@ void motor_control()
     // If going beyond the target speed, stop accelerating:
     if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
     {
+      i_case = 1;
       // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
       // dt_a = t_a-t0; should be >0, and <dt:
       dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
@@ -68,17 +72,20 @@ void motor_control()
       if (fabs(g.speed1) < SPEED_TINY)
       {
         // At this point we stopped, so no need to revisit the motor_control module
+        instant_stop = 1;
         stop_now();
       }
     }
     else
     {
+      i_case = 2;
       // Current position when accel !=0 :
       g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
     }
   }
   else
   {
+    i_case = 3;
     // Current position when accel=0
     g.pos = g.pos0 +  (float)dt * g.speed0;
   }
@@ -92,16 +99,12 @@ void motor_control()
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
-#ifndef DEBUG
     digitalWrite(PIN_DIR, HIGH);
-#endif
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
-#ifndef DEBUG
     digitalWrite(PIN_DIR, LOW);
-#endif
     delayMicroseconds(STEP_LOW_DT);
   }
 
@@ -111,38 +114,116 @@ void motor_control()
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):
-#ifndef DEBUG
     digitalWrite(PIN_STEP, LOW);
-#endif
     // For Easydriver, the delay should be at least 1.0 us:
     delayMicroseconds(STEP_LOW_DT);
-#ifndef DEBUG
     digitalWrite(PIN_STEP, HIGH);
-#endif
+
+    // How many steps we'd need to take at this call:
+    // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
+    short d = abs(pos_short - g.pos_short_old);
+
+#ifdef PRECISE_STEPPING
+    // Fixing the rare occasions of a skipped motor step, by adjusting the time delay constant (g.dt_backlash) to the point
+    // when we are back in the past around the time the correct step should have been taken.
+    // This is just a fix, not a good solution if your SPEED_LIMIT is so high that the Arduino loop becomes
+    // comparable or longer than the time interval between motor steps at the highest speed allowed.
+    // Do some TIMING tests to figure out the timings, if you use parts with different specs (motor, rail, LCD, keypad).
+    // In my setup, average Arduino loop length is
+    // about 50% of the microstep interval when moving at the maximum (5 mm/s) speed; the longest loops are
+    // around 120%, but my rail skips only a couple of steps per 10,000 steps, sometimes. This is easily
+    // fixable (see below). If you get a sizable fraction (say, more than 5 percent) of the steps skipped,
+    // you need to lower down your SPEED_LIMIT.
+    short d_sign;
+    if (d > 1)
+    {
+      // The single step with a corresponding sign which should have been taken
+      if (pos_short > g.pos_short_old)
+        d_sign = 1;
+      else
+        d_sign = -1;
+
+      // Time correction depends on the travel history between t_old and now
+      short dt1_backlash = 0;
+      float pos_a;
+      short pos_short_new = g.pos_short_old + d_sign;
+      float pos_new = (float)pos_short_new;
+      short solve_square_equation = 0;
+      switch (i_case)
+      {
+        case 1: // The most difficult case when acceleration changed to zero since t_old, when we hit the target speed
+          // Coordinate corresponding to t_a (when accel changed to zero; in the past; should be between g.pos_old and g.pos):
+          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a);
+          // Two subcases
+          if ((pos_new >= pos_a && pos_new <= g.pos) || (pos_new <= pos_a && pos_new >= g.pos))
+            // First subcase: the single step should have happened during the latter (accel=0) part of the time interval since t_old
+          {
+            if (g.speed1 != 0.0)
+              dt1_backlash = dt - dt_a - (pos_new - pos_a) / g.speed1;
+          }
+          else if ((pos_new >= g.pos_old && pos_new < pos_a) || (pos_new <= g.pos_old && pos_new > pos_a))
+            // Second subcase: the step should have happened in the first (accel!=0) part of the time interval since t_old
+          {
+            solve_square_equation = 1;
+          }
+          break;
+
+        case 2: // The intermediate difficulty case when the acceleration was constant since t0
+          solve_square_equation = 1;
+          break;
+
+        case 3: // The simplest case when we had zero acceleration since t0
+          if (g.speed0 != 0.0)
+            dt1_backlash = dt - (pos_new - g.pos0) / g.speed0;
+          break;
+      }
+
+      if (solve_square_equation)
+      {
+        float D2;
+        // We have to solve a square equation to recover the time from coordinate
+        float D = g.speed0 * g.speed0 - 2.0 * (float)g.accel * ACCEL_LIMIT * (g.pos0 - pos_new);
+        // Checking if there is at least one real solution:
+        if (D >= 0.0)
+        {
+          D2 = sqrt(D);
+          // Two possible solutions:
+          float dt1 = (-g.speed0 - D2) / ((float)g.accel * ACCEL_LIMIT);
+          float dt2 = (-g.speed0 + D2) / ((float)g.accel * ACCEL_LIMIT);
+          // Picking the right solution (if any):
+          if (dt - dt1 > 0 && dt - dt1 < g.t - g.t_old)
+            dt1_backlash = dt - dt1;
+          else if (dt - dt2 > 0 && dt - dt2 < g.t - g.t_old)
+            dt1_backlash = dt - dt2;
+        }
+      }
+
+      // Sanity checks:
+      // The single step event should have happened somewhere between t_old and t:
+      if (dt1_backlash > 0 && dt1_backlash < g.t - g.t_old)
+      {
+        // Moving back in time:
+        g.t = g.t - dt1_backlash;
+        dt = dt - dt1_backlash;
+        // Time lag correction is cumulative for the current travel (gets reset to 0 when reaching stop_now):
+        g.dt_backlash = g.dt_backlash + dt1_backlash;
+        // Now the current position only differs from pos_short_old by a single step:
+        pos_short = pos_short_new;
+        g.pos = pos_new;
+        d = 1;
+      }
+    }  // if (d > 1)
+#endif // PRECISE_STEPPING
+
     // Measuring backlash compensation:
-    /*
-    if (pos_short > g.pos_short_old)
-      // Going to good (+) direction, so BL_counter should be decreasing:
-    {
-      if (g.BL_counter > 0)
-        g.BL_counter--;
-    }
-    else
-      // Going to bad (-) direction, so BL_counter should be increasing:
-    {
-      if (g.BL_counter < BACKLASH)
-        g.BL_counter++;
-    }
-    */
-    // Backlash counter counts the model motor steps (which can sometimes become a bit less than the number of real motor steps)
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     if (g.BL_counter < 0)
       g.BL_counter = 0;
     if (g.BL_counter > BACKLASH)
       g.BL_counter = BACKLASH;
+
 #ifdef MOTOR_DEBUG
     istep++;
-    short d = abs(pos_short - g.pos_short_old);
     if (d > cmax)
     {
       imax = istep;
@@ -162,9 +243,10 @@ void motor_control()
 
     // Saving the current position as old:
     g.pos_short_old = pos_short;
+    g.pos_old = g.pos;
     // Old speed (to use to detect when the dirtection has to change):
     g.speed_old = g.speed;
-  }
+  }  // if (pos_short != g.pos_short_old)
 
   if (g.moving_mode == 1)
     // Used in go_to mode

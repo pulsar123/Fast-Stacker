@@ -220,12 +220,14 @@ void stop_now()
 #endif
 
   g.moving = 0;
+  g.t_old = g.t;
+  g.pos_old = g.pos;
+  g.pos_short_old = floorMy(g.pos);
 
 #ifdef TIMING
   // Displaying the timing data from the last movement:
   display_current_position();
   delay(5000);
-  g.t_old = g.t0;
   g.i_timing = (unsigned long)0;
   g.dt_max = (short)0;
   g.dt_min = (short)10000;
@@ -271,15 +273,15 @@ void stop_now()
     display_status_line("              ");
   }
 
-  // We can lower the breaking flag now, as we already stopped:
-  g.breaking = 0;
-  g.backlashing = 0;
-  g.speed = 0.0;
-  if (g.stacker_mode >= 2)
+  if (g.stacker_mode >= 2 && g.backlashing == 0)
   {
     // Ending 2-point focus stacking
     g.stacker_mode = 0;
   }
+  // We can lower the breaking flag now, as we already stopped:
+  g.breaking = 0;
+  g.backlashing = 0;
+  g.speed = 0.0;
   // Refresh the whole display:
   display_all("  ");
   g.t_display = g.t;
@@ -290,6 +292,15 @@ void stop_now()
     coordinate_recalibration();
     g.coords_change = 0;
   }
+
+#ifdef MOTOR_DEBUG
+  if (g.dt_backlash > dt_backlash)
+    dt_backlash = g.dt_backlash;
+#endif
+#ifdef PRECISE_STEPPING
+  g.dt_backlash = 0;
+#endif
+
 
   return;
 }

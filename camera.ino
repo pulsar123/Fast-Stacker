@@ -49,6 +49,7 @@ void camera()
         change_speed(0.0, 0);
         g.stacker_mode = 0;
       }
+      // ???? Buggy?
       if (g.stacker_mode == 2 && g.frame_counter == g.Nframes)
         g.stacker_mode = 0;
     }

@@ -125,7 +125,7 @@ const float MM_PER_ROTATION = 3.98;
 // The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical)
-const float BACKLASH_MM = 0.05;
+const float BACKLASH_MM = 1.0;
 
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
@@ -237,6 +237,7 @@ struct global
   float speed;  // Current speed (negative, 0 or positive)
   short accel; // Current acceleration, in ACCEL_LIMIT units. Allowed values: -1,0,1
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
+  float pos_old; // Last position, in the previous arduino loop
   short pos_short_old;  // Previously computed position
   float pos0;  // Last position when accel changed
   unsigned long t0; // Last time when accel changed
@@ -302,8 +303,11 @@ struct global
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
 //  short display4_counter; // Loop counter, for displaying line 4
   short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
-#ifdef TIMING
   unsigned long t_old;
+#ifdef PRECISE_STEPPING
+  unsigned long dt_backlash;
+#endif
+#ifdef TIMING
   unsigned long i_timing;
   unsigned long t0_timing;
   short dt_max;
@@ -316,6 +320,9 @@ struct global g;
 
 #ifdef MOTOR_DEBUG
   short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;  
+#ifdef PRECISE_STEPPING
+  unsigned long dt_backlash;
+#endif
 #endif
 #ifdef DEBUG
   short flag=0;
