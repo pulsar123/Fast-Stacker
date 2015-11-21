@@ -38,7 +38,7 @@ void process_keypad()
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
 
-//  if (g.stacker_mode == 1 && g.moving == 0)
+  //  if (g.stacker_mode == 1 && g.moving == 0)
   if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
     // The flag means we just initiated stacking:
@@ -223,7 +223,7 @@ void process_keypad()
           }
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 1 || g.frame_counter >= g.Nframes))
             //          if (pos_target < (float)g.limit1 + 100.0)
           {
             // Recovering the original frame counter if aborting:
@@ -252,7 +252,7 @@ void process_keypad()
             g.frame_counter++;
             pos_target = g.pos + g.msteps_per_frame;
           }
-          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 1 || g.frame_counter >= g.Nframes))
             //          if (pos_target > (float)g.limit2 - 100.0)
           {
             g.frame_counter = frame_counter0;
@@ -348,7 +348,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10 * g.stacking_direction;
                 pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 1 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;
@@ -379,7 +379,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10 * g.stacking_direction;
                 pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0)
+                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 1 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;
