@@ -41,6 +41,17 @@ const unsigned long N_TIMING = 10000;
 // If undefined, lcd will not be used
 #define LCD
 
+// Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
+// all motions moving in the bad (negative) direction at the end will need some BL compensation.
+// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
+// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
+// and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
+// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
+// Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
+// sequence will look alsmost identical).
+// Set to zero to disable BL compensation.
+const float BACKLASH_MM = 0.0;
+
 // Options controlling compilation:
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
@@ -117,19 +128,12 @@ const short MOTOR_STEPS = 200;
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-// Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
-// all motions moving in the bad (negative) direction at the end will need some BL compensation.
-// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
-// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
-// and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
-// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
-// Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
-// sequence will look alsmost identical)
-const float BACKLASH_MM = 1.0;
 
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
-// between the limiting switches and the physical limits of the rail. 5 mm/s seems to be a reasonable compromize.
+// between the limiting switches and the physical limits of the rail. In addition, too high values will result
+// in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
+// 5 mm/s seems to be a reasonable compromize, for my motor and rail.
 const float SPEED_LIMIT_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
