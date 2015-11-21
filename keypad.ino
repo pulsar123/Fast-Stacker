@@ -207,7 +207,6 @@ void process_keypad()
           if (g.moving)
             break;
           // Required microsteps per frame:
-          g.msteps_per_frame = Msteps_per_frame();
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
@@ -230,7 +229,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target + 0.5, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -239,7 +238,6 @@ void process_keypad()
           if (g.moving)
             break;
           // Required microsteps per frame:
-          g.msteps_per_frame = Msteps_per_frame();
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
@@ -259,7 +257,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target + 0.5, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -354,7 +352,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target + 0.5, SPEED_LIMIT);
+                go_to(pos_target, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -385,7 +383,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target + 0.5, SPEED_LIMIT);
+                go_to(pos_target, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -671,7 +669,7 @@ void process_keypad()
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
         // Breaking / stopping if no keys pressed (only after rewind/fastforward)
-        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED)
+        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED && g.paused == 0)
         {
           change_speed(0.0, 0);
         }
