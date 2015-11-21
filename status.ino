@@ -441,7 +441,10 @@ void display_current_position()
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
 #ifdef PRECISE_STEPPING
-  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), dt_backlash, skipped_total);
+  short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
+//  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
+//  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
+  sprintf(g.buffer, "%2d %2d %2d %2d %2d", n_fixed, n_failed, n2, n3, n4);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif  

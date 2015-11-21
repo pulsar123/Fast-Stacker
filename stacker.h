@@ -320,6 +320,7 @@ struct global g;
 
 #ifdef MOTOR_DEBUG
   short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;  
+  short n_fixed, n_failed, n1, n2, n3, n4, k1, k2, k3;
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

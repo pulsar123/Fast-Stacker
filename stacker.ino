@@ -234,6 +234,9 @@ void setup() {
 #ifdef MOTOR_DEBUG
   g.calibrate = 0;
   skipped_total = 0;
+  n_fixed = 0;
+  n_failed = 0;
+  n1=n2=n3=n4=0;
 #endif
 
 #ifdef TIMING
