@@ -110,6 +110,18 @@ void change_speed(float speed1_loc, short moving_mode1)
 
 void go_to(float pos1, float speed)
 /* Initiating a travel to pos1 at maximum acceleration and given speed (positive number)
+   With non-zero BACKLASH constant, all go_to moves result in fully backlash-compensated moves. The
+   backlash model used is the simplest possible: when starting from a good initial position
+   (g.BL_counter=0), meaning the physical coordinate correspond to program coordinate, and
+   moving in the bad (negative pos) direction, the rail will not start moving until BACKLASH
+   steps are done (and g.BL_counter gets the largest possible value, BACKLASH), and then it starts
+   moving instantly. If switching direction, again the rail doesn't move until BACKLASH steps
+   are carried out, and g.BL_counter becomes 0 (smallest possible value), and then it starts moving
+   instantly. The current physical coordinate of the rail is always connected to the program
+   coordinate via equation:
+
+   pos_phys = pos_prog + g.BL_counter
+
  */
 {
   float speed1_loc;
@@ -118,14 +130,23 @@ void go_to(float pos1, float speed)
   if (g.breaking || g.backlashing)
     return;
 
+  // Ultimate physical coordinate to achieve:
   short pos1_short = floorMy(pos1);
+
+  // Current physical coordinate:
+  short pos_short_phys = g.pos_short_old + g.BL_counter;
+  float pos_phys = g.pos + (float)g.BL_counter;
 
   // We are already there, and no need for backlash compensation, so just returning:
   if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == 0)
     return;
 
   // The "shortcut" direction - if there was no acceleration limit and no need for backlash compensation:
-  if (pos1 > g.pos)
+  //!!!!
+  // If we are here and pos1_short = pos_short_phys, that could only happen if g.BL_counter>0, so what we need
+  // to accomplish is to compensate the backlash (move g.BL_counter steps in the positive direction)
+  if (pos1_short >= pos_short_phys)
+    //  if (pos1 > g.pos)
     g.direction = 1;
   else
     g.direction = -1;
@@ -154,16 +175,18 @@ void go_to(float pos1, float speed)
   {
     // Stopping distance in the current direction:
     float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
-    // Travel vector (ignoring acceleration limit and backlash compensation):
+    // Travel vector:
+//    float dx_vec = pos1 - pos_phys;
     float dx_vec = pos1 - g.pos;
     float dx = fabs(dx_vec);
     // Number of whole steps to take if going straight to the target:
+//    short dx_steps = pos1_short - pos_short_phys;
     short dx_steps = pos1_short - g.pos_short_old;
 
     // All the cases when speed sign will change while traveling to the target:
     // When we move in the correct direction, but cannot stop in time because of the acceleration limit
     if (dx < dx_stop && (g.direction > 0 && g.speed > 0.0 || g.direction < 0 && g.speed <= 0.0) ||
-        // When we are moving in the wrong direction
+        // or when we are moving in the wrong direction
         g.direction > 0 && g.speed <= 0.0 || g.direction < 0 && g.speed > 0.0)
       speed_changes = 1;
     else
@@ -172,15 +195,14 @@ void go_to(float pos1, float speed)
 
     // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1-BACKLASH, then goto pos1
     // (The second goto is initiated in backlash() )
-    // Doing an overkill here (shouldn't be an issue with go_to stuff): even if a small amount of BL is expected, we'll do a full BACKLASH overshoot and recovery.
     if (
-      // Moving towards the target, in the bad (negative) direction:
+      // Case 1: Moving towards the target, in the bad (negative) direction:
       g.speed <= 0.0 && !speed_changes ||
-      // Moving towards the target, in the good direction, but might not far enough to compensate for the current backlash:
-      g.speed > 0.0 && !speed_changes && g.BL_counter > 0 ||
-      // Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
+      // Case 2: Moving towards the target, in the good direction, but might not far enough to compensate for the current backlash:
+      //      g.speed > 0.0 && !speed_changes && g.BL_counter > 0 ||
+      // Case 3: Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
       g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
-      // Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
+      // Case 4: Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
       g.speed > 0.0 && speed_changes)
     {
       // Current target position (to be achieved in the current go_to call):
@@ -193,7 +215,7 @@ void go_to(float pos1, float speed)
     {
       speed1_loc = speed;
     }
-  }
+  }  // End of else (if we are currently moving)
 
   // Global parameter to be used in motor_control():
   g.pos_goto = pos1;
@@ -333,8 +355,9 @@ void set_backlight()
       analogWrite(PIN_LCD_LED, 255);
       break;
   }
-  // Adds stability to backlight change commands:
-  //  delay(100);
+
+  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

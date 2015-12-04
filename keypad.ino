@@ -672,7 +672,23 @@ void process_keypad()
         // Breaking / stopping if no keys pressed (only after rewind/fastforward)
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED && g.paused == 0)
         {
-          change_speed(0.0, 0);
+#ifdef EXTENDED_REWIND
+          if (g.key_old == '1' && g.speed < 0.0)
+            // Moving in the bad (negative) direction
+          {
+            // Estimating how much rail would travel if the maximum breaking started now (that's how much
+            // rail would actually travel if moving in the good direction, or if backlash was zero):
+            // Stopping distance in the current direction:
+            float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
+            // The physical coordinate where we have to stop:
+            float pos1 = g.pos - dx_stop;
+            // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
+            // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
+            go_to(pos1, SPEED_LIMIT);
+          }
+          else
+#endif
+            change_speed(0.0, 0);
         }
       }
 

@@ -8,6 +8,7 @@ void camera()
   if (g.error > 0)
     return;
 
+  // Initiating the go_to travel for stacking
   if (g.start_stacking == 1 && g.t - g.t0_stacking > STACKING_DELAY)
   {
     g.start_stacking = 0;
@@ -31,6 +32,7 @@ void camera()
 
   }
 
+  // Triggering camera shutter when needed
   if (g.stacker_mode >= 2 && g.backlashing == 0)
   {
     if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0)
@@ -49,7 +51,6 @@ void camera()
         change_speed(0.0, 0);
         g.stacker_mode = 0;
       }
-      // ???? Buggy?
       if (g.stacker_mode == 2 && g.frame_counter == g.Nframes)
         g.stacker_mode = 0;
     }

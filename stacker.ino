@@ -5,7 +5,7 @@
    Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
 
    The hardware used:
-    - Velbon Mag Slider manual macro rail, with some customization
+    - Velbon Super Mag Slider manual macro rail, with some customization
     - Ultrathin 2-Phase 4-Wire 42 Stepper Motor 1.8 Degree 0.7A (http://www.ebay.ca/itm/Ultrathin-2-Phase-4-Wire-42-Stepper-Motor-1-8-Degree-0-7A-e-/261826922341?pt=LH_DefaultDomain_0&hash=item3cf619c765 )
     - Arduino Uno R3
     - EasyDriver stepping Stepper Motor Driver V4.4
@@ -24,7 +24,7 @@
 
    v1.0 [0.08]: Original public release design.
 
-   v1.1 [0.09]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
+   v1.1 [0.10, 0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 15k (pulldown) resistor.
 */
 #include <EEPROM.h>
@@ -146,9 +146,6 @@ void setup() {
   g.direction = 1;
   g.comment_flag = 0;
 
-  // Uncomment to emulate the very first run:
-  //  EEPROM.write(0, 255);  EEPROM.write(1, 255);
-
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
   {
@@ -217,27 +214,29 @@ void setup() {
   g.starting_point = g.point1;
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
   g.BL_counter = BACKLASH;
+  //  g.BL_counter = 0;
   g.first_loop == 1;
   g.started_moving = 0;
-  //  g.display4_counter = 0;
   g.dt_backlash = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
+
+#ifdef MOTOR_DEBUG
+  g.calibrate = 0;
+  g.calibrate_warning = 0;
+  g.calibrate_init = g.calibrate;
+  skipped_total = 0;
+  n_fixed = 0;
+  n_failed = 0;
+  n1 = n2 = n3 = n4 = 0;
+#endif
 
   // Default lcd layout:
 #ifdef LCD
   lcd.clear();
 #endif
   display_all("  ");
-
-#ifdef MOTOR_DEBUG
-  g.calibrate = 0;
-  skipped_total = 0;
-  n_fixed = 0;
-  n_failed = 0;
-  n1=n2=n3=n4=0;
-#endif
 
 #ifdef TIMING
   if (g.moving == 0)

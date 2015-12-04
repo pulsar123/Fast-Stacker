@@ -24,15 +24,16 @@ Issues to address:
 
 #define VERSION "0.09"
 
+// Options controlling compilation:
+
 // For debugging with serial monitor:
 //#define DEBUG
 
 // For timing the main loop:
 //#define TIMING
-// Compute and display timing results every that many loops:
-const unsigned long N_TIMING = 10000;
 
-// Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current etc.)
+// Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
+// and software debugging without the motor unit and when powered via USB)
 #define MOTOR_DEBUG
 
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
@@ -41,30 +42,22 @@ const unsigned long N_TIMING = 10000;
 // If undefined, lcd will not be used
 #define LCD
 
-// Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
-// all motions moving in the bad (negative) direction at the end will need some BL compensation.
-// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
-// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
-// and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
-// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
-// Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
-// sequence will look alsmost identical).
-// Set to zero to disable BL compensation.
-const float BACKLASH_MM = 0.0;
-
-// Options controlling compilation:
-
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
 
 // If defined, will be using my experimental module to make sure that my physical microsteps always correspond to the program coordinates
 // (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
-// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.delta_t) until the
+// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_backlash) until the
 // point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
 // this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
 // speed might get slightly lower than what program thinks it is.
-// EDIT: It is on hold for now, as step skipping seems to be extremely rare now, after code profiling and hardware SPI implemented
 #define PRECISE_STEPPING
+
+// Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
+// amount as when pressing fast-forward ("A) for the same period of time, with proper backlash compensation. This should result in smoother user experience.
+// If undefined, to rewind by the same amount,
+// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation. 
+#define EXTENDED_REWIND
 
 //////// Parameters to be set only once //////////
 
@@ -129,11 +122,23 @@ const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
 
+// Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
+// all motions moving in the bad (negative) direction at the end will need some BL compensation.
+// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
+// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
+// and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
+// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
+// Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
+// sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
+// Set to zero to disable BL compensation.
+const float BACKLASH_MM = 1;
+
 //////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
+// For an arbitrary rail and motor, make sure the following condition is met: 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) > 500 microseconds
 const float SPEED_LIMIT_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
@@ -303,9 +308,8 @@ struct global
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short just_paused; // a "just paused" state - before making any movements (step a single frame etc.)
   short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
-  short first_loop; // =1 during the first loop, 0 after that
+  short first_loop=1; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
-//  short display4_counter; // Loop counter, for displaying line 4
   short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   unsigned long t_old;
 #ifdef PRECISE_STEPPING

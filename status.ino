@@ -114,18 +114,14 @@ void motion_status()
       if (g.stacker_mode < 2)
         for (i = 0; i < 12; i++)
           lcd.data(rewind_char[i]);
-      //        lcd.print("<- ");
       else
         lcd.print("<  ");
     }
     else
     {
       if (g.stacker_mode < 2)
-//                lcd.print("-> ");
         for (i = 0; i < 12; i++)
           lcd.data(forward_char[i]);
-//        for (i = 11; i >= 0; i--)
-//          lcd.data(rewind_char[i]);
       else
         lcd.print(" > ");
     }
@@ -404,14 +400,6 @@ void display_current_position()
  Display the current position on the transient line
  */
 {
-  // Displaying the line only every Nth loop, for better efficiency:
-  /*
-  g.display4_counter++;
-  if (g.display4_counter < 1000)
-    return;
-  g.display4_counter = 0;
-  */
-
 #ifdef TIMING
   // Average loop length for the last motion, in shortest miscrostep length units *100:
   short avr = (short)(100.0 * (float)(g.t - g.t0_timing) / (float)(g.i_timing - 1) * SPEED_LIMIT);
@@ -435,7 +423,7 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning)
+  if (g.error || g.calibrate_warning || g.moving==0 && g.BL_counter>0)
     return;
 
   float p = MM_PER_MICROSTEP * (float)g.pos;

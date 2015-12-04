@@ -36,9 +36,9 @@ void calibration()
   if (g.calibrate == 2 && g.calibrate_flag == 1)
     // We need to calibrate the background switch (limit2)
   {
-    // Calibration triggered by hitting a limiter
+    // Calibration triggered by hitting the foreground limiter
     // Difference between new and old coordinates (to be applied after calibration is done):
-    //    g.coords_change = g.limit_tmp + LIMITER_PAD - g.limit1;
+    // (We need this because all rail coordinates are counted from g.limit1)
     g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
     // Current foreground limit in old coordinates:
     g.limit1 = g.limit_tmp + LIMITER_PAD;
@@ -62,7 +62,6 @@ void calibration()
     else if (g.calibrate == 1)
     {
       // Difference between new and old coordinates (to be applied after calibration is done):
-      //      g.coords_change = g.limit_tmp + LIMITER_PAD - g.limit1;
       g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
       // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;

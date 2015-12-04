@@ -198,7 +198,7 @@ pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin
 
 void pcd8544::begin(void)
 {
-//!!!!
+//!!!! stacker
 //	pinMode(cs,   OUTPUT);
 //	pinMode(reset, OUTPUT);
 	pinMode(dc,    OUTPUT);
@@ -220,7 +220,7 @@ void pcd8544::begin(void)
 		SPCR |= (1<<SPE) | (1<<MSTR);
 #endif
 	}
- //!!!!
+ //!!!! stacker
 //	digitalWrite(reset, LOW);
 //	delay(1);
 //	digitalWrite(reset, HIGH);
