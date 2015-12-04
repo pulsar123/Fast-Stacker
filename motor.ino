@@ -51,21 +51,21 @@ void motor_control()
   {
     // Change of speed (assuming accel hasn't changed from t0 to t);
     // can be negative or positive:
-    dV = (float)g.accel * ACCEL_LIMIT * (float)dt;
+    dV = g.accel_v[2+g.accel] * (float)dt;
 
     // Current speed (can be positive or negative):
     g.speed = g.speed0 + dV;
 
     // If going beyond the target speed, stop accelerating:
-    if ((g.accel == 1 && g.speed >= g.speed1) || (g.accel == -1 && g.speed <= g.speed1))
+    if ((g.accel >0 && g.speed >= g.speed1) || (g.accel < 0 && g.speed <= g.speed1))
     {
       i_case = 1;
       // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
       // dt_a = t_a-t0; should be >0, and <dt:
-      dt_a = (float)g.accel * (g.speed1 - g.speed0) / ACCEL_LIMIT;
+      dt_a = (g.speed1 - g.speed0) / g.accel_v[2+g.accel];
       // Current position has two components: first one (from t0 to t_a) is still accelerated,
       // second one (t_a ... t) has accel=0:
-      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
+      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2+g.accel] * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
       g.speed = g.speed1;
       new_accel = 0;
       // If the target speed was zero, stop now
@@ -153,7 +153,7 @@ void motor_control()
       {
         case 1: // The most difficult case when acceleration changed to zero since t_old, when we hit the target speed
           // Coordinate corresponding to t_a (when accel changed to zero; in the past; should be between g.pos_old and g.pos):
-          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * (float)g.accel * ACCEL_LIMIT * (float)dt_a);
+          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2+g.accel] * (float)dt_a);
           // Two subcases
           if ((pos_new >= pos_a && pos_new <= g.pos) || (pos_new <= pos_a && pos_new >= g.pos))
             // First subcase: the single step should have happened during the latter (accel=0) part of the time interval since t_old
@@ -190,14 +190,14 @@ void motor_control()
       {
         float D2;
         // We have to solve a square equation to recover the time from coordinate
-        float D = g.speed0 * g.speed0 - 2.0 * (float)g.accel * ACCEL_LIMIT * (g.pos0 - pos_new);
+        float D = g.speed0 * g.speed0 - 2.0 * g.accel_v[2+g.accel] * (g.pos0 - pos_new);
         // Checking if there is at least one real solution:
         if (D >= 0.0)
         {
           D2 = sqrt(D);
           // Two possible solutions:
-          float dt1 = (-g.speed0 - D2) / ((float)g.accel * ACCEL_LIMIT);
-          float dt2 = (-g.speed0 + D2) / ((float)g.accel * ACCEL_LIMIT);
+          float dt1 = (-g.speed0 - D2) / (g.accel_v[2+g.accel]);
+          float dt2 = (-g.speed0 + D2) / (g.accel_v[2+g.accel]);
           // Picking the right solution (if any):
           if (dt - dt1 > 0 && dt - dt1 < g.t - g.t_old)
             dt1_backlash = dt - dt1;
@@ -293,6 +293,7 @@ void motor_control()
     if (instant_stop == 0)
     {
       // Final position  if a full break were enabled now:
+      // Breaking is always done at maximum deceleration
       if (g.speed >= 0.0)
         //The additional -/+1.0 factor is to make the rail stop 1 step later on average, to deal with round-off errors
         g.pos_stop = g.pos - 1.0 + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
@@ -307,9 +308,9 @@ void motor_control()
       {
         // Initiating breaking:
         if (g.speed >= 0.0)
-          new_accel = -1;
+          new_accel = -2;
         else
-          new_accel = 1;
+          new_accel = 2;
         g.speed1 = 0.0;
       }
       g.pos_stop_old = g.pos_stop;

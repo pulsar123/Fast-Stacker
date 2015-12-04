@@ -20,14 +20,14 @@ void camera()
       // 1-point stacking
     {
       if (g.stacking_direction == -1)
-        go_to((float)g.limit1 + 0.5, speed);
+        go_to((float)g.limit1 + 0.5, speed, 2);
       else
-        go_to((float)g.limit2 + 0.5, speed);
+        go_to((float)g.limit2 + 0.5, speed, 2);
     }
     else if (g.stacker_mode == 2)
       // 2-point stacking (after moving to the starting point)
     {
-      go_to((float)g.destination_point + 0.5, speed);
+      go_to((float)g.destination_point + 0.5, speed, 2);
     }
 
   }
@@ -48,7 +48,7 @@ void camera()
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])
       {
         // End of one-point stacking
-        change_speed(0.0, 0);
+        change_speed(0.0, 0, 2);
         g.stacker_mode = 0;
       }
       if (g.stacker_mode == 2 && g.frame_counter == g.Nframes)

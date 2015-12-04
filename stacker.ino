@@ -127,7 +127,7 @@ void setup() {
 
 #ifndef MOTOR_DEBUG
   // Limiting switches should not be on when powering up:
-  unsigned char limit_on = digitalRead(PIN_LIMITERS);
+//  unsigned char limit_on = digitalRead(PIN_LIMITERS);
   if (limit_on == HIGH)
   {
     g.error = 1;

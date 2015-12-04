@@ -56,9 +56,9 @@ short roundMy(float x)
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void change_speed(float speed1_loc, short moving_mode1)
+void change_speed(float speed1_loc, short moving_mode1, short accel)
 /* Run the function every time you want to change speed. It will figure out required accel based on current speed and speed1,
-   and will update t0, speed0, pos0, if accel changed here.
+   and will update t0, speed0, pos0, if accel changed here. The parameter "accel" is the suggested acceleration (0, 1, or 2).
    Inputs:
     - speed1_loc: new target speed.
     When moving_mode1=1, global moving_mode=1 is  enabled (to be used in go_to).
@@ -75,10 +75,10 @@ void change_speed(float speed1_loc, short moving_mode1)
 
   if (speed1_loc >= g.speed)
     // We have to accelerate
-    new_accel = 1;
+    new_accel = accel;
   else
     // Have to decelerate:
-    new_accel = -1;
+    new_accel = -accel;
 
   if (new_accel != g.accel)
     // Acceleration changed
@@ -108,8 +108,8 @@ void change_speed(float speed1_loc, short moving_mode1)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void go_to(float pos1, float speed)
-/* Initiating a travel to pos1 at maximum acceleration and given speed (positive number)
+void go_to(float pos1, float speed, short accel)
+/* Initiating a travel to pos1 at acceleration accel and given target speed (positive number)
    With non-zero BACKLASH constant, all go_to moves result in fully backlash-compensated moves. The
    backlash model used is the simplest possible: when starting from a good initial position
    (g.BL_counter=0), meaning the physical coordinate correspond to program coordinate, and
@@ -142,7 +142,6 @@ void go_to(float pos1, float speed)
     return;
 
   // The "shortcut" direction - if there was no acceleration limit and no need for backlash compensation:
-  //!!!!
   // If we are here and pos1_short = pos_short_phys, that could only happen if g.BL_counter>0, so what we need
   // to accomplish is to compensate the backlash (move g.BL_counter steps in the positive direction)
   if (pos1_short >= pos_short_phys)
@@ -174,13 +173,12 @@ void go_to(float pos1, float speed)
     // We are currently moving
   {
     // Stopping distance in the current direction:
+    // Breaking is always done with the maximum deceleration:
     float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
     // Travel vector:
-//    float dx_vec = pos1 - pos_phys;
     float dx_vec = pos1 - g.pos;
     float dx = fabs(dx_vec);
     // Number of whole steps to take if going straight to the target:
-//    short dx_steps = pos1_short - pos_short_phys;
     short dx_steps = pos1_short - g.pos_short_old;
 
     // All the cases when speed sign will change while traveling to the target:
@@ -221,7 +219,7 @@ void go_to(float pos1, float speed)
   g.pos_goto = pos1;
 
   // Setting the target speed and moving_mode=1:
-  change_speed(speed1_loc, 1);
+  change_speed(speed1_loc, 1, accel);
 
   g.pos_stop_flag = 0;
 

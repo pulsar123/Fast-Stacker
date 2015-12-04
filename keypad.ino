@@ -86,7 +86,7 @@ void process_keypad()
           }
           else
           {
-            change_speed(0.0, 0);
+            change_speed(0.0, 0, 2);
             // This should be after change_speed(0.0):
             g.breaking = 1;
             letter_status("B ");
@@ -230,7 +230,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT, 2);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -258,7 +258,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target, SPEED_LIMIT, 2);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -266,7 +266,7 @@ void process_keypad()
         case 'D':  // Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
           if (g.paused)
             break;
-          go_to((float)g.starting_point + 0.5, SPEED_LIMIT);
+          go_to((float)g.starting_point + 0.5, SPEED_LIMIT, 2);
           display_comment_line(" Going to P0  ");
           break;
 
@@ -353,14 +353,15 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target, SPEED_LIMIT, 2);
                 display_frame_counter();
               }
               else
               {
                 g.direction = -1;
                 motion_status();
-                change_speed(-SPEED_LIMIT, 0);
+                // Rewinding is done with small acceleration:
+                change_speed(-SPEED_LIMIT, 0, 1);
               }
               g.just_paused = 0;
               break;
@@ -384,14 +385,15 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target, SPEED_LIMIT, 2);
                 display_frame_counter();
               }
               else
               {
                 g.direction = 1;
                 motion_status();
-                change_speed(SPEED_LIMIT, (short)0);
+                // Rewinding is done with small acceleration:
+                change_speed(SPEED_LIMIT, 0, 1);
               }
               g.just_paused = 0;
               break;
@@ -435,7 +437,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+              go_to((float)g.point1 + 0.5, SPEED_LIMIT, 2);
               display_comment_line(" Going to P1  ");
               break;
 
@@ -446,7 +448,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point2 + 0.5, SPEED_LIMIT);
+              go_to((float)g.point2 + 0.5, SPEED_LIMIT, 2);
               display_comment_line(" Going to P2  ");
               break;
 
@@ -481,14 +483,14 @@ void process_keypad()
                   short d2 = (short)abs(delta);
                   if (d1 < d2)
                   {
-                    go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+                    go_to((float)g.point1 + 0.5, SPEED_LIMIT, 2);
                     g.starting_point = g.point1;
                     g.destination_point = g.point2;
                     g.stacking_direction = 1;
                   }
                   else
                   {
-                    go_to((float)g.point2 + 0.5, SPEED_LIMIT);
+                    go_to((float)g.point2 + 0.5, SPEED_LIMIT, 2);
                     g.starting_point = g.point2;
                     g.destination_point = g.point1;
                     g.stacking_direction = -1;
@@ -646,7 +648,7 @@ void process_keypad()
           // Mode 1/2: focus stacking
         {
           // Any key press in stacking mode interrupts stacking
-          change_speed(0.0, 0);
+          change_speed(0.0, 0, 2);
           if (g.stacker_mode == 2)
             // In 2-point stacking, we pause
           {
@@ -684,11 +686,11 @@ void process_keypad()
             float pos1 = g.pos - dx_stop;
             // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
             // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
-            go_to(pos1, SPEED_LIMIT);
+            go_to(pos1, SPEED_LIMIT, 2);
           }
           else
 #endif
-            change_speed(0.0, 0);
+            change_speed(0.0, 0, 2);
         }
       }
 

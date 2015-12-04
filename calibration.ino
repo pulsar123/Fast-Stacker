@@ -13,8 +13,8 @@ void calibration()
   if (g.calibrate == 3 && g.calibrate_flag == 0)
     // The very first calibration
   {
-    // Moving towards switch 2 for its calibration:
-    change_speed(SPEED_LIMIT, 0);
+    // Moving towards switch 2 for its calibration, with maximum acceleration:
+    change_speed(SPEED_LIMIT, 0, 2);
     letter_status("C ");
   }
 
@@ -26,8 +26,8 @@ void calibration()
     g.limit2 = g.limit_tmp - LIMITER_PAD;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
 
-    // Moving towards switch 1 for its calibration:
-    change_speed(-SPEED_LIMIT, 0);
+    // Moving towards switch 1 for its calibration, with maximum acceleration:
+    change_speed(-SPEED_LIMIT, 0, 2);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;
     letter_status("C ");
@@ -43,7 +43,7 @@ void calibration()
     // Current foreground limit in old coordinates:
     g.limit1 = g.limit_tmp + LIMITER_PAD;
     // Moving towards switch 2 for its calibration:
-    change_speed(SPEED_LIMIT, 0);
+    change_speed(SPEED_LIMIT, 0, 2);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
     g.calibrate_flag = 2;
     letter_status("C ");
@@ -57,7 +57,7 @@ void calibration()
       g.limit2 = g.limit_tmp - LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       // Travelling back into safe area:
-      go_to((float)(g.limit2 - DELTA_LIMITER)+0.5, SPEED_LIMIT);
+      go_to((float)(g.limit2 - DELTA_LIMITER)+0.5, SPEED_LIMIT, 2);
     }
     else if (g.calibrate == 1)
     {
@@ -66,7 +66,7 @@ void calibration()
       // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       // Travelling back into safe area:
-      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE)+0.5, SPEED_LIMIT);
+      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE)+0.5, SPEED_LIMIT, 2);
     }
     g.calibrate = 0;
     letter_status("  ");

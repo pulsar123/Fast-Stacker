@@ -33,7 +33,7 @@ void limiters()
 #endif
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
-    change_speed(0.0, 0);
+    change_speed(0.0, 0, 2);
     // This should be after change_speed(0.0):
     g.breaking = 1;
     letter_status("B ");
@@ -116,7 +116,7 @@ void limiters()
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch
         {
-          change_speed(0.0, 0);
+          change_speed(0.0, 0, 2);
           g.breaking = 1;
           letter_status("B ");
         }
