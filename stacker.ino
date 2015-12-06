@@ -12,20 +12,21 @@
     - 4x4 keys keypad (http://www.ebay.ca/itm/4x4-Matrix-high-quality-Keyboard-Keypad-Use-Key-PIC-AVR-Stamp-Sml-/141687830020?pt=LH_DefaultDomain_0&hash=item20fd40b604 )
     - Nokia 5110 LCD display + four 10 kOhm resistors + 1 kOhm + 330 Ohm (https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide)
     - 5V Relay SIP-1A05 + 1N4004 diode + 33 Ohm resistor; to operate camera shutter (http://www.forward.com.au/pfod/HomeAutomation/OnOffAddRelay/index.html)
+    New in h1.1: extra 10k resistor.
 
    I am using the following libraries:
 
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
     - Keypad library: http://playground.arduino.cc/Code/Keypad
 
-   I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
+   Since s0.10, I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
 
    Hardware revisions [software versions supported]:
 
-   v1.0 [0.08]: Original public release design.
+   h1.0 [s0.08]: Original public release design.
 
-   v1.1 [0.10, 0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
-                Instead, display SCE pin is soldered to the ground via 15k (pulldown) resistor.
+   h1.1 [s0.10, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
+                Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -74,7 +75,6 @@ void setup() {
 
   g.error = 0;
   g.calibrate_warning = 0;
-
 
   // Setting pins for EasyDriver to OUTPUT:
   pinMode(PIN_DIR, OUTPUT);
@@ -127,7 +127,7 @@ void setup() {
 
 #ifndef MOTOR_DEBUG
   // Limiting switches should not be on when powering up:
-//  unsigned char limit_on = digitalRead(PIN_LIMITERS);
+  unsigned char limit_on = digitalRead(PIN_LIMITERS);
   if (limit_on == HIGH)
   {
     g.error = 1;

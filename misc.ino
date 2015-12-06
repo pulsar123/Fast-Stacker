@@ -108,8 +108,8 @@ void change_speed(float speed1_loc, short moving_mode1, short accel)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void go_to(float pos1, float speed, short accel)
-/* Initiating a travel to pos1 at acceleration accel and given target speed (positive number)
+void go_to(float pos1, float speed)
+/* Initiating a travel to pos1 at given target speed (positive number) and maximum acceleration.
    With non-zero BACKLASH constant, all go_to moves result in fully backlash-compensated moves. The
    backlash model used is the simplest possible: when starting from a good initial position
    (g.BL_counter=0), meaning the physical coordinate correspond to program coordinate, and
@@ -196,11 +196,9 @@ void go_to(float pos1, float speed, short accel)
     if (
       // Case 1: Moving towards the target, in the bad (negative) direction:
       g.speed <= 0.0 && !speed_changes ||
-      // Case 2: Moving towards the target, in the good direction, but might not far enough to compensate for the current backlash:
-      //      g.speed > 0.0 && !speed_changes && g.BL_counter > 0 ||
-      // Case 3: Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
+      // Case 2: Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
       g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
-      // Case 4: Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
+      // Case 3: Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
       g.speed > 0.0 && speed_changes)
     {
       // Current target position (to be achieved in the current go_to call):
@@ -218,8 +216,8 @@ void go_to(float pos1, float speed, short accel)
   // Global parameter to be used in motor_control():
   g.pos_goto = pos1;
 
-  // Setting the target speed and moving_mode=1:
-  change_speed(speed1_loc, 1, accel);
+  // Setting the target speed and moving_mode=1; in go_to, acceleration is always maximum possible (accel=2):
+  change_speed(speed1_loc, 1, 2);
 
   g.pos_stop_flag = 0;
 
@@ -346,12 +344,14 @@ void set_backlight()
       break;
 
     case 1:
-      analogWrite(PIN_LCD_LED, 127);
-      break;
-
-    case 2:
+    // For some reason intermediate backlight (127) started crashing the LCD (since I borrowed some pins)
+    // Switching to two level for now
       analogWrite(PIN_LCD_LED, 255);
       break;
+
+//    case 2:
+//      analogWrite(PIN_LCD_LED, 255);
+//      break;
   }
 
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);

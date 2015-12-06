@@ -18,14 +18,6 @@ void backlash()
  */
 {
 
-/*
-  if (g.first_loop == 1)
-  {
-      lcd.setCursor(0, 0);  lcd.print(g.BL_counter);lcd.print(g.calibrate);lcd.print(g.breaking);lcd.print(g.moving);lcd.print(g.backlashing);
-      delay(10000);
-  }
-*/
-  
   // Should not be moving or breaking, and should need >0 backlash compensation:
   // Don't do anything while calibrating.
   if (g.calibrate || g.breaking || g.moving || g.backlashing || g.BL_counter == 0)
@@ -35,9 +27,8 @@ void backlash()
   if (g.first_loop == 1)
   {
     // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
-    //!!!
     // Go_to the current position, with BL>0, will result in a full backlash compensation
-    go_to(g.pos, SPEED_LIMIT, 2);
+    go_to(g.pos, SPEED_LIMIT);
 
     // This should be done after go_to call:
     g.backlashing = 1;
@@ -47,7 +38,7 @@ void backlash()
   if (g.first_loop == 0)
   {
     // Backlash compensation. It's always done at the maximum acceletarion/speed
-    go_to(g.pos + (float)g.BL_counter, SPEED_LIMIT, 2);
+    go_to(g.pos + (float)g.BL_counter, SPEED_LIMIT);
 
     // This should be done after go_to call:
     g.backlashing = 1;

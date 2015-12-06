@@ -34,7 +34,7 @@ Issues to address:
 
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
@@ -124,13 +124,12 @@ const float MM_PER_ROTATION = 3.98;
 
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
-// All go_to() motions always get maximum BL compensation just in case (as it doesn't pose a problem); small rewinds (in negative direction) might
-// end up doing a fractional BL compensation, using the simplest BL model (the model: rail physically doesn't move until rewinding the full BACKLASH amount,
+// Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full BACKLASH amount,
 // and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
 // The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
-// Set to zero to disable BL compensation.
+// Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2;
 
 //////// Parameters which might need to be changed ////////
@@ -138,19 +137,20 @@ const float BACKLASH_MM = 0.2;
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
-// For an arbitrary rail and motor, make sure the following condition is met: 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) > 500 microseconds
+// For an arbitrary rail and motor, make sure the following condition is met: 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 const float SPEED_LIMIT_MM_S = 5;
 
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
-const float BREAKING_DISTANCE_MM = 2.0;
+const float BREAKING_DISTANCE_MM = 1.0;
 
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
-const float ACCEL_FACTOR = 10.0;
+// Set it to larger value if you typically deal with high magnifications, and lower value if do low magnifications.
+const float ACCEL_FACTOR = 4.0;
 
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
@@ -197,7 +197,7 @@ const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 // Acceleration used only during rewind or fast-forward ("1" / "A" keys)
 const float ACCEL_SMALL = ACCEL_LIMIT / ACCEL_FACTOR;
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
-//!!! 2* - to make goto accurate, but with higher decelerations at the end
+//` 2* - to make goto accurate, but with higher decelerations at the end
 const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-3 * SPEED_SMALL;

@@ -20,14 +20,14 @@ void camera()
       // 1-point stacking
     {
       if (g.stacking_direction == -1)
-        go_to((float)g.limit1 + 0.5, speed, 2);
+        go_to((float)g.limit1 + 0.5, speed);
       else
-        go_to((float)g.limit2 + 0.5, speed, 2);
+        go_to((float)g.limit2 + 0.5, speed);
     }
     else if (g.stacker_mode == 2)
       // 2-point stacking (after moving to the starting point)
     {
-      go_to((float)g.destination_point + 0.5, speed, 2);
+      go_to((float)g.destination_point + 0.5, speed);
     }
 
   }

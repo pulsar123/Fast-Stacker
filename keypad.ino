@@ -183,7 +183,8 @@ void process_keypad()
 
         case '4': // Backlighting control
           g.backlight++;
-          if (g.backlight > 2)
+          // LCD unstable for medium backlight; using only two levels:
+          if (g.backlight > 1)
             g.backlight = 0;
           set_backlight();
           break;
@@ -230,7 +231,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT, 2);
+          go_to(pos_target, SPEED_LIMIT);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -258,7 +259,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT, 2);
+          go_to(pos_target, SPEED_LIMIT);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -266,8 +267,31 @@ void process_keypad()
         case 'D':  // Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
           if (g.paused)
             break;
-          go_to((float)g.starting_point + 0.5, SPEED_LIMIT, 2);
+          go_to((float)g.starting_point + 0.5, SPEED_LIMIT);
           display_comment_line(" Going to P0  ");
+          break;
+
+        case '0': // Start shooting (2-point focus stacking), always from P1 (foreground point) - best if you need reproduceability
+          if (g.paused)
+            break;
+          // Checking the correctness of point1/2
+          if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
+          {
+            // Using the simplest approach which will result the last shot to always slightly undershoot
+            g.Nframes = Nframes();
+            // Unlike "0" command, "#0" always starts shooting from the foreground point (P1):
+            go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+            g.starting_point = g.point1;
+            g.destination_point = g.point2;
+            g.stacking_direction = 1;
+            g.stacker_mode = 1;
+            display_comment_line("2-points stack");
+          }
+          else
+          {
+            // Should print error message
+            display_comment_line("Bad 2 points! ");
+          }
           break;
 
       } // switch
@@ -353,7 +377,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT, 2);
+                go_to(pos_target, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -385,7 +409,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT, 2);
+                go_to(pos_target, SPEED_LIMIT);
                 display_frame_counter();
               }
               else
@@ -437,7 +461,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point1 + 0.5, SPEED_LIMIT, 2);
+              go_to((float)g.point1 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P1  ");
               break;
 
@@ -448,7 +472,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point2 + 0.5, SPEED_LIMIT, 2);
+              go_to((float)g.point2 + 0.5, SPEED_LIMIT);
               display_comment_line(" Going to P2  ");
               break;
 
@@ -483,14 +507,14 @@ void process_keypad()
                   short d2 = (short)abs(delta);
                   if (d1 < d2)
                   {
-                    go_to((float)g.point1 + 0.5, SPEED_LIMIT, 2);
+                    go_to((float)g.point1 + 0.5, SPEED_LIMIT);
                     g.starting_point = g.point1;
                     g.destination_point = g.point2;
                     g.stacking_direction = 1;
                   }
                   else
                   {
-                    go_to((float)g.point2 + 0.5, SPEED_LIMIT, 2);
+                    go_to((float)g.point2 + 0.5, SPEED_LIMIT);
                     g.starting_point = g.point2;
                     g.destination_point = g.point1;
                     g.stacking_direction = -1;
@@ -686,7 +710,7 @@ void process_keypad()
             float pos1 = g.pos - dx_stop;
             // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
             // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
-            go_to(pos1, SPEED_LIMIT, 2);
+            go_to(pos1, SPEED_LIMIT);
           }
           else
 #endif
