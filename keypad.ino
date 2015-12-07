@@ -54,6 +54,7 @@ void process_keypad()
           {
             g.paused = 0;
             g.just_paused = 0;
+            g.frame_counter = 0;
             letter_status("  ");
           }
           else
@@ -655,6 +656,7 @@ void process_keypad()
           else
             // In 1-point stacking, we abort
           {
+            g.frame_counter = 0;
             display_comment_line("Stacking abort");
           }
           g.stacker_mode = 0;

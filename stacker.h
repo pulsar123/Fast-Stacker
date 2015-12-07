@@ -19,7 +19,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.09"
+#define VERSION "0.10"
 
 // Options controlling compilation:
 
