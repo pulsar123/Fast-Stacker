@@ -1,11 +1,8 @@
 /* Sergey Mashchenko 2015
 
-   User header file
+   User header file. Contains user adjustable parameters (constants), and other stuff.
 
    To be used with automated macro rail for focus stacking
-
-Basic functionality to implement:
- - Error message if the battery level is below acceptable.
 
 Issues to address:
  - Position accuracy after turning off/on again: the motor will likely move to the
@@ -26,26 +23,23 @@ Issues to address:
 
 // Options controlling compilation:
 
+// Debugging options
 // For debugging with serial monitor:
 //#define DEBUG
-
 // For timing the main loop:
 //#define TIMING
-
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
 //#define MOTOR_DEBUG
-
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
-
 // If undefined, lcd will not be used
 #define LCD
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
 
-// If defined, will be using my experimental module to make sure that my physical microsteps always correspond to the program coordinates
+// If defined, will be using my module to make sure that my physical microsteps always correspond to the program coordinates
 // (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
 // My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_backlash) until the
 // point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
@@ -54,12 +48,12 @@ Issues to address:
 #define PRECISE_STEPPING
 
 // Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
-// amount as when pressing fast-forward ("A) for the same period of time, with proper backlash compensation. This should result in smoother user experience.
+// amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
 // If undefined, to rewind by the same amount,
 // one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation. 
 #define EXTENDED_REWIND
 
-//////// Parameters to be set only once //////////
+//////// Hardware related parameters //////////
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -126,7 +120,7 @@ const float MM_PER_ROTATION = 3.98;
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
 // Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full BACKLASH amount,
 // and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
-// The algorithm guarantees that every time rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
+// The algorithm guarantees that every time the rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
@@ -137,7 +131,8 @@ const float BACKLASH_MM = 0.2;
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
-// For an arbitrary rail and motor, make sure the following condition is met: 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
+// For an arbitrary rail and motor, make sure the following condition is met: 
+// 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 const float SPEED_LIMIT_MM_S = 5;
 
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
@@ -149,7 +144,7 @@ const float BREAKING_DISTANCE_MM = 1.0;
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
-// Set it to larger value if you typically deal with high magnifications, and lower value if do low magnifications.
+// Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
 const float ACCEL_FACTOR = 4.0;
 
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
@@ -168,7 +163,7 @@ const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment l
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
-// If you focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D
+// If your focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D:
 const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
 
 // INPUT PARAMETERS:
@@ -192,19 +187,18 @@ const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); /
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
-// This is a limiter, to minimize damage to the rail and motor
+// (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 // Acceleration used only during rewind or fast-forward ("1" / "A" keys)
 const float ACCEL_SMALL = ACCEL_LIMIT / ACCEL_FACTOR;
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
-//` 2* - to make goto accurate, but with higher decelerations at the end
+// 2* - to make goto accurate, but with higher decelerations at the end
+// Currently not used
 const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
-const float SPEED_TINY = 1e-3 * SPEED_SMALL;
+const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
 // Backlash in microsteps:
 const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP);
-// Slightly smaller value of backlash, to be used in motor_control
-const short BACKLASH1 = (short)(0.9 * BACKLASH_MM / MM_PER_MICROSTEP);
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -221,7 +215,7 @@ short SIZE_REG=sizeof(regist);
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
 const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will be done at the beginning (1 byte)
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
-const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter; should be 0? (2 bytes)
+const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter (2 bytes)
 const int ADDR_LIMIT2 = ADDR_LIMIT1 + 2; // pos_short for the background limiter (2 bytes)
 const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
 const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
@@ -251,9 +245,9 @@ struct global
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
-  float speed1; // Target speed, in microsteps per microsecond (
+  float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
-  short accel; // Current acceleration. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
+  short accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
   float accel_v[5] = {-ACCEL_LIMIT,-ACCEL_SMALL,0.0,ACCEL_SMALL,ACCEL_LIMIT}; // Five possible floating point values for acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
   float pos_old; // Last position, in the previous arduino loop
@@ -278,7 +272,7 @@ struct global
   short limit1; // pos_short for the foreground limiter
   short limit2; // pos_short for the background limiter
   short limit_tmp; // temporary value of a new limit when rail hits a limiter
-  unsigned char breaking;  // =1 when doing emergency breaking (to avoid hitting the limiting switch); disables the keypad
+  unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
   short moving_mode; // =0 when using speed_change, =1 when using go_to
@@ -289,7 +283,7 @@ struct global
   short starting_point; // The starting point in the focus stacking with two points
   short destination_point; // The destination point in the focus stacking with two points
   short stacking_direction; // 1/-1 for direct/reverse stacking direction
-  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: focus stacking itself; 3: single-point stacking
+  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
   float msteps_per_frame; // Microsteps per frame for focus stacking
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
@@ -301,14 +295,13 @@ struct global
   short i_n_shots; // counter for n_shots parameter;
   short direction; // -1/1 for reverse/forward directions of moving
   char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
-  char p_buffer[16]; // keeps a copy of the buffer used to print position on display
   byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   KeyState state_old;  // keeping old key[0] state
   KeyState state1_old;  // keeping old key[1] state
   short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
-  short backlight; // backlight level; 0,1,2 for now
+  short backlight; // backlight level; 0,1 for now
   struct regist reg1; // Custom parameters saved in register1
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
@@ -317,7 +310,7 @@ struct global
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short just_paused; // a "just paused" state - before making any movements (step a single frame etc.)
-  short BL_counter; // Counting microsteps mad in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
+  short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   short first_loop=1; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
   short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise

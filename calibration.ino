@@ -1,5 +1,5 @@
 void calibration()
-/* Calibration of either one or both limiting switches - placing soft limits (limi1, limit2) such that the hard
+/* Calibration of either one or both limiting switches - placing soft limits (limit1, limit2) such that the hard
    limits (triggering the limiting switches) normally doesn't occur.
 
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.

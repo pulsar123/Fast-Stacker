@@ -8,13 +8,6 @@ void backlash()
     This routine should work in concert with go_to() function, where all moves ending in the bad (negative) direction
     should always travel BACKLASH further back. The backlash() picks up where go_to() left, after the rail stops, and rewinds
     the rail back in the good direction, to completely compensate the backlash.
-
-    It also works with the rewind function (key "1"); in this case, unlike go_to case, partial backlash compensation
-    (as recorded by the variable g.BL_counter) is allowed. Meaning that for small rewinds (travelling less than BACKLASH
-    distance) the compensating go_to initiated here will be smaller than BACKLASH, whcih should make it more convenient
-    for fine-tuning fore/background points. A drawback: this relies on backlash known precisely. For example, it will start
-    producing some artifacts (overcompensating) when the rail is pointed at an angle (so the gravity will start shrinking
-    the effect of backlash).
  */
 {
 
@@ -37,7 +30,7 @@ void backlash()
 
   if (g.first_loop == 0)
   {
-    // Backlash compensation. It's always done at the maximum acceletarion/speed
+    // Backlash compensation.
     go_to(g.pos + (float)g.BL_counter, SPEED_LIMIT);
 
     // This should be done after go_to call:

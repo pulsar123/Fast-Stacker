@@ -137,8 +137,7 @@ void display_frame_counter()
 /*
  Printing the current stacking frame number in the status line. Allowing for negative (>-100) and
  positive <1000 numbers.
- Very expensive (time-wise)! Can result in up to 0.5% of microsteps skipped.
- */
+  */
 {
   if (g.error)
     return;
@@ -233,7 +232,7 @@ void battery_status()
   lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
-  // A simple 4-level indication (between V_LOW and V_HIGH):
+  // A 4-level bitmao indication (between V_LOW and V_HIGH):
   short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
   if (level < 0)
     level = 0;
@@ -355,7 +354,6 @@ void display_two_point_params()
     return;
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
-  //  sprintf(g.buffer, "%3d %4.1fm %3ds", g.Nframes, dx, dt);
   if (g.Nframes < 1000)
     sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
   else
@@ -379,7 +377,6 @@ void display_two_points()
 {
   if (g.error)
     return;
-  //  sprintf(g.buffer, "F%5.2f  B%5.2f", MM_PER_MICROSTEP * (float)g.point1, MM_PER_MICROSTEP * (float)g.point2);
   float p1 = MM_PER_MICROSTEP * (float)g.point1;
   float p2 = MM_PER_MICROSTEP * (float)g.point2;
   sprintf(g.buffer, "F%2d.%02d  B%2d.%02d", (int)p1, (int)(100.0 * (p1 - (int)p1)), (int)p2, (int)(100.0 * (p2 - (int)p2)));
@@ -423,24 +420,21 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning || g.moving==0 && g.BL_counter>0)
+  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0)
     return;
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
 #ifdef PRECISE_STEPPING
   short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
-//  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
+  //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
-//  sprintf(g.buffer, "%2d %2d %2d %2d %2d", n_fixed, n_failed, n2, n3, n4);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
-#endif  
+#endif
 #else
   sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
 #endif
-  //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, g.BL_counter);
-  // Do the slow display operation only if the number changed:
 #ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);

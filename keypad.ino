@@ -1,15 +1,3 @@
-float Msteps_per_frame ()
-{
-  return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-}
-
-
-short Nframes ()
-{
-  return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
-}
-
-
 void process_keypad()
 /*
  All the keypad runtime stuff goes here
@@ -18,27 +6,11 @@ void process_keypad()
   float speed, pos_target;
   short frame_counter0;
 
-  // Disabling the last comment line displaying after COMMENT_DELAY interval:
-  if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
-  {
-    g.comment_flag == 0;
-    if (g.moving == 0)
-      display_current_position();
-  }
-
-  // Refreshing whole display regularly (only when not moving, as it is slow):
-  if (g.moving == 0 && g.calibrate_warning == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
-  {
-    g.t_display = g.t;
-    display_all("  ");
-  }
-
-
+ 
   // Ignore keypad during emergency breaking
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
 
-  //  if (g.stacker_mode == 1 && g.moving == 0)
   if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
     // The flag means we just initiated stacking:
@@ -59,13 +31,13 @@ void process_keypad()
 
 
   if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
-    // Two-key commands (they all involve the "Ctrl" key - "#")
+    // Two-key commands (they all start with "#" key)
   {
     if (state1 == PRESSED)
     {
       switch (keypad.key[1].kchar)
       {
-        case 'C': // Initiate a full calibration
+        case 'C': // #C: Initiate a full calibration
           // Ignore if moving:
           if (g.moving == 1 || g.paused)
             break;
@@ -77,7 +49,7 @@ void process_keypad()
           display_all("  ");
           break;
 
-        case 'B':  // Initiate emergency breaking, or abort paused stacking
+        case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
           if (g.paused && g.moving == 0)
           {
             g.paused = 0;
@@ -87,7 +59,7 @@ void process_keypad()
           else
           {
             change_speed(0.0, 0, 2);
-            // This should be after change_speed(0.0):
+            // This should be done after change_speed(0.0):
             g.breaking = 1;
             letter_status("B ");
             g.calibrate = 0;
@@ -97,7 +69,7 @@ void process_keypad()
           }
           break;
 
-        case '2': // Save parameters to first memory bank
+        case '2': // #2: Save parameters to first memory bank
           if (g.paused)
             break;
           g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
@@ -105,7 +77,7 @@ void process_keypad()
           display_comment_line("Saved to Reg1 ");
           break;
 
-        case '3': // Read parameters from first memory bank
+        case '3': // #3: Read parameters from first memory bank
           if (g.paused)
             break;
           EEPROM.get( ADDR_REG1, g.reg1);
@@ -125,7 +97,7 @@ void process_keypad()
           display_comment_line("Read from Reg1");
           break;
 
-        case '5': // Save parameters to second memory bank
+        case '5': // #5: Save parameters to second memory bank
           if (g.paused)
             break;
           g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
@@ -133,7 +105,7 @@ void process_keypad()
           display_comment_line("Saved to Reg2 ");
           break;
 
-        case '6': // Read parameters from second memory bank
+        case '6': // #6: Read parameters from second memory bank
           if (g.paused)
             break;
           EEPROM.get( ADDR_REG2, g.reg2);
@@ -153,7 +125,7 @@ void process_keypad()
           display_comment_line("Read from Reg2");
           break;
 
-        case '8': // Save parameters to third memory bank
+        case '8': // #8: Save parameters to third memory bank
           if (g.paused)
             break;
           g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
@@ -161,7 +133,7 @@ void process_keypad()
           display_comment_line("Saved to Reg3 ");
           break;
 
-        case '9': // Read parameters from third memory bank
+        case '9': // #9: Read parameters from third memory bank
           if (g.paused)
             break;
           EEPROM.get( ADDR_REG3, g.reg3);
@@ -181,7 +153,7 @@ void process_keypad()
           display_comment_line("Read from Reg3");
           break;
 
-        case '4': // Backlighting control
+        case '4': // #4: Backlighting control
           g.backlight++;
           // LCD unstable for medium backlight; using only two levels:
           if (g.backlight > 1)
@@ -189,7 +161,7 @@ void process_keypad()
           set_backlight();
           break;
 
-        case '*': // Factory reset
+        case '*': // #*: Factory reset
           if (g.paused)
             break;
           factory_reset();
@@ -198,21 +170,21 @@ void process_keypad()
           display_all("  ");
           break;
 
-        case '7': // Manual camera shutter triggering
+        case '7': // #7: Manual camera shutter triggering
           // Setting the shutter on:
           digitalWrite(PIN_SHUTTER, HIGH);
           g.shutter_on = 1;
           g.t_shutter = g.t;
           break;
 
-        case '1': // Rewind a single frame step (no shooting)
+        case '1': // #1: Rewind a single frame step (no shooting)
           if (g.moving)
             break;
           // Required microsteps per frame:
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            // This if condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
+            // This "if" condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
             if (!g.just_paused || g.stacking_direction < 0)
               g.frame_counter = g.frame_counter - g.stacking_direction;
             pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
@@ -225,7 +197,6 @@ void process_keypad()
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
           if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-            //          if (pos_target < (float)g.limit1 + 100.0)
           {
             // Recovering the original frame counter if aborting:
             g.frame_counter = frame_counter0;
@@ -236,7 +207,7 @@ void process_keypad()
           g.just_paused = 0;
           break;
 
-        case 'A': // Fast-forward a single frame step (no shooting)
+        case 'A': // #A: Fast-forward a single frame step (no shooting)
           if (g.moving)
             break;
           // Required microsteps per frame:
@@ -254,7 +225,6 @@ void process_keypad()
             pos_target = g.pos + g.msteps_per_frame;
           }
           if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-            //          if (pos_target > (float)g.limit2 - 100.0)
           {
             g.frame_counter = frame_counter0;
             break;
@@ -264,14 +234,14 @@ void process_keypad()
           g.just_paused = 0;
           break;
 
-        case 'D':  // Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
+        case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
           if (g.paused)
             break;
           go_to((float)g.starting_point + 0.5, SPEED_LIMIT);
           display_comment_line(" Going to P0  ");
           break;
 
-        case '0': // Start shooting (2-point focus stacking), always from P1 (foreground point) - best if you need reproduceability
+        case '0': // #0: Start shooting (2-point focus stacking), always from P1 (foreground point) - best if you need reproduceability
           if (g.paused)
             break;
           // Checking the correctness of point1/2
@@ -340,7 +310,7 @@ void process_keypad()
           {
             g.N_repeats++;
             g.t_last_repeat = g.t;
-            // ??? A trick, as "key" has only proper value when just pressed
+            // A trick, as "key" has only proper value when just pressed
             key = g.key_old;
           }
           else
@@ -358,7 +328,7 @@ void process_keypad()
 
           switch (key)
           {
-            case '1':  // Rewinding, or moving 10 frames back for the current stacking direction (if paused)
+            case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
               if (g.pos_short_old <= g.limit1)
                 break;
 #ifdef MOTOR_DEBUG
@@ -390,7 +360,7 @@ void process_keypad()
               g.just_paused = 0;
               break;
 
-            case 'A':  // Fast forwarding, or moving 10 frames forward  for the current stacking direction (if paused)
+            case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
               if (g.pos_short_old >= g.limit2)
                 break;
 #ifdef MOTOR_DEBUG
@@ -422,7 +392,7 @@ void process_keypad()
               g.just_paused = 0;
               break;
 
-            case '4':  // Set foreground point
+            case '4':  // 4: Set foreground point
               if (g.paused || g.moving)
                 break;
               g.point1 = g.pos_short_old;
@@ -438,7 +408,7 @@ void process_keypad()
               EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
               break;
 
-            case 'B':  // Set background point
+            case 'B':  // B: Set background point
               if (g.paused || g.moving)
                 break;
               g.point2 = g.pos_short_old;
@@ -454,7 +424,7 @@ void process_keypad()
               EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
               break;
 
-            case '7':  // Go to the foreground point
+            case '7':  // 7: Go to the foreground point
               if (g.paused)
                 break;
 #ifdef MOTOR_DEBUG
@@ -465,7 +435,7 @@ void process_keypad()
               display_comment_line(" Going to P1  ");
               break;
 
-            case 'C':  // Go to the background point
+            case 'C':  // C: Go to the background point
               if (g.paused)
                 break;
 #ifdef MOTOR_DEBUG
@@ -476,7 +446,7 @@ void process_keypad()
               display_comment_line(" Going to P2  ");
               break;
 
-            case '0': // Start shooting (2-point focus stacking)
+            case '0': // 0: Start shooting (2-point focus stacking) from the nearest point
               // Checking the correctness of point1/2
               if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
               {
@@ -506,6 +476,7 @@ void process_keypad()
                   delta = g.pos_short_old - g.point2;
                   short d2 = (short)abs(delta);
                   if (d1 < d2)
+                  // Nearest point is P1
                   {
                     go_to((float)g.point1 + 0.5, SPEED_LIMIT);
                     g.starting_point = g.point1;
@@ -513,6 +484,7 @@ void process_keypad()
                     g.stacking_direction = 1;
                   }
                   else
+                  // Nearest point is P2
                   {
                     go_to((float)g.point2 + 0.5, SPEED_LIMIT);
                     g.starting_point = g.point2;
@@ -531,11 +503,11 @@ void process_keypad()
               g.just_paused = 0;
               break;
 
-            case '*':  // Initiate one-point focus stacking backwards
-              // Simplest workaround: ignore the command if currently moving
-              // (better solution would be to stop first)
+            case '*':  // *: Initiate one-point focus stacking backwards
               if (g.paused)
                 break;
+              // Simplest workaround: ignore the command if currently moving
+              // (better solution would be to stop first)
               if (!g.moving)
               {
                 // The flag means we just initiated stacking:
@@ -552,7 +524,7 @@ void process_keypad()
               }
               break;
 
-            case 'D':  // Initiate one-point focus stacking forward
+            case 'D':  // D: Initiate one-point focus stacking forward
               if (g.paused)
                 break;
               if (!g.moving)
@@ -571,7 +543,7 @@ void process_keypad()
               }
               break;
 
-            case '2':  // Decrease parameter n_shots
+            case '2':  // 2: Decrease parameter n_shots (for 1-point sstacking)
               if (g.paused)
                 break;
               if (g.i_n_shots > 0)
@@ -582,7 +554,7 @@ void process_keypad()
               display_all("  ");
               break;
 
-            case '3':  // Increase parameter n_shots
+            case '3':  // 3: Increase parameter n_shots (for 1-point sstacking)
               if (g.paused)
                 break;
               if (g.i_n_shots < N_PARAMS - 1)
@@ -593,7 +565,7 @@ void process_keypad()
               display_one_point_params();
               break;
 
-            case '5':  // Decrease parameter mm_per_frame
+            case '5':  // 5: Decrease parameter mm_per_frame
               if (g.paused)
                 break;
               if (g.i_mm_per_frame > 0)
@@ -602,20 +574,19 @@ void process_keypad()
                 break;
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
-              // Using instead the simplest approach, which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
               display_all("  ");
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
               break;
 
-            case '6':  // Increase parameter mm_per_frame
+            case '6':  // 6: Increase parameter mm_per_frame
               if (g.paused)
                 break;
               if (g.i_mm_per_frame < N_PARAMS - 1)
               {
                 g.i_mm_per_frame++;
                 // Estimating the required speed in microsteps per microsecond
-                speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+                speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
                 if (speed > SPEED_LIMIT)
                 {
@@ -627,13 +598,12 @@ void process_keypad()
                 break;
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
-              // Using instead the simplest approach, which will result the last shot to always slightly undershoot
               g.Nframes = Nframes();
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
               display_all("  ");
               break;
 
-            case '8':  // Decrease parameter fps
+            case '8':  // 8: Decrease parameter fps
               if (g.paused)
                 break;
               if (g.i_fps > 0)
@@ -644,14 +614,14 @@ void process_keypad()
               display_all("  ");
               break;
 
-            case '9':  // Increase parameter fps
+            case '9':  // 9: Increase parameter fps
               if (g.paused)
                 break;
               if (g.i_fps < N_PARAMS - 1)
               {
                 g.i_fps++;
                 // Estimating the required speed in microsteps per microsecond
-                speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+                speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
                 if (speed > SPEED_LIMIT)
                 {
@@ -667,7 +637,8 @@ void process_keypad()
 
 
           } // End of case
-        }
+        }  // if (g.stacker_mode == 0)
+        
         else if (g.stacker_mode > 0)
           // Mode 1/2: focus stacking
         {
@@ -690,6 +661,7 @@ void process_keypad()
         }
 
       }  // if (PRESSED)
+      
       else
         // if a key was just released
       {

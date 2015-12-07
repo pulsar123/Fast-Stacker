@@ -15,7 +15,7 @@ void camera()
     // Required microsteps per frame:
     g.msteps_per_frame = Msteps_per_frame();
     // Estimating the required speed in microsteps per microsecond
-    speed = SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+    speed = target_speed();
     if (g.stacker_mode == 3)
       // 1-point stacking
     {

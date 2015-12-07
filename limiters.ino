@@ -13,7 +13,7 @@ void limiters()
   if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
     return;
 
-  // Priority action: read the input from the limiting switches:
+  // Read the input from the limiting switches:
   unsigned char limit_on = digitalRead(PIN_LIMITERS);
 
   //////// Hard limits //////
@@ -103,7 +103,7 @@ void limiters()
           return;
       }
 
-      // Something wrong:
+      // Something went wrong:
       if (dx < 0)
         return;
 

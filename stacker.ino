@@ -256,6 +256,9 @@ void loop()
   // Performing backlash compensation after bad direction moves:
   backlash();
 
+  // Display related regular activities:
+  display_stuff();
+
   // Processing the keypad:
   process_keypad();
 

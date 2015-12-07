@@ -1,6 +1,3 @@
-//#include <Arduino.h>
-//#include "stacker.h"
-
 void motor_control()
 /* Controlling the stepper motor, based on current time, target speed (speed1), acceleration (accel),
    values at the last accel change (t0, pos0, speed0), and old integer position pos_old_short.
@@ -21,7 +18,7 @@ void motor_control()
   g.t = micros();
 #endif
 
-  // If we initied a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
+  // If we initiated a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
   // that the motion is only actually initiated here, skipping all the potential delays (especially when using
   // SAVE_ENERGY).
   if (g.started_moving == 1)
@@ -38,7 +35,7 @@ void motor_control()
     return;
 
 
-  ////////   PART 1: estimating the current position, pos
+  ////////   PART 1: estimating the current position, pos (solving the equation of motion)
 
   // Time in microseconds since the last accel change:
   dt = g.t - g.t0;
@@ -51,21 +48,21 @@ void motor_control()
   {
     // Change of speed (assuming accel hasn't changed from t0 to t);
     // can be negative or positive:
-    dV = g.accel_v[2+g.accel] * (float)dt;
+    dV = g.accel_v[2 + g.accel] * (float)dt;
 
     // Current speed (can be positive or negative):
     g.speed = g.speed0 + dV;
 
     // If going beyond the target speed, stop accelerating:
-    if ((g.accel >0 && g.speed >= g.speed1) || (g.accel < 0 && g.speed <= g.speed1))
+    if ((g.accel > 0 && g.speed >= g.speed1) || (g.accel < 0 && g.speed <= g.speed1))
     {
       i_case = 1;
       // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
       // dt_a = t_a-t0; should be >0, and <dt:
-      dt_a = (g.speed1 - g.speed0) / g.accel_v[2+g.accel];
+      dt_a = (g.speed1 - g.speed0) / g.accel_v[2 + g.accel];
       // Current position has two components: first one (from t0 to t_a) is still accelerated,
       // second one (t_a ... t) has accel=0:
-      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2+g.accel] * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
+      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2 + g.accel] * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
       g.speed = g.speed1;
       new_accel = 0;
       // If the target speed was zero, stop now
@@ -109,8 +106,7 @@ void motor_control()
   }
 
   // If the pos_short changed since the last step, do another step
-  // This implicitely assumes that there are more than one arduino loops per step; if not, perhaps
-  // I should allow more than one step here, in rapid sequence? This can result in high accelerations though
+  // This implicitely assumes that Arduino loop is shorter than the time interval between microsteps at the largest allowed speed
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):
@@ -123,17 +119,19 @@ void motor_control()
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
     short d = abs(pos_short - g.pos_short_old);
 
-#ifdef PRECISE_STEPPING
+#ifdef PRECISE_STEPPING               //  Precise stepping module
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Fixing the rare occasions of a skipped motor step, by adjusting the time delay constant (g.dt_backlash) to the point
     // when we are back in the past around the time the correct step should have been taken.
     // This is just a fix, not a good solution if your SPEED_LIMIT is so high that the Arduino loop becomes
     // comparable or longer than the time interval between motor steps at the highest speed allowed.
     // Do some TIMING tests to figure out the timings, if you use parts with different specs (motor, rail, LCD, keypad).
-    // In my setup, average Arduino loop length is
+    // In my setup, average Arduino loop length is 250 us when moving, or
     // about 50% of the microstep interval when moving at the maximum (5 mm/s) speed; the longest loops are
-    // around 120%, but my rail skips only a couple of steps per 10,000 steps, sometimes. This is easily
+    // around 120%, but my rail skips only a couple of steps per 10,000 steps on average. This is easily
     // fixable (see below). If you get a sizable fraction (say, more than 5 percent) of the steps skipped,
-    // you need to lower down your SPEED_LIMIT.
+    // you need to lower down your SPEED_LIMIT. For an arbitrary rail and motor, make sure the following condition is met:
+    // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
     short d_sign;
     if (d > 1)
     {
@@ -153,7 +151,7 @@ void motor_control()
       {
         case 1: // The most difficult case when acceleration changed to zero since t_old, when we hit the target speed
           // Coordinate corresponding to t_a (when accel changed to zero; in the past; should be between g.pos_old and g.pos):
-          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2+g.accel] * (float)dt_a);
+          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2 + g.accel] * (float)dt_a);
           // Two subcases
           if ((pos_new >= pos_a && pos_new <= g.pos) || (pos_new <= pos_a && pos_new >= g.pos))
             // First subcase: the single step should have happened during the latter (accel=0) part of the time interval since t_old
@@ -190,14 +188,14 @@ void motor_control()
       {
         float D2;
         // We have to solve a square equation to recover the time from coordinate
-        float D = g.speed0 * g.speed0 - 2.0 * g.accel_v[2+g.accel] * (g.pos0 - pos_new);
+        float D = g.speed0 * g.speed0 - 2.0 * g.accel_v[2 + g.accel] * (g.pos0 - pos_new);
         // Checking if there is at least one real solution:
         if (D >= 0.0)
         {
           D2 = sqrt(D);
           // Two possible solutions:
-          float dt1 = (-g.speed0 - D2) / (g.accel_v[2+g.accel]);
-          float dt2 = (-g.speed0 + D2) / (g.accel_v[2+g.accel]);
+          float dt1 = (-g.speed0 - D2) / (g.accel_v[2 + g.accel]);
+          float dt2 = (-g.speed0 + D2) / (g.accel_v[2 + g.accel]);
           // Picking the right solution (if any):
           if (dt - dt1 > 0 && dt - dt1 < g.t - g.t_old)
             dt1_backlash = dt - dt1;
@@ -242,12 +240,16 @@ void motor_control()
 #endif
 
     }  // if (d > 1)
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #endif // PRECISE_STEPPING
 
-    // Measuring backlash compensation:
+    // Measuring backlash (it gets larger as we move in the bad - negative - direction,
+    // and gets smaller as we move in the good - positive - direction):
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
+    // Backlash cannot be negative:
     if (g.BL_counter < 0)
       g.BL_counter = 0;
+    // and cannot be larger than BACKLASH:
     if (g.BL_counter > BACKLASH)
       g.BL_counter = BACKLASH;
 
@@ -273,7 +275,7 @@ void motor_control()
     // Saving the current position as old:
     g.pos_short_old = pos_short;
     g.pos_old = g.pos;
-    // Old speed (to use to detect when the dirtection has to change):
+    // Old speed (to use to detect when the direction has to change):
     g.speed_old = g.speed;
   }  // if (pos_short != g.pos_short_old)
 
@@ -306,7 +308,7 @@ void motor_control()
         // If we initiate breaking now, we'll always slightly overshoot the target position (so the previous part
         // with the instant stop when speed is very small makes sense)
       {
-        // Initiating breaking:
+        // Initiating breaking at maximum (2) acceleration index:
         if (g.speed >= 0.0)
           new_accel = -2;
         else

@@ -1,3 +1,27 @@
+float target_speed ()
+// Estimating the required speed in microsteps per microsecond
+{
+  return SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+}
+
+
+float Msteps_per_frame ()
+/* Computing the "microsteps per frame" parameter - redo this every time g.i_mm_per_frame changes.
+ */
+{
+  return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+}
+
+
+short Nframes ()
+/* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
+   g.msteps_per_frame, g.point1, or g.point2 changes.
+ */
+{
+  return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+}
+
+
 short nintMy(float x)
 /*
  My version of nint. Float -> short conversion. Valid for positive/negative/zero.
@@ -57,7 +81,7 @@ short roundMy(float x)
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void change_speed(float speed1_loc, short moving_mode1, short accel)
-/* Run the function every time you want to change speed. It will figure out required accel based on current speed and speed1,
+/* Run the function every time you want to change speed. It will figure out required acceleration based on current speed and speed1,
    and will update t0, speed0, pos0, if accel changed here. The parameter "accel" is the suggested acceleration (0, 1, or 2).
    Inputs:
     - speed1_loc: new target speed.
@@ -67,7 +91,6 @@ void change_speed(float speed1_loc, short moving_mode1, short accel)
   short new_accel;
 
   // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
-  // DOn't forget to reset breaking=0 somewhere!
   if (g.breaking || g.calibrate_flag == 2)
     return;
 
@@ -112,7 +135,7 @@ void go_to(float pos1, float speed)
 /* Initiating a travel to pos1 at given target speed (positive number) and maximum acceleration.
    With non-zero BACKLASH constant, all go_to moves result in fully backlash-compensated moves. The
    backlash model used is the simplest possible: when starting from a good initial position
-   (g.BL_counter=0), meaning the physical coordinate correspond to program coordinate, and
+   (g.BL_counter=0), meaning the physical coordinate = program coordinate, and
    moving in the bad (negative pos) direction, the rail will not start moving until BACKLASH
    steps are done (and g.BL_counter gets the largest possible value, BACKLASH), and then it starts
    moving instantly. If switching direction, again the rail doesn't move until BACKLASH steps
@@ -145,10 +168,10 @@ void go_to(float pos1, float speed)
   // If we are here and pos1_short = pos_short_phys, that could only happen if g.BL_counter>0, so what we need
   // to accomplish is to compensate the backlash (move g.BL_counter steps in the positive direction)
   if (pos1_short >= pos_short_phys)
-    //  if (pos1 > g.pos)
     g.direction = 1;
   else
     g.direction = -1;
+
   motion_status();
 
   // Considering separately the cases when we are at rest, and when we are currently moving
@@ -229,7 +252,7 @@ void go_to(float pos1, float speed)
 
 void stop_now()
 /*
- Things to do when we completely stop. Should only be called from motor_control()
+ Things to do when we decide to stop inside motor_control().
  */
 {
 #ifdef TIMING
@@ -287,7 +310,7 @@ void stop_now()
   if (g.calibrate_init == 3 && g.calibrate_warning == 1)
   {
     g.calibrate_warning = 0;
-    //??? To clear garbage in the status line:
+    // To clear garbage in the status line:
     display_status_line("              ");
   }
 
@@ -324,18 +347,9 @@ void stop_now()
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-void show_params()
-{
-  //  Serial.print(pos_short_old);
-  //  Serial.print(" ");
-  //  Serial.println(pos);
-  return;
-}
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 void set_backlight()
-// Setting the LCD backlight. 3 levels for now.
+// Setting the LCD backlight. 2 levels for now.
 {
   switch (g.backlight)
   {
@@ -344,14 +358,14 @@ void set_backlight()
       break;
 
     case 1:
-    // For some reason intermediate backlight (127) started crashing the LCD (since I borrowed some pins)
-    // Switching to two level for now
+      // For some reason intermediate backlight (127) started crashing the LCD (since I borrowed some pins)
+      // Switching to two level for now
       analogWrite(PIN_LCD_LED, 255);
       break;
 
-//    case 2:
-//      analogWrite(PIN_LCD_LED, 255);
-//      break;
+      //    case 2:
+      //      analogWrite(PIN_LCD_LED, 255);
+      //      break;
   }
 
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);
@@ -369,19 +383,7 @@ void coordinate_recalibration()
 {
   if (g.moving)
     return;
-  //  EEPROM.put( ADDR_LIMIT1, g.limit1);
 
-  /*
-      g.pos = g.pos + (float)g.coords_change;
-      g.pos_short_old = g.pos_short_old + g.coords_change;
-      g.t0 = g.t;
-      g.pos0 = g.pos;
-      // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
-      g.limit2 = g.limit2 + g.coords_change;
-      EEPROM.put( ADDR_LIMIT2, g.limit2);
-      // In new coordinates, g.limit1 is always zero:
-      g.limit1 = g.limit1 + g.coords_change;
-      */
   g.pos = g.pos + (float)g.coords_change;
   g.pos_short_old = g.pos_short_old + g.coords_change;
   g.t0 = g.t;
