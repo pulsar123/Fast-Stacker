@@ -19,7 +19,14 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.10"
+#define VERSION "0.11"
+
+// New experimental parameters:
+// First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in us:
+const unsigned long FIRST_DELAY = 2000000;
+// Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), us:
+const unsigned long SECOND_DELAY = 500000;
+
 
 // Options controlling compilation:
 
@@ -30,11 +37,14 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
 #define LCD
+
+// If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
+//#define SOFTWARE_SPI
 
 // If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
 #define SAVE_ENERGY
@@ -107,7 +117,13 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 // sdin (MOSI) is on pin 11 and sclk on pin 13.
 // The LCD has 6 lines (rows) and 14 columns
 // Pin 10 has to be unused (will be used internally)
+#ifdef SOFTWARE_SPI
+// Software SPI emulation:
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
+#else
+// Hardware SPI
 pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+#endif
 
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
@@ -314,6 +330,8 @@ struct global
   short first_loop=1; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
   short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
+  short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
+  short noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;

@@ -316,8 +316,10 @@ void stop_now()
 
   if (g.stacker_mode >= 2 && g.backlashing == 0)
   {
-    // Ending 2-point focus stacking
+    // Ending focus stacking
     g.stacker_mode = 0;
+    // Probably not necessary:
+    g.continuous_mode = 1;
   }
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;

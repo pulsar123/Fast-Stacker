@@ -96,7 +96,9 @@ void setup() {
 
 #ifdef LCD
   // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
+#ifndef SOFTWARE_SPI
   SPI.setClockDivider(SPI_CLOCK_DIV8);
+#endif  
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -218,6 +220,8 @@ void setup() {
   g.first_loop == 1;
   g.started_moving = 0;
   g.dt_backlash = 0;
+  g.continuous_mode = 1;
+  g.noncont_flag = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();

@@ -25,3 +25,6 @@ second link - to the small version):
 
 <span class="plainlinks">[https://farm6.staticflickr.com/5675/21490797273_bfcc884ec9_o.jpg https://c2.staticflickr.com/6/5675/21490797273_1ac3411a60_m_d.jpg]</span>
 
+== Code ==
+* Generate a list of current key functions:
+ grep case keypad.ino|grep :|cut -d/ -f3

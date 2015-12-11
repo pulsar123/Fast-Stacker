@@ -6,7 +6,7 @@ void process_keypad()
   float speed, pos_target;
   short frame_counter0;
 
- 
+
   // Ignore keypad during emergency breaking
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
@@ -14,7 +14,13 @@ void process_keypad()
   if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
     // The flag means we just initiated stacking:
-    g.start_stacking = 1;
+    if (g.continuous_mode)
+      g.start_stacking = 1;
+    else
+    {
+      g.start_stacking = 0;
+      g.noncont_flag = 1;
+    }
     // Time when stacking was initiated:
     g.t0_stacking = g.t;
     g.frame_counter = 0;
@@ -242,7 +248,7 @@ void process_keypad()
           display_comment_line(" Going to P0  ");
           break;
 
-        case '0': // #0: Start shooting (2-point focus stacking), always from P1 (foreground point) - best if you need reproduceability
+        case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
           if (g.paused)
             break;
           // Checking the correctness of point1/2
@@ -250,12 +256,14 @@ void process_keypad()
           {
             // Using the simplest approach which will result the last shot to always slightly undershoot
             g.Nframes = Nframes();
-            // Unlike "0" command, "#0" always starts shooting from the foreground point (P1):
+            // Always starting from the foreground point, for full backlash compensation:
             go_to((float)g.point1 + 0.5, SPEED_LIMIT);
             g.starting_point = g.point1;
             g.destination_point = g.point2;
             g.stacking_direction = 1;
             g.stacker_mode = 1;
+            // This is a non-continuous mode:
+            g.continuous_mode = 0;
             display_comment_line("2-points stack");
           }
           else
@@ -447,7 +455,7 @@ void process_keypad()
               display_comment_line(" Going to P2  ");
               break;
 
-            case '0': // 0: Start shooting (2-point focus stacking) from the nearest point
+            case '0': // 0: Start shooting (2-point focus stacking) from the foreground point (backlash compensated)
               // Checking the correctness of point1/2
               if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
               {
@@ -470,29 +478,12 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  // Finding the closest point:
-                  // Need to compute delta separately because of the limitations of arduino abs():
-                  short delta = g.pos_short_old - g.point1;
-                  short d1 = (short)abs(delta);
-                  delta = g.pos_short_old - g.point2;
-                  short d2 = (short)abs(delta);
-                  if (d1 < d2)
-                  // Nearest point is P1
-                  {
-                    go_to((float)g.point1 + 0.5, SPEED_LIMIT);
-                    g.starting_point = g.point1;
-                    g.destination_point = g.point2;
-                    g.stacking_direction = 1;
-                  }
-                  else
-                  // Nearest point is P2
-                  {
-                    go_to((float)g.point2 + 0.5, SPEED_LIMIT);
-                    g.starting_point = g.point2;
-                    g.destination_point = g.point1;
-                    g.stacking_direction = -1;
-                  }
+                  go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+                  g.starting_point = g.point1;
+                  g.destination_point = g.point2;
+                  g.stacking_direction = 1;
                   g.stacker_mode = 1;
+                  g.continuous_mode = 1;
                   display_comment_line("2-points stack");
                 }
               }
@@ -504,7 +495,7 @@ void process_keypad()
               g.just_paused = 0;
               break;
 
-            case '*':  // *: Initiate one-point focus stacking backwards
+            case '*':  // *: Initiate one-point focus stacking backwards (not backlash compensated)
               if (g.paused)
                 break;
               // Simplest workaround: ignore the command if currently moving
@@ -521,6 +512,7 @@ void process_keypad()
                 g.starting_point = g.pos_short_old;
                 g.stacking_direction = -1;
                 g.stacker_mode = 3;
+                g.continuous_mode = 1;
                 display_comment_line("1-point stack ");
               }
               break;
@@ -540,6 +532,7 @@ void process_keypad()
                 g.starting_point = g.pos_short_old;
                 g.stacking_direction = 1;
                 g.stacker_mode = 3;
+                g.continuous_mode = 1;
                 display_comment_line("1-point stack ");
               }
               break;
@@ -639,7 +632,7 @@ void process_keypad()
 
           } // End of case
         }  // if (g.stacker_mode == 0)
-        
+
         else if (g.stacker_mode > 0)
           // Mode 1/2: focus stacking
         {
@@ -663,7 +656,7 @@ void process_keypad()
         }
 
       }  // if (PRESSED)
-      
+
       else
         // if a key was just released
       {
