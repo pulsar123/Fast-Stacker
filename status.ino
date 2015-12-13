@@ -428,7 +428,9 @@ void display_current_position()
 #ifdef PRECISE_STEPPING
   short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
-  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
+//  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
+//!!!
+sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif

@@ -25,6 +25,7 @@ void process_keypad()
     g.t0_stacking = g.t;
     g.frame_counter = 0;
     display_frame_counter();
+    letter_status("S ");
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
   }

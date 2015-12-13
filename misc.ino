@@ -314,19 +314,21 @@ void stop_now()
     display_status_line("              ");
   }
 
-  if (g.stacker_mode >= 2 && g.backlashing == 0)
+  if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
   {
     // Ending focus stacking
     g.stacker_mode = 0;
-    // Probably not necessary:
-    g.continuous_mode = 1;
   }
+
   // We can lower the breaking flag now, as we already stopped:
   g.breaking = 0;
   g.backlashing = 0;
   g.speed = 0.0;
   // Refresh the whole display:
-  display_all("  ");
+  if (g.noncont_flag == 0)
+    display_all("  ");
+  else
+    display_all("S ");
   g.t_display = g.t;
 
   if (g.calibrate_flag == 0 && g.coords_change != 0)
@@ -335,6 +337,10 @@ void stop_now()
     coordinate_recalibration();
     g.coords_change = 0;
   }
+
+  // Used in continuous_mode=0; we are here right after the travel to the next frame position
+  if (g.noncont_flag == 4)
+    g.noncont_flag = 1;
 
 #ifdef MOTOR_DEBUG
   if (g.dt_backlash > dt_backlash)

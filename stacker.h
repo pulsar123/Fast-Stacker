@@ -25,7 +25,7 @@ Issues to address:
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in us:
 const unsigned long FIRST_DELAY = 2000000;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), us:
-const unsigned long SECOND_DELAY = 500000;
+const unsigned long SECOND_DELAY = 1000000;
 
 
 // Options controlling compilation:

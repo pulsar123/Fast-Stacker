@@ -15,7 +15,10 @@ void display_stuff()
   if (g.moving == 0 && g.calibrate_warning == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
   {
     g.t_display = g.t;
-    display_all("  ");
+    if (g.noncont_flag == 0)
+      display_all("  ");
+    else
+      display_all("S ");
   }
 
   return;

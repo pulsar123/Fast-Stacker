@@ -37,11 +37,9 @@ void camera()
   // Non-continuous stacking mode
   else
   {
-    if (g.moving == 0)
+    if (g.moving == 0 && g.stacker_mode == 2)
     {
-      if (g.noncont_flag == 4)
-        g.noncont_flag = 1;
-      else if (g.noncont_flag == 2 && g.t - g.t_shutter > FIRST_DELAY)
+      if (g.noncont_flag == 2 && g.t - g.t_shutter > FIRST_DELAY)
       {
         g.noncont_flag = 3;
         // Triggering shutter second time (actual shot):
@@ -70,7 +68,7 @@ void camera()
   // This block is shared between continuous and non-continuous modes (in the latter case, it does the first shutter trigger, to lock the mirror)
   if (g.stacker_mode >= 2 && g.backlashing == 0)
   {
-    if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode || g.noncont_flag == 1))
+    if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode ==1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
       digitalWrite(PIN_SHUTTER, HIGH);
