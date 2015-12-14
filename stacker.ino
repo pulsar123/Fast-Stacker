@@ -46,13 +46,14 @@ void factory_reset()
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
+  g.i_first_delay = 3;
+  g.i_first_delay = 3;
   g.point1 = 2000;
   g.point2 = 3000;
   g.points_byte = 0;
   g.backlight = 2;
-  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
   g.reg2 = g.reg1;
-  g.reg3 = g.reg1;
   // Saving these values in EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
   EEPROM.put( ADDR_CALIBRATE, g.calibrate );
@@ -67,7 +68,8 @@ void factory_reset()
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);
   EEPROM.put( ADDR_REG1, g.reg1);
   EEPROM.put( ADDR_REG2, g.reg2);
-  EEPROM.put( ADDR_REG3, g.reg3);
+  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   return;
 }
 
@@ -98,7 +100,7 @@ void setup() {
   // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
 #ifndef SOFTWARE_SPI
   SPI.setClockDivider(SPI_CLOCK_DIV8);
-#endif  
+#endif
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -170,7 +172,8 @@ void setup() {
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     EEPROM.get( ADDR_REG1, g.reg1);
     EEPROM.get( ADDR_REG2, g.reg2);
-    EEPROM.get( ADDR_REG3, g.reg3);
+    EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
+    EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
 #ifdef DEBUG
     Serial.println("EEPROM values:");
     Serial.println(g.pos, 2);
@@ -202,6 +205,8 @@ void setup() {
   g.t_key_pressed = g.t0;
   g.t_last_repeat = g.t0;
   g.t_display = g.t0;
+  g.t_first_delay = g.t0;
+  g.t_second_delay = g.t0;
   g.N_repeats = 0;
   g.breaking = 0;
   g.backlashing = 0;

@@ -428,9 +428,9 @@ void display_current_position()
 #ifdef PRECISE_STEPPING
   short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
-//  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
-//!!!
-sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
+  //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
+  //!!!
+  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif
@@ -466,6 +466,22 @@ void display_comment_line(char *l)
 #endif
   g.t_comment = g.t;
   g.comment_flag = 1;
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void delay_buffer()
+// Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+{
+  float y = MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_MICROSTEP / ACCEL_LIMIT;
+  // Time to travel one frame (s), with fixed acceleration:
+  float dt_goto = 2e-6 * sqrt(y);
+  float delay1 = FIRST_DELAY[g.i_first_delay];
+  float delay2 = SECOND_DELAY[g.i_second_delay];
+  short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1)*dt_goto);
+  sprintf(g.buffer, "%2d.%01d %2d.%01d %3ds", (int)delay1, (int)(10.0 * (delay1 - (int)delay1)), (int)delay2, (int)(10.0 * (delay2 - (int)delay2)), dt);
+
   return;
 }
 

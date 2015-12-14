@@ -21,13 +21,6 @@ Issues to address:
 
 #define VERSION "0.11"
 
-// New experimental parameters:
-// First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in us:
-const unsigned long FIRST_DELAY = 2000000;
-// Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), us:
-const unsigned long SECOND_DELAY = 1000000;
-
-
 // Options controlling compilation:
 
 // Debugging options
@@ -191,6 +184,16 @@ const float MM_PER_FRAME[] = {0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.025, 0.0
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
+// Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
+// The length of the first delay table:
+const short N_FIRST_DELAY = 5;
+// First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
+const float FIRST_DELAY[N_FIRST_DELAY] = {0.1, 0.3, 1, 3, 10};
+// The length of the first delay table:
+const short N_SECOND_DELAY = 5;
+// Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
+// (This should be always longer than the camera exposure time)
+const float SECOND_DELAY[N_SECOND_DELAY] = {0.1, 0.3, 1, 3, 10};
 
 //////// Don't modify these /////////
 // MM per microstep:
@@ -222,6 +225,8 @@ struct regist
   short i_n_shots;
   short i_mm_per_frame;
   short i_fps;
+  short i_first_delay;
+  short i_second_delay;
   short point1;
   short point2;
 };
@@ -242,7 +247,8 @@ const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
 const int ADDR_BACKLIGHT = ADDR_POINTS_BYTE + 2;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
-const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
+const int ADDR_I_FIRST_DELAY = ADDR_REG2 + SIZE_REG;  // for the FIRST_DELAY parameter
+const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 uint8_t battery_char [][12] = {
@@ -309,6 +315,8 @@ struct global
   short i_mm_per_frame; // counter for mm_per_frame parameter;
   short i_fps; // counter for fps parameter;
   short i_n_shots; // counter for n_shots parameter;
+  short i_first_delay; // counter for FIRST_DELAY parameter
+  short i_second_delay; // counter for SECOND_DELAY parameter
   short direction; // -1/1 for reverse/forward directions of moving
   char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
   byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
@@ -333,6 +341,8 @@ struct global
   short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   short noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
+  unsigned long t_first_delay; // to be used for displaying the first_delay parameter
+  unsigned long t_second_delay; // to be used for displaying the second_delay parameter
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

@@ -13,19 +13,22 @@ void process_keypad()
 
   if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
-    // The flag means we just initiated stacking:
     if (g.continuous_mode)
+    {
+      // The flag means we just initiated stacking:
       g.start_stacking = 1;
+      letter_status("  ");
+    }
     else
     {
       g.start_stacking = 0;
       g.noncont_flag = 1;
+      letter_status("S ");
     }
     // Time when stacking was initiated:
     g.t0_stacking = g.t;
     g.frame_counter = 0;
     display_frame_counter();
-    letter_status("S ");
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
   }
@@ -62,7 +65,10 @@ void process_keypad()
             g.paused = 0;
             g.just_paused = 0;
             g.frame_counter = 0;
+            display_frame_counter();
             letter_status("  ");
+            g.noncont_flag = 0;
+            g.stacker_mode = 0;
           }
           else
           {
@@ -80,7 +86,7 @@ void process_keypad()
         case '2': // #2: Save parameters to first memory bank
           if (g.paused)
             break;
-          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
           EEPROM.put( ADDR_REG1, g.reg1);
           display_comment_line("Saved to Reg1 ");
           break;
@@ -94,6 +100,8 @@ void process_keypad()
           g.i_fps = g.reg1.i_fps;
           g.point1 = g.reg1.point1;
           g.point2 = g.reg1.point2;
+          g.i_first_delay = g.reg1.i_first_delay;
+          g.i_second_delay = g.reg1.i_second_delay;
           g.msteps_per_frame = Msteps_per_frame();
           g.Nframes = Nframes();
           EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
@@ -101,6 +109,8 @@ void process_keypad()
           EEPROM.put( ADDR_I_FPS, g.i_fps);
           EEPROM.put( ADDR_POINT1, g.point1);
           EEPROM.put( ADDR_POINT2, g.point2);
+          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
           display_all("  ");
           display_comment_line("Read from Reg1");
           break;
@@ -108,7 +118,7 @@ void process_keypad()
         case '5': // #5: Save parameters to second memory bank
           if (g.paused)
             break;
-          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
+          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
           EEPROM.put( ADDR_REG2, g.reg2);
           display_comment_line("Saved to Reg2 ");
           break;
@@ -122,6 +132,8 @@ void process_keypad()
           g.i_fps = g.reg2.i_fps;
           g.point1 = g.reg2.point1;
           g.point2 = g.reg2.point2;
+          g.i_first_delay = g.reg2.i_first_delay;
+          g.i_second_delay = g.reg2.i_second_delay;
           g.msteps_per_frame = Msteps_per_frame();
           g.Nframes = Nframes();
           EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
@@ -129,36 +141,48 @@ void process_keypad()
           EEPROM.put( ADDR_I_FPS, g.i_fps);
           EEPROM.put( ADDR_POINT1, g.point1);
           EEPROM.put( ADDR_POINT2, g.point2);
+          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
           display_all("  ");
           display_comment_line("Read from Reg2");
           break;
 
-        case '8': // #8: Save parameters to third memory bank
+        case '8': // #8: Cycle through the table for FIRST_DELAY parameter
           if (g.paused)
             break;
-          g.reg3 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.point1, g.point2};
-          EEPROM.put( ADDR_REG3, g.reg3);
-          display_comment_line("Saved to Reg3 ");
+          // When clicking for the first time, just show the current delay parameter values
+          // If clicked more than once within the last COMMENT_DELAY, change the parameter
+          if (g.t < g.t_first_delay + COMMENT_DELAY)
+          {
+            if (g.i_first_delay < N_FIRST_DELAY - 1)
+              g.i_first_delay++;
+            else
+              g.i_first_delay = 0;
+            EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+          }
+          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+          delay_buffer();
+          display_comment_line(g.buffer);
+          g.t_first_delay = g.t;
           break;
 
-        case '9': // #9: Read parameters from third memory bank
+        case '9': // #9: Cycle through the table for SECOND_DELAY parameter
           if (g.paused)
             break;
-          EEPROM.get( ADDR_REG3, g.reg3);
-          g.i_n_shots = g.reg3.i_n_shots;
-          g.i_mm_per_frame = g.reg3.i_mm_per_frame;
-          g.i_fps = g.reg3.i_fps;
-          g.point1 = g.reg3.point1;
-          g.point2 = g.reg3.point2;
-          g.msteps_per_frame = Msteps_per_frame();
-          g.Nframes = Nframes();
-          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-          EEPROM.put( ADDR_I_FPS, g.i_fps);
-          EEPROM.put( ADDR_POINT1, g.point1);
-          EEPROM.put( ADDR_POINT2, g.point2);
-          display_all("  ");
-          display_comment_line("Read from Reg3");
+          // When clicking for the first time, just show the current delay parameter values
+          // If clicked more than once within the last COMMENT_DELAY, change the parameter
+          if (g.t < g.t_second_delay + COMMENT_DELAY)
+          {
+            if (g.i_second_delay < N_SECOND_DELAY - 1)
+              g.i_second_delay++;
+            else
+              g.i_second_delay = 0;
+            EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+          }
+          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+          delay_buffer();
+          display_comment_line(g.buffer);
+          g.t_second_delay = g.t;
           break;
 
         case '4': // #4: Backlighting control
@@ -188,7 +212,6 @@ void process_keypad()
         case '1': // #1: Rewind a single frame step (no shooting)
           if (g.moving)
             break;
-          // Required microsteps per frame:
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
@@ -465,15 +488,23 @@ void process_keypad()
                 {
                   if (g.moving)
                     break;
-                  // The flag means we just initiated stacking (used to make the first shot longer):
-                  g.start_stacking = 1;
+                  g.paused = 0;
+                  if (g.continuous_mode)
+                  {
+                    // The flag means we just initiated stacking:
+                    g.start_stacking = 1;
+                    letter_status("  ");
+                  }
+                  else
+                  {
+                    g.start_stacking = 0;
+                    g.noncont_flag = 1;
+                    letter_status("S ");
+                  }
                   // Time when stacking was initiated:
                   g.t0_stacking = g.t;
-                  // To make sure that a shot is taken at the current position:
                   g.pos_to_shoot = g.pos_short_old;
                   g.stacker_mode = 2;
-                  g.paused = 0;
-                  letter_status("  ");
                 }
                 else
                 {
@@ -638,7 +669,8 @@ void process_keypad()
           // Mode 1/2: focus stacking
         {
           // Any key press in stacking mode interrupts stacking
-          change_speed(0.0, 0, 2);
+          if (g.moving)
+            change_speed(0.0, 0, 2);
           if (g.stacker_mode == 2)
             // In 2-point stacking, we pause
           {
