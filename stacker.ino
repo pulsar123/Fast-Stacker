@@ -40,14 +40,20 @@
 void factory_reset()
 {
   g.pos = 0.0;
+#ifdef MOTOR_DEBUG
+  g.calibrate = 0;
+  g.calibrate_warning = 0;
+  g.calibrate_init = g.calibrate;
+#else
   g.calibrate = 3;
+#endif  
   g.limit1 = 0;
   g.limit2 = 30000;
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
   g.i_first_delay = 3;
-  g.i_first_delay = 3;
+  g.i_second_delay = 3;
   g.point1 = 2000;
   g.point2 = 3000;
   g.points_byte = 0;

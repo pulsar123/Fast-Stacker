@@ -39,6 +39,9 @@ void process_keypad()
   KeyState state = keypad.getState();
   KeyState state1 = keypad.key[1].kstate;
 
+// This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
+  if (g.comment_flag == 1 && keypad.key[0].kchar == '#')
+    g.t_comment = g.t;
 
   if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
     // Two-key commands (they all start with "#" key)
@@ -152,7 +155,7 @@ void process_keypad()
             break;
           // When clicking for the first time, just show the current delay parameter values
           // If clicked more than once within the last COMMENT_DELAY, change the parameter
-          if (g.t < g.t_first_delay + COMMENT_DELAY)
+//          if (g.t < g.t_first_delay + COMMENT_DELAY)
           {
             if (g.i_first_delay < N_FIRST_DELAY - 1)
               g.i_first_delay++;
@@ -163,7 +166,7 @@ void process_keypad()
           // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
           delay_buffer();
           display_comment_line(g.buffer);
-          g.t_first_delay = g.t;
+//          g.t_first_delay = g.t;
           break;
 
         case '9': // #9: Cycle through the table for SECOND_DELAY parameter
@@ -171,7 +174,7 @@ void process_keypad()
             break;
           // When clicking for the first time, just show the current delay parameter values
           // If clicked more than once within the last COMMENT_DELAY, change the parameter
-          if (g.t < g.t_second_delay + COMMENT_DELAY)
+//          if (g.t < g.t_second_delay + COMMENT_DELAY)
           {
             if (g.i_second_delay < N_SECOND_DELAY - 1)
               g.i_second_delay++;
@@ -182,7 +185,7 @@ void process_keypad()
           // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
           delay_buffer();
           display_comment_line(g.buffer);
-          g.t_second_delay = g.t;
+//          g.t_second_delay = g.t;
           break;
 
         case '4': // #4: Backlighting control
@@ -661,6 +664,12 @@ void process_keypad()
               display_all("  ");
               break;
 
+            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
+              if (g.moving || g.paused)
+                break;
+              delay_buffer();
+              display_comment_line(g.buffer);
+              break;
 
           } // End of case
         }  // if (g.stacker_mode == 0)
@@ -678,6 +687,8 @@ void process_keypad()
             letter_status("P ");
             g.paused = 1;
             g.just_paused = 1;
+            // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
+            g.state1_old = (KeyState)0;
           }
           else
             // In 1-point stacking, we abort

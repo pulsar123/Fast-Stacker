@@ -480,7 +480,7 @@ void delay_buffer()
   float delay1 = FIRST_DELAY[g.i_first_delay];
   float delay2 = SECOND_DELAY[g.i_second_delay];
   short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1)*dt_goto);
-  sprintf(g.buffer, "%2d.%01d %2d.%01d %3ds", (int)delay1, (int)(10.0 * (delay1 - (int)delay1)), (int)delay2, (int)(10.0 * (delay2 - (int)delay2)), dt);
+  sprintf(g.buffer, "%2d.%01d %2d.%01d %4d", (int)delay1, (int)(10.0 * (delay1 - (int)delay1)), (int)delay2, (int)(10.0 * (delay2 - (int)delay2)), dt);
 
   return;
 }

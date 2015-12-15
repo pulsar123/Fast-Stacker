@@ -148,13 +148,13 @@ const float SPEED_LIMIT_MM_S = 5;
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
-const float BREAKING_DISTANCE_MM = 1.0;
+const float BREAKING_DISTANCE_MM = 2.0;
 
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
 // Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
-const float ACCEL_FACTOR = 4.0;
+const float ACCEL_FACTOR = 3.0;
 
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
@@ -318,7 +318,7 @@ struct global
   short i_first_delay; // counter for FIRST_DELAY parameter
   short i_second_delay; // counter for SECOND_DELAY parameter
   short direction; // -1/1 for reverse/forward directions of moving
-  char buffer[16];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
+  char buffer[15];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
   byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
