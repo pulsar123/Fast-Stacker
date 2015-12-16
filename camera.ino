@@ -39,7 +39,7 @@ void camera()
   {
     if (g.moving == 0 && g.stacker_mode == 2)
     {
-      if (g.noncont_flag == 2 && g.t - g.t_shutter > FIRST_DELAY[g.i_first_delay]*1e6)
+      if (g.noncont_flag == 2 && g.t - g.t_shutter > FIRST_DELAY[g.i_first_delay] * 1e6)
       {
         g.noncont_flag = 3;
         // Triggering shutter second time (actual shot):
@@ -47,7 +47,7 @@ void camera()
         g.shutter_on = 1;
         g.t_shutter = g.t;
       }
-      else if (g.noncont_flag == 3 && g.t - g.t_shutter > SECOND_DELAY[g.i_second_delay]*1e6)
+      else if (g.noncont_flag == 3 && g.t - g.t_shutter > SECOND_DELAY[g.i_second_delay] * 1e6)
       {
         if (g.frame_counter < g.Nframes)
         {
@@ -74,11 +74,17 @@ void camera()
     if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
-      digitalWrite(PIN_SHUTTER, HIGH);
+#ifndef MIRROR_LOCK
+      // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
+      // If it is defined, it will also happen in non-continuous mode, where it will be used to lock the mirror
+      if (g.continuous_mode)
+#endif
+        digitalWrite(PIN_SHUTTER, HIGH);
       g.shutter_on = 1;
       g.t_shutter = g.t;
-      g.frame_counter++;
+//!!! <>
       display_frame_counter();
+      g.frame_counter++;
       // Position at which to shoot the next shot:
       g.pos_to_shoot = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])

@@ -142,8 +142,10 @@ void display_frame_counter()
   if (g.error)
     return;
   // Printing frame counter:
-  if (g.frame_counter > -100 && g.frame_counter < 1000)
-    sprintf (g.buffer, "%3d ",  g.frame_counter);
+  if (g.stacker_mode == 0 && g.paused == 0)
+    sprintf (g.buffer, "  0 ");
+  else if (g.frame_counter > -100 && g.frame_counter + 1 < 1000)
+    sprintf (g.buffer, "%3d ",  g.frame_counter + 1);
   else
     sprintf (g.buffer, "*** ");
 #ifdef LCD
@@ -479,7 +481,7 @@ void delay_buffer()
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.i_first_delay];
   float delay2 = SECOND_DELAY[g.i_second_delay];
-  short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1)*dt_goto);
+  short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
   sprintf(g.buffer, "%2d.%01d %2d.%01d %4d", (int)delay1, (int)(10.0 * (delay1 - (int)delay1)), (int)delay2, (int)(10.0 * (delay2 - (int)delay2)), dt);
 
   return;

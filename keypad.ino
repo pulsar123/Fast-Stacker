@@ -39,9 +39,11 @@ void process_keypad()
   KeyState state = keypad.getState();
   KeyState state1 = keypad.key[1].kstate;
 
-// This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
+  // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
   if (g.comment_flag == 1 && keypad.key[0].kchar == '#')
-    g.t_comment = g.t;
+    // -COMMENT_LINE+10000 is a hack, to reduce to almost zero the time the parameters are displayed:
+    // (So basically the parameters are only displayed as long as the "#" key is pressed)
+    g.t_comment = g.t - COMMENT_DELAY + 10000;
 
   if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
     // Two-key commands (they all start with "#" key)
@@ -89,7 +91,7 @@ void process_keypad()
         case '2': // #2: Save parameters to first memory bank
           if (g.paused)
             break;
-          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
+          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
           EEPROM.put( ADDR_REG1, g.reg1);
           display_comment_line("Saved to Reg1 ");
           break;
@@ -121,7 +123,7 @@ void process_keypad()
         case '5': // #5: Save parameters to second memory bank
           if (g.paused)
             break;
-          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
+          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
           EEPROM.put( ADDR_REG2, g.reg2);
           display_comment_line("Saved to Reg2 ");
           break;
@@ -153,39 +155,27 @@ void process_keypad()
         case '8': // #8: Cycle through the table for FIRST_DELAY parameter
           if (g.paused)
             break;
-          // When clicking for the first time, just show the current delay parameter values
-          // If clicked more than once within the last COMMENT_DELAY, change the parameter
-//          if (g.t < g.t_first_delay + COMMENT_DELAY)
-          {
-            if (g.i_first_delay < N_FIRST_DELAY - 1)
-              g.i_first_delay++;
-            else
-              g.i_first_delay = 0;
-            EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-          }
+          if (g.i_first_delay < N_FIRST_DELAY - 1)
+            g.i_first_delay++;
+          else
+            g.i_first_delay = 0;
+          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
           // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
           delay_buffer();
           display_comment_line(g.buffer);
-//          g.t_first_delay = g.t;
           break;
 
         case '9': // #9: Cycle through the table for SECOND_DELAY parameter
           if (g.paused)
             break;
-          // When clicking for the first time, just show the current delay parameter values
-          // If clicked more than once within the last COMMENT_DELAY, change the parameter
-//          if (g.t < g.t_second_delay + COMMENT_DELAY)
-          {
-            if (g.i_second_delay < N_SECOND_DELAY - 1)
-              g.i_second_delay++;
-            else
-              g.i_second_delay = 0;
-            EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-          }
+          if (g.i_second_delay < N_SECOND_DELAY - 1)
+            g.i_second_delay++;
+          else
+            g.i_second_delay = 0;
+          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
           // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
           delay_buffer();
           display_comment_line(g.buffer);
-//          g.t_second_delay = g.t;
           break;
 
         case '4': // #4: Backlighting control
@@ -689,6 +679,8 @@ void process_keypad()
             g.just_paused = 1;
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
             g.state1_old = (KeyState)0;
+            // Switches the frame counter back to the last accomplished frame
+            g.frame_counter--;
           }
           else
             // In 1-point stacking, we abort

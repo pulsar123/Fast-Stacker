@@ -36,6 +36,10 @@ Issues to address:
 // If undefined, lcd will not be used
 #define LCD
 
+// If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
+// the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
+#define MIRROR_LOCK
+
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
 
@@ -341,8 +345,6 @@ struct global
   short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   short noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
-  unsigned long t_first_delay; // to be used for displaying the first_delay parameter
-  unsigned long t_second_delay; // to be used for displaying the second_delay parameter
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

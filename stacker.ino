@@ -58,7 +58,7 @@ void factory_reset()
   g.point2 = 3000;
   g.points_byte = 0;
   g.backlight = 2;
-  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_first_delay, g.point1, g.point2};
+  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
   g.reg2 = g.reg1;
   // Saving these values in EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
@@ -211,8 +211,6 @@ void setup() {
   g.t_key_pressed = g.t0;
   g.t_last_repeat = g.t0;
   g.t_display = g.t0;
-  g.t_first_delay = g.t0;
-  g.t_second_delay = g.t0;
   g.N_repeats = 0;
   g.breaking = 0;
   g.backlashing = 0;
