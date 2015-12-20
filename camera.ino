@@ -82,7 +82,6 @@ void camera()
         digitalWrite(PIN_SHUTTER, HIGH);
       g.shutter_on = 1;
       g.t_shutter = g.t;
-//!!! <>
       display_frame_counter();
       g.frame_counter++;
       // Position at which to shoot the next shot:

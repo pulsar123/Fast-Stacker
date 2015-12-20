@@ -230,7 +230,8 @@ void pcd8544::begin(void)
 	// and horizontal adressing (autoincrement of x-adress)
 	command(PCD8544_FUNCTION_SET | PCD8544_FUNCTION_H);
 	// Set Vop to 0x3F
-	command(PCD8544_VOP | 0x3F);  // 0x3F
+  // !!! stacker: increasing the default value to 0x47 made the display contrast much better:
+	command(PCD8544_VOP | 0x47);  // 0x3F
 	// Vlcd temp. coeff. 0
 	command(PCD8544_TEMP_CONTROL);
 	// Bias system 4, 1:48

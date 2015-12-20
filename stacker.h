@@ -19,7 +19,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.11"
+#define VERSION "0.12"
 
 // Options controlling compilation:
 
@@ -30,7 +30,7 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
@@ -164,7 +164,7 @@ const float ACCEL_FACTOR = 3.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const unsigned long SHUTTER_TIME_US = 50000; // Time to keep the shutter button pressed (us)
+const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
 const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
@@ -190,14 +190,14 @@ const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 // Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
 // The length of the first delay table:
-const short N_FIRST_DELAY = 5;
+const short N_FIRST_DELAY = 6;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-const float FIRST_DELAY[N_FIRST_DELAY] = {0.1, 0.3, 1, 3, 10};
+const float FIRST_DELAY[N_FIRST_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
 // The length of the first delay table:
-const short N_SECOND_DELAY = 5;
+const short N_SECOND_DELAY = 6;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
-const float SECOND_DELAY[N_SECOND_DELAY] = {0.1, 0.3, 1, 3, 10};
+const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
 
 //////// Don't modify these /////////
 // MM per microstep:
