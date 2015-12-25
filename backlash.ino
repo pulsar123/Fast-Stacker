@@ -21,7 +21,7 @@ void backlash()
   {
     // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
     // Go_to the current position, with BL>0, will result in a full backlash compensation
-    go_to(g.pos, SPEED_LIMIT);
+    go_to(g.pos, g.speed_limit);
 
     // This should be done after go_to call:
     g.backlashing = 1;
@@ -31,7 +31,7 @@ void backlash()
   if (g.first_loop == 0)
   {
     // Backlash compensation.
-    go_to(g.pos + (float)g.BL_counter, SPEED_LIMIT);
+    go_to(g.pos + (float)g.BL_counter, g.speed_limit);
 
     // This should be done after go_to call:
     g.backlashing = 1;

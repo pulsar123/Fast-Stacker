@@ -19,7 +19,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.12"
+#define VERSION "0.14"
 
 // Options controlling compilation:
 
@@ -146,7 +146,17 @@ const float BACKLASH_MM = 0.2;
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
 // For an arbitrary rail and motor, make sure the following condition is met: 
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
+// This speed limits is normally used only with AC power (which provides mor torque).
 const float SPEED_LIMIT_MM_S = 5;
+// The second (smaller) speed limit (used only with a battery power, which provides less torque):
+const float SPEED_LIMIT2_MM_S = 2.5;
+// The speed related critical voltage value; if the power voltage is above this value, we assume that we are 
+// running from AC power, and will be using the larger speed limit SPEED_LIMIT_MM_S; if it is below this value,
+// we assume that we are using the battery power and will be using SPEED_LIMIT2_MM_S speed limit.
+// The acceleration limit is always computed from SPEED_LIMIT_MM_S.
+// This test is only done once, when you power up the device.
+// We are dividing the value by 8 as that's how we compute the voltage in battery_status() (per AA battery)
+const float SPEED_VOLTAGE = 11.5 / 8.0;
 
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
@@ -165,7 +175,8 @@ const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
 const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
-const short DELTA_LIMITER = 400; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, travel this many microsteps after the limiter goes off again, before starting checking the limiter again
+const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, 
+// travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
 const short STEP_LOW_DT = 3;
@@ -209,6 +220,7 @@ const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM /
 const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
+const float SPEED_LIMIT2 = SPEED_SCALE * SPEED_LIMIT2_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
@@ -345,6 +357,8 @@ struct global
   short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   short noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
+  float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
+  short setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

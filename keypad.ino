@@ -226,7 +226,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target, g.speed_limit);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -253,7 +253,7 @@ void process_keypad()
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, SPEED_LIMIT);
+          go_to(pos_target, g.speed_limit);
           display_frame_counter();
           g.just_paused = 0;
           break;
@@ -261,7 +261,7 @@ void process_keypad()
         case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
           if (g.paused)
             break;
-          go_to((float)g.starting_point + 0.5, SPEED_LIMIT);
+          go_to((float)g.starting_point + 0.5, g.speed_limit);
           display_comment_line(" Going to P0  ");
           break;
 
@@ -274,7 +274,7 @@ void process_keypad()
             // Using the simplest approach which will result the last shot to always slightly undershoot
             g.Nframes = Nframes();
             // Always starting from the foreground point, for full backlash compensation:
-            go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+            go_to((float)g.point1 + 0.5, g.speed_limit);
             g.starting_point = g.point1;
             g.destination_point = g.point2;
             g.stacking_direction = 1;
@@ -373,7 +373,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target, g.speed_limit);
                 display_frame_counter();
               }
               else
@@ -381,7 +381,7 @@ void process_keypad()
                 g.direction = -1;
                 motion_status();
                 // Rewinding is done with small acceleration:
-                change_speed(-SPEED_LIMIT, 0, 1);
+                change_speed(-g.speed_limit, 0, 1);
               }
               g.just_paused = 0;
               break;
@@ -405,7 +405,7 @@ void process_keypad()
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, SPEED_LIMIT);
+                go_to(pos_target, g.speed_limit);
                 display_frame_counter();
               }
               else
@@ -413,7 +413,7 @@ void process_keypad()
                 g.direction = 1;
                 motion_status();
                 // Rewinding is done with small acceleration:
-                change_speed(SPEED_LIMIT, 0, 1);
+                change_speed(g.speed_limit, 0, 1);
               }
               g.just_paused = 0;
               break;
@@ -457,7 +457,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+              go_to((float)g.point1 + 0.5, g.speed_limit);
               display_comment_line(" Going to P1  ");
               break;
 
@@ -468,7 +468,7 @@ void process_keypad()
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
               cmax = 0;  istep = 0;
 #endif
-              go_to((float)g.point2 + 0.5, SPEED_LIMIT);
+              go_to((float)g.point2 + 0.5, g.speed_limit);
               display_comment_line(" Going to P2  ");
               break;
 
@@ -503,7 +503,7 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  go_to((float)g.point1 + 0.5, SPEED_LIMIT);
+                  go_to((float)g.point1 + 0.5, g.speed_limit);
                   g.starting_point = g.point1;
                   g.destination_point = g.point2;
                   g.stacking_direction = 1;
@@ -607,7 +607,7 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > SPEED_LIMIT)
+                if (speed > g.speed_limit)
                 {
                   g.i_mm_per_frame--;
                   break;
@@ -642,7 +642,7 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > SPEED_LIMIT)
+                if (speed > g.speed_limit)
                 {
                   g.i_fps--;
                   break;
@@ -713,7 +713,7 @@ void process_keypad()
             float pos1 = g.pos - dx_stop;
             // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
             // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
-            go_to(pos1, SPEED_LIMIT);
+            go_to(pos1, g.speed_limit);
           }
           else
 #endif

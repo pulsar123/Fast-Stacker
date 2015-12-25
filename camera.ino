@@ -52,7 +52,7 @@ void camera()
         if (g.frame_counter < g.Nframes)
         {
           g.noncont_flag = 4;
-          go_to((float)g.pos_to_shoot + 0.5, SPEED_LIMIT);
+          go_to((float)g.pos_to_shoot + 0.5, g.speed_limit);
         }
         else
         {

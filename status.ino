@@ -213,12 +213,27 @@ void battery_status()
  Measuring the battery voltage and displaying it.
  */
 {
-  if (g.error || g.moving == 1)
+  if (g.moving == 1)
     return;
+    
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
   // (to reduce voltage from 12V -> 5V)
   // Slow operation (100 us), so should be done infrequently
   float V = (float)analogRead(PIN_BATTERY) * VOLTAGE_SCALER;
+
+  // This is done only once, when the decice is powerd up:
+  if (g.setup_flag == 1)
+  {
+    // Deciding which seep limit to use: using the larger value if powered from AC, smaller value if powered from batteries:
+    if (V > SPEED_VOLTAGE)
+      g.speed_limit = SPEED_LIMIT;
+    else
+      g.speed_limit = SPEED_LIMIT2;
+  }
+  
+  if (g.error)
+    return;
+
 #ifdef DEBUG
   Serial.print("Voltage=");
   sprintf(g.buffer, "%5d.%03d V", (int)V, (int)(1000.0 * (V - (int)V)));

@@ -46,9 +46,9 @@ void factory_reset()
   g.calibrate_init = g.calibrate;
 #else
   g.calibrate = 3;
-#endif  
+#endif
   g.limit1 = 0;
-  g.limit2 = 30000;
+  g.limit2 = 32767;
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
@@ -83,6 +83,7 @@ void setup() {
 
   g.error = 0;
   g.calibrate_warning = 0;
+  g.setup_flag = 1;
 
   // Setting pins for EasyDriver to OUTPUT:
   pinMode(PIN_DIR, OUTPUT);
@@ -249,6 +250,7 @@ void setup() {
 #ifdef LCD
   lcd.clear();
 #endif
+  // This sets g.speed_limit, among other trhings:
   display_all("  ");
 
 #ifdef TIMING
@@ -260,6 +262,9 @@ void setup() {
     g.bad_timing_counter = (short)0;
   }
 #endif
+
+  // Should be the last line in setup:
+  g.setup_flag = 0;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
