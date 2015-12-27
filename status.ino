@@ -175,6 +175,7 @@ void points_status()
 
   switch (g.points_byte)
   {
+
     case 0:
       lcd.print("   ");
       break;
@@ -201,6 +202,9 @@ void points_status()
       else
         lcd.print("fb ");
       break;
+
+//    default:
+//      lcd.print(g.points_byte);
   }
 #endif
   return;

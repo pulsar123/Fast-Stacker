@@ -335,7 +335,7 @@ struct global
   short i_second_delay; // counter for SECOND_DELAY parameter
   short direction; // -1/1 for reverse/forward directions of moving
   char buffer[15];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
-  byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
+  short points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   KeyState state_old;  // keeping old key[0] state
