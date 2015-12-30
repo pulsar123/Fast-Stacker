@@ -25,8 +25,10 @@
 
    h1.0 [s0.08]: Original public release design.
 
-   h1.1 [s0.10, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
+   h1.1 [s0.10,s0.12,s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
+   h1.2 [s1.00]: LCD reset pin (RST) disconnected from Arduino; instead it is now harware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
+                 ARduino pin 6 is now used to control a second relay (+ diod + R=33Ohm), for camera autofocus.
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -95,8 +97,8 @@ void setup() {
 
   pinMode(PIN_LCD_LED, OUTPUT);
   //!!!!  Testing to see if I can free up the RST pin on LCD, by permanently pulling it up:
-  pinMode(PIN_LCD_RST, OUTPUT);
-  digitalWrite(PIN_LCD_RST, HIGH);
+//  pinMode(PIN_LCD_RST, OUTPUT);
+//  digitalWrite(PIN_LCD_RST, HIGH);
 
 #ifdef DEBUG
   Serial.begin(250000);
@@ -129,6 +131,7 @@ void setup() {
 #endif
 
   digitalWrite(PIN_SHUTTER, LOW);
+  digitalWrite(PIN_AF, LOW);
 
   // Keypad stuff:
   // No locking for keys:
@@ -250,7 +253,7 @@ void setup() {
 #ifdef LCD
   lcd.clear();
 #endif
-  // This sets g.speed_limit, among other trhings:
+  // This sets g.speed_limit, among other things:
   display_all("  ");
 
 #ifdef TIMING

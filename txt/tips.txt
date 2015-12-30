@@ -1,7 +1,7 @@
 == Flash continuous shooting ==
 * Yongnuo 560 with external battery pack
 ** 125 shots at 1/16 power at 1fps
-** >150 shots at 1/16 power at 0.5 fps
+** >320 shots at 1/16 power at 0.5 fps
 ** >30 shots at 1/8 power at 4 fps
 * YN-560 without external pack
 ** 15 shots at 4 fps and 1/16

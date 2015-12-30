@@ -19,7 +19,7 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.14"
+#define VERSION "0.15"
 
 // Options controlling compilation:
 
@@ -36,9 +36,6 @@ Issues to address:
 // If undefined, lcd will not be used
 #define LCD
 
-// If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
-// the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
-#define MIRROR_LOCK
 
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
@@ -62,6 +59,14 @@ Issues to address:
 
 //////// Hardware related parameters //////////
 
+// Camera related parameters:
+// If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
+// the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
+#define MIRROR_LOCK
+// If your focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D:
+const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
+const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
+
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
 const short PIN_STEP = 0;
@@ -69,8 +74,9 @@ const short PIN_DIR = 1;
 const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
-const short PIN_LCD_RST = 6;  // Via 10 kOhm resistor
-// Hardware v1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
+// Hardware h1.2: ARduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
+const short PIN_LCD_RST = 100;  // Via 10 kOhm resistor
+// Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
 // (I modified the pcd8544 library to disable the use of this pin)
 const short PIN_LCD_SCE = 100;
 const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
@@ -80,6 +86,8 @@ const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
 const short PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
 const short PIN_SHUTTER = 3;
+// Hardware h1.2: pin 6 was reassigned from RST LCD to operate the AF relay:
+const short PIN_AF = 6;
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 
@@ -174,7 +182,6 @@ const float ACCEL_FACTOR = 3.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
 const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, 
 // travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 
@@ -187,8 +194,6 @@ const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment l
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
-// If your focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D:
-const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
 
 // INPUT PARAMETERS:
 // Number of values for the input parameters (mm_per_frame etc):
