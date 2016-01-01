@@ -31,6 +31,14 @@ void process_keypad()
     display_frame_counter();
     g.pos_to_shoot = g.pos_short_old;
     g.stacker_mode = 2;
+#ifdef H1.2
+    // Initiating AF now:
+    digitalWrite(PIN_AF, HIGH);
+    g.AF_on = 1;
+#ifdef CAMERA_DEBUG
+    AF_status(1);
+#endif
+#endif
   }
 
 
@@ -197,7 +205,18 @@ void process_keypad()
 
         case '7': // #7: Manual camera shutter triggering
           // Setting the shutter on:
+#ifdef H1.2
+          digitalWrite(PIN_AF, HIGH);
+#ifdef CAMERA_DEBUG
+          AF_status(1);
+#endif
+          g.AF_on = 1;
+          g.single_shot = 1;
+#endif
           digitalWrite(PIN_SHUTTER, HIGH);
+#ifdef CAMERA_DEBUG
+          shutter_status(1);
+#endif
           g.shutter_on = 1;
           g.t_shutter = g.t;
           break;
@@ -538,6 +557,14 @@ void process_keypad()
                 g.stacking_direction = -1;
                 g.stacker_mode = 3;
                 g.continuous_mode = 1;
+#ifdef H1.2
+                // Initiating AF now:
+                digitalWrite(PIN_AF, HIGH);
+                g.AF_on = 1;
+#endif                
+#ifdef CAMERA_DEBUG
+                AF_status(1);
+#endif
                 display_comment_line("1-point stack ");
               }
               break;
@@ -558,6 +585,14 @@ void process_keypad()
                 g.stacking_direction = 1;
                 g.stacker_mode = 3;
                 g.continuous_mode = 1;
+#ifdef H1.2
+                // Initiating AF now:
+                digitalWrite(PIN_AF, HIGH);
+                g.AF_on = 1;
+#endif                
+#ifdef CAMERA_DEBUG
+                AF_status(1);
+#endif
                 display_comment_line("1-point stack ");
               }
               break;

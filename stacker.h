@@ -21,6 +21,9 @@ Issues to address:
 
 #define VERSION "0.15"
 
+// If defined, hardware h1.2 is assumed:
+#define H1.2
+
 // Options controlling compilation:
 
 // Debugging options
@@ -30,12 +33,13 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
 #define LCD
-
+// If defined, do camera debugging:
+#define CAMERA_DEBUG
 
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
@@ -64,8 +68,8 @@ Issues to address:
 // the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
 #define MIRROR_LOCK
 // If your focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D:
-const unsigned long STACKING_DELAY = 200000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
-const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us)
+const unsigned long STACKING_DELAY = 2000000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
+const unsigned long SHUTTER_TIME_US = 500000; // Time to keep the shutter button pressed (us)
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -332,6 +336,10 @@ struct global
   short frame_counter; // Counter for shots
   short pos_to_shoot; // Position to shoot the next shot during focus stacking
   short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
+#ifdef H1.2
+  short AF_on; // flag for camera AF state: 0/1 corresponds to off/on
+  short single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
+#endif  
   unsigned long t_shutter; // Time when the camera shutter was triggered
   short i_mm_per_frame; // counter for mm_per_frame parameter;
   short i_fps; // counter for fps parameter;

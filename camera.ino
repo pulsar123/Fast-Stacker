@@ -44,6 +44,9 @@ void camera()
         g.noncont_flag = 3;
         // Triggering shutter second time (actual shot):
         digitalWrite(PIN_SHUTTER, HIGH);
+#ifdef CAMERA_DEBUG
+        shutter_status(1);
+#endif
         g.shutter_on = 1;
         g.t_shutter = g.t;
       }
@@ -56,6 +59,7 @@ void camera()
         }
         else
         {
+          // The end of non-continuous stacking:
           g.noncont_flag = 0;
           g.stacker_mode = 0;
           g.frame_counter = 0;
@@ -69,7 +73,7 @@ void camera()
 
   // Triggering camera shutter when needed
   // This block is shared between continuous and non-continuous modes (in the latter case, it does the first shutter trigger, to lock the mirror)
-  if (g.stacker_mode >= 2 && g.backlashing == 0)
+  if (g.stacker_mode >= 2 && g.backlashing == 0 && g.start_stacking == 0)
   {
     if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
@@ -80,6 +84,9 @@ void camera()
       if (g.continuous_mode)
 #endif
         digitalWrite(PIN_SHUTTER, HIGH);
+#ifdef CAMERA_DEBUG
+      shutter_status(1);
+#endif
       g.shutter_on = 1;
       g.t_shutter = g.t;
       display_frame_counter();
@@ -112,6 +119,9 @@ void camera()
   {
     // Releasing the shutter:
     digitalWrite(PIN_SHUTTER, LOW);
+#ifdef CAMERA_DEBUG
+    shutter_status(0);
+#endif
     g.shutter_on = 0;
   }
 
@@ -119,10 +129,26 @@ void camera()
     // We paused when the mirror is locked; release the lock right away
   {
     digitalWrite(PIN_SHUTTER, HIGH);
+#ifdef CAMERA_DEBUG
+    shutter_status(1);
+#endif
     g.shutter_on = 1;
     g.t_shutter = g.t;
     g.noncont_flag = 0;
   }
+
+#ifdef H1.2
+  // Depress the camera's AF when it's no longer needed (after stacking, and after a single shot):
+  if (g.AF_on == 1 && g.shutter_on == 0 && (g.stacker_mode == 0 || g.single_shot == 1))
+  {
+    digitalWrite(PIN_AF, LOW);
+#ifdef CAMERA_DEBUG
+    AF_status(0);
+#endif
+    g.AF_on = 0;
+    g.single_shot = 0;
+  }
+#endif
 
   return;
 }

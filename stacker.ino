@@ -94,11 +94,11 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   pinMode(PIN_SHUTTER, OUTPUT);
+#ifdef H1.2
+  pinMode(PIN_AF, OUTPUT);
+#endif
 
   pinMode(PIN_LCD_LED, OUTPUT);
-  //!!!!  Testing to see if I can free up the RST pin on LCD, by permanently pulling it up:
-//  pinMode(PIN_LCD_RST, OUTPUT);
-//  digitalWrite(PIN_LCD_RST, HIGH);
 
 #ifdef DEBUG
   Serial.begin(250000);
@@ -131,7 +131,9 @@ void setup() {
 #endif
 
   digitalWrite(PIN_SHUTTER, LOW);
+#ifdef H1.2
   digitalWrite(PIN_AF, LOW);
+#endif
 
   // Keypad stuff:
   // No locking for keys:
@@ -157,6 +159,10 @@ void setup() {
   g.pos_stop_flag = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
+#ifdef H1.2
+  g.AF_on = 0;  
+  g.single_shot = 0;
+#endif
   g.direction = 1;
   g.comment_flag = 0;
 
@@ -264,6 +270,12 @@ void setup() {
     g.dt_min = (short)10000;
     g.bad_timing_counter = (short)0;
   }
+#endif
+#ifdef H1.2
+#ifdef CAMERA_DEBUG
+  shutter_status(0);
+  AF_status(0);
+#endif
 #endif
 
   // Should be the last line in setup:

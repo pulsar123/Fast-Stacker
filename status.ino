@@ -418,6 +418,9 @@ void display_current_position()
  Display the current position on the transient line
  */
 {
+#ifdef CAMERA_DEBUG
+  return;
+#endif
 #ifdef TIMING
   // Average loop length for the last motion, in shortest miscrostep length units *100:
   short avr = (short)(100.0 * (float)(g.t - g.t0_timing) / (float)(g.i_timing - 1) * SPEED_LIMIT);
@@ -475,6 +478,9 @@ void display_comment_line(char *l)
 #ifdef TIMING
   return;
 #endif
+#ifdef CAMERA_DEBUG
+  return;
+#endif
   if (g.error)
     return;
 #ifdef LCD
@@ -504,4 +510,20 @@ void delay_buffer()
 
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+#ifdef CAMERA_DEBUG
+void AF_status(short s)
+{
+  lcd.setCursor(12, 4);
+  lcd.print(s);
+  return;
+}
+void shutter_status(short s)
+{
+  lcd.setCursor(13, 4);
+  lcd.print(s);
+  return;
+}
+#endif
