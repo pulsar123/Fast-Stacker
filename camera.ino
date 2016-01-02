@@ -8,12 +8,13 @@ void camera()
   if (g.error > 0)
     return;
 
-  if (g.continuous_mode)
+  // Enforcing the initial delay before a stacking:
+  if (g.start_stacking == 1 && g.t - g.t0_stacking > STACKING_DELAY)
   {
-    // Initiating the go_to travel for stacking
-    if (g.start_stacking == 1 && g.t - g.t0_stacking > STACKING_DELAY)
+    g.start_stacking = 0;
+
+    if (g.continuous_mode)
     {
-      g.start_stacking = 0;
       // Required microsteps per frame:
       g.msteps_per_frame = Msteps_per_frame();
       // Estimating the required speed in microsteps per microsecond
@@ -34,8 +35,9 @@ void camera()
 
     }
   }
+
   // Non-continuous stacking mode
-  else
+  if (g.continuous_mode == 0 && g.start_stacking == 0)
   {
     if (g.moving == 0 && g.stacker_mode == 2)
     {
@@ -69,6 +71,7 @@ void camera()
       }
     }
   }
+
 
 
   // Triggering camera shutter when needed
@@ -138,8 +141,9 @@ void camera()
   }
 
 #ifdef H1.2
-  // Depress the camera's AF when it's no longer needed (after stacking, and after a single shot):
-  if (g.AF_on == 1 && g.shutter_on == 0 && (g.stacker_mode == 0 || g.single_shot == 1))
+  // Depress the camera's AF when it's no longer needed (after stacking, when pasued, and after a single shot),
+  // and only if the shutter is off:
+  if (g.AF_on == 1 && g.shutter_on == 0 && (g.stacker_mode == 0 || g.single_shot == 1 || g.paused == 1))
   {
     digitalWrite(PIN_AF, LOW);
 #ifdef CAMERA_DEBUG

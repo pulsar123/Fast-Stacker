@@ -13,15 +13,14 @@ void process_keypad()
 
   if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
   {
+    g.start_stacking = 1;
     if (g.continuous_mode)
     {
       // The flag means we just initiated stacking:
-      g.start_stacking = 1;
       letter_status("  ");
     }
     else
     {
-      g.start_stacking = 0;
       g.noncont_flag = 1;
       letter_status("S ");
     }
@@ -76,7 +75,6 @@ void process_keypad()
           if (g.paused && g.moving == 0)
           {
             g.paused = 0;
-            g.just_paused = 0;
             g.frame_counter = 0;
             display_frame_counter();
             letter_status("  ");
@@ -204,12 +202,15 @@ void process_keypad()
           break;
 
         case '7': // #7: Manual camera shutter triggering
+          if (g.moving)
+            break;
           // Setting the shutter on:
 #ifdef H1.2
           digitalWrite(PIN_AF, HIGH);
 #ifdef CAMERA_DEBUG
           AF_status(1);
 #endif
+          delay(STACKING_DELAY/1000);
           g.AF_on = 1;
           g.single_shot = 1;
 #endif
@@ -227,8 +228,7 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            // This "if" condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
-            if (!g.just_paused || g.stacking_direction < 0)
+//            if (g.stacking_direction < 0)
               g.frame_counter = g.frame_counter - g.stacking_direction;
             pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
@@ -247,7 +247,6 @@ void process_keypad()
           }
           go_to(pos_target, g.speed_limit);
           display_frame_counter();
-          g.just_paused = 0;
           break;
 
         case 'A': // #A: Fast-forward a single frame step (no shooting)
@@ -257,8 +256,7 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            // This if condition is to ensure that the very first frame back is to the currently displayed frame (as the pause happens between the current and the next frame)
-            if (!g.just_paused || g.stacking_direction > 0)
+            if (g.stacking_direction > 0)
               g.frame_counter = g.frame_counter + g.stacking_direction;
             pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
           }
@@ -274,7 +272,6 @@ void process_keypad()
           }
           go_to(pos_target, g.speed_limit);
           display_frame_counter();
-          g.just_paused = 0;
           break;
 
         case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
@@ -402,7 +399,6 @@ void process_keypad()
                 // Rewinding is done with small acceleration:
                 change_speed(-g.speed_limit, 0, 1);
               }
-              g.just_paused = 0;
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
@@ -434,7 +430,6 @@ void process_keypad()
                 // Rewinding is done with small acceleration:
                 change_speed(g.speed_limit, 0, 1);
               }
-              g.just_paused = 0;
               break;
 
             case '4':  // 4: Set foreground point
@@ -501,15 +496,14 @@ void process_keypad()
                   if (g.moving)
                     break;
                   g.paused = 0;
+                  g.start_stacking = 1;
                   if (g.continuous_mode)
                   {
                     // The flag means we just initiated stacking:
-                    g.start_stacking = 1;
                     letter_status("  ");
                   }
                   else
                   {
-                    g.start_stacking = 0;
                     g.noncont_flag = 1;
                     letter_status("S ");
                   }
@@ -517,6 +511,14 @@ void process_keypad()
                   g.t0_stacking = g.t;
                   g.pos_to_shoot = g.pos_short_old;
                   g.stacker_mode = 2;
+#ifdef H1.2
+                  // Initiating AF now:
+                  digitalWrite(PIN_AF, HIGH);
+                  g.AF_on = 1;
+#ifdef CAMERA_DEBUG
+                  AF_status(1);
+#endif
+#endif
                 }
                 else
                 {
@@ -536,7 +538,6 @@ void process_keypad()
                 // Should print error message
                 display_comment_line("Bad 2 points! ");
               }
-              g.just_paused = 0;
               break;
 
             case '*':  // *: Initiate one-point focus stacking backwards (not backlash compensated)
@@ -561,7 +562,7 @@ void process_keypad()
                 // Initiating AF now:
                 digitalWrite(PIN_AF, HIGH);
                 g.AF_on = 1;
-#endif                
+#endif
 #ifdef CAMERA_DEBUG
                 AF_status(1);
 #endif
@@ -589,7 +590,7 @@ void process_keypad()
                 // Initiating AF now:
                 digitalWrite(PIN_AF, HIGH);
                 g.AF_on = 1;
-#endif                
+#endif
 #ifdef CAMERA_DEBUG
                 AF_status(1);
 #endif
@@ -711,11 +712,13 @@ void process_keypad()
             display_comment_line("    Paused    ");
             letter_status("P ");
             g.paused = 1;
-            g.just_paused = 1;
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
             g.state1_old = (KeyState)0;
             // Switches the frame counter back to the last accomplished frame
             g.frame_counter--;
+            // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
+            short pos_short = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+            go_to(pos_short + 0.5, g.speed_limit);
           }
           else
             // In 1-point stacking, we abort

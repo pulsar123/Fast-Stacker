@@ -33,13 +33,13 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
 #define LCD
 // If defined, do camera debugging:
-#define CAMERA_DEBUG
+//#define CAMERA_DEBUG
 
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
@@ -67,9 +67,11 @@ Issues to address:
 // If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
 // the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
 #define MIRROR_LOCK
-// If your focus stacking skips the very first shot, increase this parameter; 200000 works for Canon 50D:
-const unsigned long STACKING_DELAY = 2000000; // delay in us before initiating stacking/making first shot and starting the movement; also the shutter open time for the first shot
-const unsigned long SHUTTER_TIME_US = 500000; // Time to keep the shutter button pressed (us)
+// Delay in us before initiating stacking/making first shot and starting the movement
+// In h1.2 serves an additional purpose: this is the delay in us between triggering camera's AF and shutter (only the first shutter press in a stacking sequence)
+// If your focus stacking skips the very first shot, increase this parameter
+const unsigned long STACKING_DELAY = 10000;  // 10000
+const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -78,7 +80,8 @@ const short PIN_DIR = 1;
 const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
-// Hardware h1.2: ARduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
+// Hardware h1.2: Arduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
+// (I modified the pcd8544 library to disable the use of this pin)
 const short PIN_LCD_RST = 100;  // Via 10 kOhm resistor
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
 // (I modified the pcd8544 library to disable the use of this pin)
@@ -105,6 +108,13 @@ const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
 const float V_LOW = 1.125;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
+// The speed related critical voltage value; if the power voltage is above this value, we assume that we are 
+// running from AC power, and will be using the larger speed limit SPEED_LIMIT_MM_S; if it is below this value,
+// we assume that we are using the battery power and will be using SPEED_LIMIT2_MM_S speed limit.
+// The acceleration limit is always computed from SPEED_LIMIT_MM_S.
+// This test is only done once, when you power up the device.
+// We are dividing the value by 8 as that's how we compute the voltage in battery_status() (per AA battery)
+const float SPEED_VOLTAGE = 11.5 / 8.0;
 
 // Keypad stuff:
 const byte rows = 4; //four rows
@@ -151,7 +161,6 @@ const float MM_PER_ROTATION = 3.98;
 // Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2;
 
-//////// Parameters which might need to be changed ////////
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
@@ -162,13 +171,6 @@ const float BACKLASH_MM = 0.2;
 const float SPEED_LIMIT_MM_S = 5;
 // The second (smaller) speed limit (used only with a battery power, which provides less torque):
 const float SPEED_LIMIT2_MM_S = 2.5;
-// The speed related critical voltage value; if the power voltage is above this value, we assume that we are 
-// running from AC power, and will be using the larger speed limit SPEED_LIMIT_MM_S; if it is below this value,
-// we assume that we are using the battery power and will be using SPEED_LIMIT2_MM_S speed limit.
-// The acceleration limit is always computed from SPEED_LIMIT_MM_S.
-// This test is only done once, when you power up the device.
-// We are dividing the value by 8 as that's how we compute the voltage in battery_status() (per AA battery)
-const float SPEED_VOLTAGE = 11.5 / 8.0;
 
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
@@ -362,7 +364,6 @@ struct global
   short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
-  short just_paused; // a "just paused" state - before making any movements (step a single frame etc.)
   short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   short first_loop=1; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise

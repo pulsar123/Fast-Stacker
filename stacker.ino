@@ -5,6 +5,7 @@
    Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
 
    The hardware used:
+   Original (h1.0):
     - Velbon Super Mag Slider manual macro rail, with some customization
     - Ultrathin 2-Phase 4-Wire 42 Stepper Motor 1.8 Degree 0.7A (http://www.ebay.ca/itm/Ultrathin-2-Phase-4-Wire-42-Stepper-Motor-1-8-Degree-0-7A-e-/261826922341?pt=LH_DefaultDomain_0&hash=item3cf619c765 )
     - Arduino Uno R3
@@ -13,6 +14,7 @@
     - Nokia 5110 LCD display + four 10 kOhm resistors + 1 kOhm + 330 Ohm (https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide)
     - 5V Relay SIP-1A05 + 1N4004 diode + 33 Ohm resistor; to operate camera shutter (http://www.forward.com.au/pfod/HomeAutomation/OnOffAddRelay/index.html)
     New in h1.1: extra 10k resistor.
+    New in h1.2: extra SIP-1A05 relay, 1N4004 diode, 0.1 uF capacitor, 33 Ohm and 47 k resistors.
 
    I am using the following libraries:
 
@@ -28,7 +30,7 @@
    h1.1 [s0.10,s0.12,s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
    h1.2 [s1.00]: LCD reset pin (RST) disconnected from Arduino; instead it is now harware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
-                 ARduino pin 6 is now used to control a second relay (+ diod + R=33Ohm), for camera autofocus.
+                 Arduino pin 6 is now used to control a second relay (+ diod + R=33 Ohm), for camera autofocus.
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -106,8 +108,9 @@ void setup() {
 #endif
 
 #ifdef LCD
-  // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
 #ifndef SOFTWARE_SPI
+  // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
+  // Some LCD's don't work with this settings (empty screen) - try to change the constant to SPI_CLOCK_DIV16 if this is the case
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 #endif
   lcd.begin();  // Always call lcd.begin() first.
@@ -231,7 +234,6 @@ void setup() {
   g.coords_change = 0;
   g.start_stacking = 0;
   g.paused = 0;
-  g.just_paused = 0;
   g.starting_point = g.point1;
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
   g.BL_counter = BACKLASH;
