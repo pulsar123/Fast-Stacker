@@ -3,42 +3,13 @@ void process_keypad()
  All the keypad runtime stuff goes here
  */
 {
-  float speed, pos_target;
-  short frame_counter0;
+  float speed;
+  short frame_counter0, pos_target;
 
 
   // Ignore keypad during emergency breaking
   if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
     return;
-
-  if (g.stacker_mode == 1 && g.moving == 0 && g.backlashing == 0)
-  {
-    g.start_stacking = 1;
-    if (g.continuous_mode)
-    {
-      // The flag means we just initiated stacking:
-      letter_status("  ");
-    }
-    else
-    {
-      g.noncont_flag = 1;
-      letter_status("S ");
-    }
-    // Time when stacking was initiated:
-    g.t0_stacking = g.t;
-    g.frame_counter = 0;
-    display_frame_counter();
-    g.pos_to_shoot = g.pos_short_old;
-    g.stacker_mode = 2;
-#ifdef H1.2
-    // Initiating AF now:
-    digitalWrite(PIN_AF, HIGH);
-    g.AF_on = 1;
-#ifdef CAMERA_DEBUG
-    AF_status(1);
-#endif
-#endif
-  }
 
 
   // Reading a keypad key if any:
@@ -204,22 +175,10 @@ void process_keypad()
         case '7': // #7: Manual camera shutter triggering
           if (g.moving)
             break;
-          // Setting the shutter on:
-#ifdef H1.2
-          digitalWrite(PIN_AF, HIGH);
-#ifdef CAMERA_DEBUG
-          AF_status(1);
-#endif
-          delay(STACKING_DELAY/1000);
-          g.AF_on = 1;
+          g.make_shot = 1;
           g.single_shot = 1;
-#endif
-          digitalWrite(PIN_SHUTTER, HIGH);
-#ifdef CAMERA_DEBUG
-          shutter_status(1);
-#endif
-          g.shutter_on = 1;
-          g.t_shutter = g.t;
+          g.start_stacking = 0;
+          g.stacker_mode = 0;
           break;
 
         case '1': // #1: Rewind a single frame step (no shooting)
@@ -228,24 +187,24 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-//            if (g.stacking_direction < 0)
-              g.frame_counter = g.frame_counter - g.stacking_direction;
-            pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+            //            if (g.stacking_direction < 0)
+            g.frame_counter = g.frame_counter - g.stacking_direction;
+            pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
           }
           else
           {
             g.frame_counter--;
-            pos_target = g.pos - g.msteps_per_frame;
+            pos_target = (short)(g.pos - g.msteps_per_frame);
           }
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+          if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
           {
             // Recovering the original frame counter if aborting:
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, g.speed_limit);
+          go_to(pos_target + 0.5, g.speed_limit);
           display_frame_counter();
           break;
 
@@ -258,19 +217,19 @@ void process_keypad()
           {
             if (g.stacking_direction > 0)
               g.frame_counter = g.frame_counter + g.stacking_direction;
-            pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+            pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
           }
           else
           {
             g.frame_counter++;
-            pos_target = g.pos + g.msteps_per_frame;
+            pos_target = (short)(g.pos + g.msteps_per_frame);
           }
-          if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+          if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
           {
             g.frame_counter = frame_counter0;
             break;
           }
-          go_to(pos_target, g.speed_limit);
+          go_to(pos_target + 0.5, g.speed_limit);
           display_frame_counter();
           break;
 
@@ -297,6 +256,7 @@ void process_keypad()
             g.stacker_mode = 1;
             // This is a non-continuous mode:
             g.continuous_mode = 0;
+            g.start_stacking = 0;
             display_comment_line("2-points stack");
           }
           else
@@ -383,13 +343,13 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10 * g.stacking_direction;
-                pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+                pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, g.speed_limit);
+                go_to(pos_target + 0.5, g.speed_limit);
                 display_frame_counter();
               }
               else
@@ -414,13 +374,13 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10 * g.stacking_direction;
-                pos_target = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-                if (pos_target < (float)g.limit1 + 100.0 || pos_target > (float)g.limit2 - 100.0 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+                pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;
                 }
-                go_to(pos_target, g.speed_limit);
+                go_to(pos_target + 0.5, g.speed_limit);
                 display_frame_counter();
               }
               else
@@ -511,14 +471,6 @@ void process_keypad()
                   g.t0_stacking = g.t;
                   g.pos_to_shoot = g.pos_short_old;
                   g.stacker_mode = 2;
-#ifdef H1.2
-                  // Initiating AF now:
-                  digitalWrite(PIN_AF, HIGH);
-                  g.AF_on = 1;
-#ifdef CAMERA_DEBUG
-                  AF_status(1);
-#endif
-#endif
                 }
                 else
                 {
@@ -530,6 +482,7 @@ void process_keypad()
                   g.stacking_direction = 1;
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
+                  g.start_stacking = 0;
                   display_comment_line("2-points stack");
                 }
               }
@@ -558,14 +511,6 @@ void process_keypad()
                 g.stacking_direction = -1;
                 g.stacker_mode = 3;
                 g.continuous_mode = 1;
-#ifdef H1.2
-                // Initiating AF now:
-                digitalWrite(PIN_AF, HIGH);
-                g.AF_on = 1;
-#endif
-#ifdef CAMERA_DEBUG
-                AF_status(1);
-#endif
                 display_comment_line("1-point stack ");
               }
               break;
@@ -586,14 +531,6 @@ void process_keypad()
                 g.stacking_direction = 1;
                 g.stacker_mode = 3;
                 g.continuous_mode = 1;
-#ifdef H1.2
-                // Initiating AF now:
-                digitalWrite(PIN_AF, HIGH);
-                g.AF_on = 1;
-#endif
-#ifdef CAMERA_DEBUG
-                AF_status(1);
-#endif
                 display_comment_line("1-point stack ");
               }
               break;
@@ -714,11 +651,14 @@ void process_keypad()
             g.paused = 1;
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
             g.state1_old = (KeyState)0;
-            // Switches the frame counter back to the last accomplished frame
-            g.frame_counter--;
-            // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-            short pos_short = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
-            go_to(pos_short + 0.5, g.speed_limit);
+            if (g.t - g.t0_stacking > CONT_STACKING_DELAY)
+            {
+              // Switches the frame counter back to the last accomplished frame
+              g.frame_counter--;
+              // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
+              pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+              go_to(pos_target + 0.5, g.speed_limit);
+            }
           }
           else
             // In 1-point stacking, we abort

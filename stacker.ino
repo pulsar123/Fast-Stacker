@@ -96,9 +96,7 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   pinMode(PIN_SHUTTER, OUTPUT);
-#ifdef H1.2
   pinMode(PIN_AF, OUTPUT);
-#endif
 
   pinMode(PIN_LCD_LED, OUTPUT);
 
@@ -134,9 +132,7 @@ void setup() {
 #endif
 
   digitalWrite(PIN_SHUTTER, LOW);
-#ifdef H1.2
   digitalWrite(PIN_AF, LOW);
-#endif
 
   // Keypad stuff:
   // No locking for keys:
@@ -162,10 +158,8 @@ void setup() {
   g.pos_stop_flag = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
-#ifdef H1.2
   g.AF_on = 0;  
   g.single_shot = 0;
-#endif
   g.direction = 1;
   g.comment_flag = 0;
 
@@ -224,6 +218,9 @@ void setup() {
   g.t_key_pressed = g.t0;
   g.t_last_repeat = g.t0;
   g.t_display = g.t0;
+  g.t_shutter = g.t0;
+  g.t_shutter_off = g.t0;
+  g.t_AF = g.t0;
   g.N_repeats = 0;
   g.breaking = 0;
   g.backlashing = 0;
@@ -233,6 +230,7 @@ void setup() {
   g.state1_old = (KeyState)0;
   g.coords_change = 0;
   g.start_stacking = 0;
+  g.make_shot = 0;
   g.paused = 0;
   g.starting_point = g.point1;
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
@@ -273,11 +271,11 @@ void setup() {
     g.bad_timing_counter = (short)0;
   }
 #endif
-#ifdef H1.2
 #ifdef CAMERA_DEBUG
   shutter_status(0);
   AF_status(0);
-#endif
+  g.i_first_delay = 4;
+  g.i_second_delay = 3;
 #endif
 
   // Should be the last line in setup:

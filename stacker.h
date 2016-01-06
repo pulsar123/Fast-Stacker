@@ -21,9 +21,6 @@ Issues to address:
 
 #define VERSION "0.15"
 
-// If defined, hardware h1.2 is assumed:
-#define H1.2
-
 // Options controlling compilation:
 
 // Debugging options
@@ -33,13 +30,13 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
 #define LCD
 // If defined, do camera debugging:
-//#define CAMERA_DEBUG
+#define CAMERA_DEBUG
 
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
@@ -67,11 +64,15 @@ Issues to address:
 // If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
 // the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
 #define MIRROR_LOCK
-// Delay in us before initiating stacking/making first shot and starting the movement
-// In h1.2 serves an additional purpose: this is the delay in us between triggering camera's AF and shutter (only the first shutter press in a stacking sequence)
-// If your focus stacking skips the very first shot, increase this parameter
-const unsigned long STACKING_DELAY = 10000;  // 10000
+// Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
+// (If your continuous focus stacking skips the very first shot, increase this parameter)
+const unsigned long CONT_STACKING_DELAY = 1000000;  // 10000
 const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
+const unsigned long SHUTTER_ON_DELAY = 200000; // Delay in microseconds between setting AF on and shutter on  5000
+const unsigned long SHUTTER_OFF_DELAY = 200000; // Delay in microseconds between setting shutter off and AF off  5000
+// If defined, AF is always synched with shutter, even in continuous stacking mode: (when shutter is on AF is always on, when shutter is off
+// AF is always off). The above delays, SHUTTER_ON_DELAY and SHUTTER_OFF_DELAY, are still inforced.
+#define AF_SYNC
 
 //////// Pin assignment ////////
 // We are using the bare minimum of arduino pins for stepper driver:
@@ -82,7 +83,7 @@ const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save 
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
 // Hardware h1.2: Arduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
 // (I modified the pcd8544 library to disable the use of this pin)
-const short PIN_LCD_RST = 100;  // Via 10 kOhm resistor
+const short PIN_LCD_RST = 100;
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
 // (I modified the pcd8544 library to disable the use of this pin)
 const short PIN_LCD_SCE = 100;
@@ -338,11 +339,11 @@ struct global
   short frame_counter; // Counter for shots
   short pos_to_shoot; // Position to shoot the next shot during focus stacking
   short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
-#ifdef H1.2
   short AF_on; // flag for camera AF state: 0/1 corresponds to off/on
   short single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
-#endif  
   unsigned long t_shutter; // Time when the camera shutter was triggered
+  unsigned long t_shutter_off; // Time when the camera shutter was switched off
+  unsigned long t_AF; // Time when the camera AF was triggered
   short i_mm_per_frame; // counter for mm_per_frame parameter;
   short i_fps; // counter for fps parameter;
   short i_n_shots; // counter for n_shots parameter;
@@ -361,7 +362,9 @@ struct global
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
   short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
-  short start_stacking; // =1 if we just initiated focust stacking, 0 otherwise; used to create an initial delay befor emoving, to ensure first shot is taken
+  short start_stacking; // =1 if we just initiated focus stacking, =0 otherwise
+  short make_shot; // =1 if we just initiated a shot; 0 otherwise
+  unsigned long t_shot; // the time shot was initiated  
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
