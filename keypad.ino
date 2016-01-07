@@ -615,7 +615,7 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > g.speed_limit)
+                if (speed > g.speed_limit || FPS[g.i_fps] > MAXIMUM_FPS)
                 {
                   g.i_fps--;
                   break;

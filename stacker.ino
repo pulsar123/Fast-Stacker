@@ -1,4 +1,4 @@
-/* Sergey Mashchenko 2015
+/* Sergey Mashchenko 2015, 2016
 
    Automated macro rail for focus stacking
 
@@ -13,6 +13,7 @@
     - 4x4 keys keypad (http://www.ebay.ca/itm/4x4-Matrix-high-quality-Keyboard-Keypad-Use-Key-PIC-AVR-Stamp-Sml-/141687830020?pt=LH_DefaultDomain_0&hash=item20fd40b604 )
     - Nokia 5110 LCD display + four 10 kOhm resistors + 1 kOhm + 330 Ohm (https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide)
     - 5V Relay SIP-1A05 + 1N4004 diode + 33 Ohm resistor; to operate camera shutter (http://www.forward.com.au/pfod/HomeAutomation/OnOffAddRelay/index.html)
+    - Voltage divider for battery sensor: resistors 270k, 360k, capacitor 0.1 uF.
     New in h1.1: extra 10k resistor.
     New in h1.2: extra SIP-1A05 relay, 1N4004 diode, 0.1 uF capacitor, 33 Ohm and 47 k resistors.
 
@@ -29,8 +30,8 @@
 
    h1.1 [s0.10,s0.12,s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
-   h1.2 [s1.00]: LCD reset pin (RST) disconnected from Arduino; instead it is now harware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
-                 Arduino pin 6 is now used to control a second relay (+ diod + R=33 Ohm), for camera autofocus.
+   h1.2 [s1.00]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
+                 Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -56,7 +57,7 @@ void factory_reset()
   g.i_n_shots = 9;
   g.i_mm_per_frame = 5;
   g.i_fps = 16;
-  g.i_first_delay = 3;
+  g.i_first_delay = 4;
   g.i_second_delay = 3;
   g.point1 = 2000;
   g.point2 = 3000;

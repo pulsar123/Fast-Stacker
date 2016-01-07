@@ -1,4 +1,4 @@
-/* Sergey Mashchenko 2015
+/* Sergey Mashchenko 2015, 2016
 
    User header file. Contains user adjustable parameters (constants), and other stuff.
 
@@ -19,74 +19,53 @@ Issues to address:
 #ifndef STACKER_H
 #define STACKER_H
 
-#define VERSION "0.15"
+// Requires hardware version h1.2
+#define VERSION "1.00"
 
-// Options controlling compilation:
 
-// Debugging options
+//////// Debugging options ////////
 // For debugging with serial monitor:
 //#define DEBUG
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
 #define LCD
 // If defined, do camera debugging:
-#define CAMERA_DEBUG
-
+//#define CAMERA_DEBUG
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
 
-// If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
-#define SAVE_ENERGY
 
-// If defined, will be using my module to make sure that my physical microsteps always correspond to the program coordinates
-// (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
-// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_backlash) until the
-// point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
-// this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
-// speed might get slightly lower than what program thinks it is.
-#define PRECISE_STEPPING
-
-// Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
-// amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
-// If undefined, to rewind by the same amount,
-// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation. 
-#define EXTENDED_REWIND
-
-//////// Hardware related parameters //////////
-
-// Camera related parameters:
+//////// Camera related parameters: ////////
 // If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
 // the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
 #define MIRROR_LOCK
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
 // (If your continuous focus stacking skips the very first shot, increase this parameter)
-const unsigned long CONT_STACKING_DELAY = 1000000;  // 10000
+const unsigned long CONT_STACKING_DELAY = 100000;  // 100000
 const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
-const unsigned long SHUTTER_ON_DELAY = 200000; // Delay in microseconds between setting AF on and shutter on  5000
-const unsigned long SHUTTER_OFF_DELAY = 200000; // Delay in microseconds between setting shutter off and AF off  5000
-// If defined, AF is always synched with shutter, even in continuous stacking mode: (when shutter is on AF is always on, when shutter is off
-// AF is always off). The above delays, SHUTTER_ON_DELAY and SHUTTER_OFF_DELAY, are still inforced.
-#define AF_SYNC
+const unsigned long SHUTTER_ON_DELAY = 5000; // Delay in microseconds between setting AF on and shutter on  5000
+const unsigned long SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between setting shutter off and AF off  5000
+// The mode of AF synching with the shutter: 
+//  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
+//      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
+//  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
+const short AF_SYNC = 0;
+
 
 //////// Pin assignment ////////
+// Pin 10 is left unused because it is used internally by hardware SPI.
 // We are using the bare minimum of arduino pins for stepper driver:
 const short PIN_STEP = 0;
 const short PIN_DIR = 1;
 const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
-// Hardware h1.2: Arduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
-// (I modified the pcd8544 library to disable the use of this pin)
-const short PIN_LCD_RST = 100;
-// Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
-// (I modified the pcd8544 library to disable the use of this pin)
-const short PIN_LCD_SCE = 100;
 const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
 const short PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
 const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
@@ -98,10 +77,18 @@ const short PIN_SHUTTER = 3;
 const short PIN_AF = 6;
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
+// Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
+// (I modified the pcd8544 library to disable the use of this pin). Using a fake value:
+const short PIN_LCD_SCE = 100;
+// Hardware h1.2: Arduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
+// (I modified the pcd8544 library to disable the use of this pin). Using a fake value:
+const short PIN_LCD_RST = 100;
 
-// Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R1 and R2.
-// Assuming R2 is the one directly connected to "+" of the battery, the scaler is (R1+R2)/R2. R1+R2 should be ~0.5M)
-// To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R1.
+
+//////// Voltage parameters: ////////
+// Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R3 and R4.
+// Assuming R3 is the one directly connected to "+" of the battery, the scaler is (R3+R4)/R4. R3+R4 should be ~0.5M)
+// To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R4.
 // The second factor is 5.0V/1024/8 (assumes 8 AA batteries) - don't change it.
 const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
@@ -117,7 +104,8 @@ const float V_HIGH = 1.4;
 // We are dividing the value by 8 as that's how we compute the voltage in battery_status() (per AA battery)
 const float SPEED_VOLTAGE = 11.5 / 8.0;
 
-// Keypad stuff:
+
+//////// Keypad stuff: ////////
 const byte rows = 4; //four rows
 const byte cols = 4; //three columns
 char keys[rows][cols] = {
@@ -131,10 +119,9 @@ byte rowPins[rows] = {4, 7, 12, A1}; //connect to the row pinouts of the keypad 
 byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
-// LCD stuff
+
+//////// LCD stuff: ////////
 // Create a pcd8544 object.
-// Hardware SPI will be used.
-// sdin (MOSI) is on pin 11 and sclk on pin 13.
 // The LCD has 6 lines (rows) and 14 columns
 // Pin 10 has to be unused (will be used internally)
 #ifdef SOFTWARE_SPI
@@ -145,13 +132,16 @@ pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
 pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 #endif
 
+
+//////// Parameters related to the motor and the rail: ////////
+// If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
+#define SAVE_ENERGY
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
 const short N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
 // Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full BACKLASH amount,
@@ -161,7 +151,6 @@ const float MM_PER_ROTATION = 3.98;
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2;
-
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
@@ -172,37 +161,36 @@ const float BACKLASH_MM = 0.2;
 const float SPEED_LIMIT_MM_S = 5;
 // The second (smaller) speed limit (used only with a battery power, which provides less torque):
 const float SPEED_LIMIT2_MM_S = 2.5;
-
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 2.0;
-
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
 // Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
 const float ACCEL_FACTOR = 3.0;
-
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
 const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, 
 // travel this many microsteps after the limiter goes off again, before starting checking the limiter again
-
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
 const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
 
+
+//////// User interface parameters: ////////
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
 
-// INPUT PARAMETERS:
+
+//////// INPUT PARAMETERS: ////////
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
@@ -222,7 +210,9 @@ const short N_SECOND_DELAY = 6;
 // (This should be always longer than the camera exposure time)
 const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
 
-//////// Don't modify these /////////
+
+//////////////////////////////////////////// Don't modify anything below ///////////////////////////////////////////////////
+
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
@@ -246,6 +236,21 @@ const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
 // Backlash in microsteps:
 const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP);
+// Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
+const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
+// If defined, will be using my module to make sure that my physical microsteps always correspond to the program coordinates
+// (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
+// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_backlash) until the
+// point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
+// this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
+// speed might get slightly lower than what program thinks it is.
+#define PRECISE_STEPPING
+// Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
+// amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
+// If undefined, to rewind by the same amount,
+// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation. 
+#define EXTENDED_REWIND
+
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -362,7 +367,7 @@ struct global
   struct regist reg2; // Custom parameters saved in register2
   struct regist reg3; // Custom parameters saved in register3
   short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
-  short start_stacking; // =1 if we just initiated focus stacking, =0 otherwise
+  short start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   short make_shot; // =1 if we just initiated a shot; 0 otherwise
   unsigned long t_shot; // the time shot was initiated  
   unsigned long int t0_stacking; // time when stacking was initiated;

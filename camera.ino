@@ -31,7 +31,7 @@ void camera()
   }
 
   // Enforcing the initial delay before a stacking (only for continuous mode):
-  if (g.start_stacking == 2 && (g.t - g.t0_stacking > CONT_STACKING_DELAY || g.continuous_mode == 0))
+  if (g.start_stacking == 2 && (g.t - g.t0_stacking > CONT_STACKING_DELAY || g.continuous_mode == 0 || AF_SYNC))
   {
     g.start_stacking = 3;
 
@@ -143,10 +143,10 @@ void camera()
   // Making decisions regarding whether to turn AF and shutter on or off:
 
   // Triggering camera's AF:
-  if (g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1))
+  if (g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1 || AF_SYNC))
   {
-    // Switching camera's AF on initially (for continuous mode only)
-    if (g.continuous_mode == 1 && g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1))
+    // Switching camera's AF on
+    if (g.continuous_mode == 1 && g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1 || AF_SYNC))
     {
       // Initiating AF now:
       digitalWrite(PIN_AF, HIGH);
@@ -187,8 +187,7 @@ void camera()
 
   // Depress the camera's AF when it's no longer needed
   // and only if the shutter has been off for at least SHUTTER_OFF_DELAY microseconds:
-  //  if (g.AF_on == 1 && g.shutter_on == 0 && g.t - g.t_AF >= SHUTTER_TIME_US && g.single_shot != 1 && (g.stacker_mode == 0 || g.paused == 1))
-  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY && (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1))
+  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY && (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
     digitalWrite(PIN_AF, LOW);
 #ifdef CAMERA_DEBUG

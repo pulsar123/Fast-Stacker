@@ -6,6 +6,9 @@
 * YN-560 without external pack
 ** 15 shots at 4 fps and 1/16
 
+== Without flash ==
+* At least 30 shots at 4 fps (s1.00)
+
 == Schneider Kreuznach Componon 28 mm f/4 reveresed on three extension tubes ==
 * Aperture:
 ** f/4.5 best overall (contrast and sharpness from center to corner)
