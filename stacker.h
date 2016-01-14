@@ -20,7 +20,7 @@ Issues to address:
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.00"
+#define VERSION "1.01"
 
 
 //////// Debugging options ////////
@@ -30,7 +30,7 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
@@ -191,10 +191,12 @@ const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for r
 
 
 //////// INPUT PARAMETERS: ////////
+// If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded of to the nearest whole number of microsteps.
+#define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
-const float MM_PER_FRAME[] = {0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
+float MM_PER_FRAME[] = {0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
@@ -211,7 +213,7 @@ const short N_SECOND_DELAY = 6;
 const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
 
 
-//////////////////////////////////////////// Don't modify anything below ///////////////////////////////////////////////////
+//////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
 
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
@@ -355,7 +357,7 @@ struct global
   short i_first_delay; // counter for FIRST_DELAY parameter
   short i_second_delay; // counter for SECOND_DELAY parameter
   short direction; // -1/1 for reverse/forward directions of moving
-  char buffer[15];  // char buffer to be used for lcd print; 2 more elements than the lcd width (14)
+  char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
   short points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly

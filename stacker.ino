@@ -246,6 +246,17 @@ void setup() {
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
 
+#ifdef ROUND_OFF
+  // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
+  for (int i=0; i<N_PARAMS; i++)
+  {
+    float fsteps = MM_PER_FRAME[i] / MM_PER_MICROSTEP;
+    short steps = nintMy(fsteps);
+    if (steps < 20)
+        MM_PER_FRAME[i] = ((float)steps) * MM_PER_MICROSTEP;
+  }
+#endif
+
 #ifdef MOTOR_DEBUG
   g.calibrate = 0;
   g.calibrate_warning = 0;

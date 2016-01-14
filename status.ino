@@ -203,8 +203,8 @@ void points_status()
         lcd.print("fb ");
       break;
 
-//    default:
-//      lcd.print(g.points_byte);
+      //    default:
+      //      lcd.print(g.points_byte);
   }
 #endif
   return;
@@ -219,7 +219,7 @@ void battery_status()
 {
   if (g.moving == 1)
     return;
-    
+
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
   // (to reduce voltage from 12V -> 5V)
   // Slow operation (100 us), so should be done infrequently
@@ -234,7 +234,7 @@ void battery_status()
     else
       g.speed_limit = SPEED_LIMIT2;
   }
-  
+
   if (g.error)
     return;
 
@@ -303,7 +303,7 @@ void display_u_per_f()
 {
   if (g.error)
     return;
-  sprintf(g.buffer, "%4duf ", (short)(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
 #ifdef LCD
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
@@ -350,7 +350,15 @@ void display_one_point_params()
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
-  sprintf(g.buffer, "%3d %2d.%01dm %3ds", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  char dt_char[5];
+  if (dt < 1000.0)
+    sprintf(dt_char, "%3ds", dt);
+  else if (dt < 10000.0)
+    sprintf(dt_char, "%4d", dt);
+  else
+    sprintf(dt_char, "****");
+
+  sprintf(g.buffer, "%3d %2d.%01dm %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt_char);
 #ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
@@ -375,10 +383,21 @@ void display_two_point_params()
     return;
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
-  if (g.Nframes < 1000)
-    sprintf(g.buffer, "%3d %2d.%01dm %3ds", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+  char dt_char[5];
+  if (dt < 1000.0)
+    sprintf(dt_char, "%3ds", dt);
+  else if (dt < 10000.0)
+    sprintf(dt_char, "%4d", dt);
   else
-    sprintf(g.buffer, "*** %2d.%01dm %3ds", (int)dx, (int)((dx - (int)dx) * 10.0), dt);
+    sprintf(dt_char, "****");
+
+  char Nframes_char[4];
+  if (g.Nframes < 1000)
+    sprintf(Nframes_char, "%3d", g.Nframes);
+  else
+    sprintf(Nframes_char, "***");
+
+  sprintf(g.buffer, "%3s %2d.%01dm %4s", Nframes_char, (int)dx, (int)((dx - (int)dx) * 10.0), dt_char);
 #ifdef LCD
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
@@ -419,7 +438,7 @@ void display_current_position()
  */
 {
 #ifdef CAMERA_DEBUG
-//  return;
+  //  return;
 #endif
 #ifdef TIMING
   // Average loop length for the last motion, in shortest miscrostep length units *100:
@@ -453,7 +472,7 @@ void display_current_position()
   short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
-//  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
+  //  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
   sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
@@ -463,7 +482,7 @@ void display_current_position()
   sprintf(g.buffer, " P=%2d.%02dmm", (int)p, (int)(100.0 * (p - (int)p)));
 #else
   sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
-#endif  
+#endif
 #endif
 #ifdef LCD
   lcd.setCursor(0, 4);
