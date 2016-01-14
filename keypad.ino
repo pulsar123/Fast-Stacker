@@ -24,7 +24,7 @@ void process_keypad()
     g.t_comment = g.t - COMMENT_DELAY + 10000;
 
   if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
-    // Two-key commands (they all start with "#" key)
+    // Two-key #X commands
   {
     if (state1 == PRESSED)
     {
@@ -271,6 +271,34 @@ void process_keypad()
     g.state1_old = state1;
   }
 
+
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  else if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '*') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
+    // Two-key *X commands (don't work for paused and moving states)
+  {
+    if (state1 == PRESSED && g.moving == 0 && g.paused == 0)
+    {
+      switch (keypad.key[1].kchar)
+      {
+        case '1': // *1: Rail reverse
+          g.straight = 1 - g.straight;
+          alt_display();
+          // We need to do a full backlash compensation loop when reversing the rail operation:
+          g.BL_counter = BACKLASH;
+          g.backlash_init = 1;
+          // Updating the current coordinate in the new (reversed) frame of reference:
+          g.pos = g.limit1 + g.limit2 - g.pos;
+          g.pos0 = g.pos;
+          g.pos_old = g.pos;
+          g.pos_short_old = floorMy(g.pos);
+          break;
+
+      } // switch
+    }
+    g.state1_old = state1;
+  }
+
+
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   else
     // Single-key commands
@@ -493,25 +521,13 @@ void process_keypad()
               }
               break;
 
-            case '*':  // *: Initiate one-point focus stacking backwards (not backlash compensated)
+            case '*':  // *: Show alternative display (for *X commands)
               if (g.paused)
                 break;
-              // Simplest workaround: ignore the command if currently moving
-              // (better solution would be to stop first)
               if (!g.moving)
               {
-                // The flag means we just initiated stacking:
-                g.start_stacking = 1;
-                // Time when stacking was initiated:
-                g.t0_stacking = g.t;
-                g.frame_counter = 0;
-                display_frame_counter();
-                g.pos_to_shoot = g.pos_short_old;
-                g.starting_point = g.pos_short_old;
-                g.stacking_direction = -1;
-                g.stacker_mode = 3;
-                g.continuous_mode = 1;
-                display_comment_line("1-point stack ");
+                g.alt_flag = 1;
+                alt_display();
               }
               break;
 
@@ -696,6 +712,11 @@ void process_keypad()
           else
 #endif
             change_speed(0.0, 0, 2);
+        }
+        if (g.key_old == '*')
+        {
+          g.alt_flag = 0;
+          display_all("  ");
         }
       }
 

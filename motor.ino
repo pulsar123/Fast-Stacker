@@ -96,12 +96,12 @@ void motor_control()
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
-    digitalWrite(PIN_DIR, HIGH);
+    digitalWrite(PIN_DIR, g.straight);
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
-    digitalWrite(PIN_DIR, LOW);
+    digitalWrite(PIN_DIR, 1-g.straight);
     delayMicroseconds(STEP_LOW_DT);
   }
 

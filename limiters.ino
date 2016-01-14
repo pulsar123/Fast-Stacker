@@ -14,7 +14,11 @@ void limiters()
     return;
 
   // Read the input from the limiting switches:
-  unsigned char limit_on = digitalRead(PIN_LIMITERS);
+#ifdef MOTOR_DEBUG
+  unsigned char limit_on = 0;
+#else  
+  unsigned char limit_on = digitalRead(PIN_LIMITERS);  
+#endif
 
   //////// Hard limits //////
   // If a limiter is on:

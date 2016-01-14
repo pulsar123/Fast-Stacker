@@ -16,19 +16,7 @@ void backlash()
   if (g.calibrate || g.breaking || g.moving || g.backlashing || g.BL_counter == 0)
     return;
 
-  // First move - only done once, initiated in the very first loop, and only if it's not calibrating, breaking, or moving:
-  if (g.first_loop == 1)
-  {
-    // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
-    // Go_to the current position, with BL>0, will result in a full backlash compensation
-    go_to(g.pos, g.speed_limit);
-
-    // This should be done after go_to call:
-    g.backlashing = 1;
-  }
-
-
-  if (g.first_loop == 0)
+  if (g.backlash_init == 0)
   {
     // Backlash compensation.
     go_to(g.pos + (float)g.BL_counter, g.speed_limit);
@@ -36,6 +24,19 @@ void backlash()
     // This should be done after go_to call:
     g.backlashing = 1;
   }
+
+  // First move - only done once, initiated in the very first loop, and only if it's not calibrating, breaking, or moving:
+  if (g.backlash_init == 1)
+  {
+    // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
+    // Go_to the current position, with BL>0, will result in a full backlash compensation
+    go_to(g.pos, g.speed_limit);
+
+    // This should be done after go_to call:
+    g.backlashing = 1;
+    g.backlash_init = 0;
+  }
+
 
   return;
 }

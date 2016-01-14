@@ -2,6 +2,28 @@
  All LCD related functions
 */
 
+void alt_display()
+/* Alternative display when pressing * key)
+ */
+{
+  if (g.alt_flag == 0)
+    return;
+
+#ifdef LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  sprintf(g.buffer, "R=%1d           ",1-g.straight);
+  lcd.print(g.buffer);
+  lcd.print("              ");
+  lcd.print("              ");
+  lcd.print("              ");
+  lcd.print("              ");
+  lcd.print("              ");
+#endif
+
+  return;
+}
+
 void display_all(char* l)
 /*
  Refreshing the whole screen
@@ -10,6 +32,8 @@ void display_all(char* l)
 #ifdef TIMING
   return;
 #endif
+  if (g.alt_flag)
+    return;
   if (g.error == 0)
   {
     if (g.calibrate_warning == 0)
@@ -27,12 +51,14 @@ void display_all(char* l)
       Serial.println("Press any key to start calibration");
 #endif
 #ifdef LCD
-      lcd.setCursor(0, 0);  lcd.print("  Calibration ");
-      lcd.setCursor(0, 1);  lcd.print("  required!   ");
-      lcd.setCursor(0, 2);  lcd.print("              ");
-      lcd.setCursor(0, 3);  lcd.print("Press any key ");
-      lcd.setCursor(0, 4);  lcd.print("to start      ");
-      lcd.setCursor(0, 5);  lcd.print("calibration.   ");
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("  Calibration ");
+      lcd.print("  required!   ");
+      lcd.print("              ");
+      lcd.print("Press any key ");
+      lcd.print("to start      ");
+      lcd.print("calibration.  ");
 #endif
     }
   }
@@ -49,23 +75,27 @@ void display_all(char* l)
         Serial.println("If cable is connected, rewind to safe area");
 #endif
 #ifdef LCD
-        lcd.setCursor(0, 0);  lcd.print("Cable discon- ");
-        lcd.setCursor(0, 1);  lcd.print("nected, or    ");
-        lcd.setCursor(0, 2);  lcd.print("limiter is on!");
-        lcd.setCursor(0, 3);  lcd.print("Only if cable ");
-        lcd.setCursor(0, 4);  lcd.print("is connected, ");
-        lcd.setCursor(0, 5);  lcd.print("rewind.       ");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Cable discon- ");
+        lcd.print("nected, or    ");
+        lcd.print("limiter is on!");
+        lcd.print("Only if cable ");
+        lcd.print("is connected, ");
+        lcd.print("rewind.       ");
 #endif
         break;
 
       case 2: // Critically low battery level; not used when debugging
 #ifdef LCD
-        lcd.setCursor(0, 0);  lcd.print("Critically low");
-        lcd.setCursor(0, 1);  lcd.print("battery level!");
-        lcd.setCursor(0, 2);  lcd.print("              ");
-        lcd.setCursor(0, 3);  lcd.print("Replace the   ");
-        lcd.setCursor(0, 4);  lcd.print("batteries.    ");
-        lcd.setCursor(0, 5);  lcd.print("              ");
+        lcd.clear();
+        lcd.setCursor(0, 0);  
+        lcd.print("Critically low");
+        lcd.print("battery level!");
+        lcd.print("              ");
+        lcd.print("Replace the   ");
+        lcd.print("batteries.    ");
+        lcd.print("              ");
 #endif
         break;
 
@@ -81,7 +111,7 @@ void letter_status(char* l)
  Display a letter code "l" at the beginning of the status line
  */
 {
-  if (g.error || g.paused)
+  if (g.error || g.paused || g.alt_flag)
     return;
 #ifdef LCD
   lcd.setCursor(0, 5);
@@ -99,7 +129,7 @@ void motion_status()
  Motion status: 2-char status showing the direction and speed (rewind vs. focus stacking)
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
 #ifdef LCD
   uint8_t i;
@@ -139,7 +169,7 @@ void display_frame_counter()
  positive <1000 numbers.
   */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   // Printing frame counter:
   if (g.stacker_mode == 0 && g.paused == 0)
@@ -168,7 +198,7 @@ void points_status()
   points (point1/point2).
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
 #ifdef LCD
   lcd.setCursor(9, 5);
@@ -217,7 +247,7 @@ void battery_status()
  Measuring the battery voltage and displaying it.
  */
 {
-  if (g.moving == 1)
+  if (g.moving == 1 || g.alt_flag)
     return;
 
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
@@ -284,7 +314,7 @@ void display_status_line(char* l)
  Display the whole status line
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   letter_status(l);
   motion_status();
@@ -301,7 +331,7 @@ void display_u_per_f()
  Display the input parameter u per frame (1000*MM_PER_FRAME)
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
 #ifdef LCD
@@ -321,7 +351,7 @@ void display_fps()
  Display the input parameter fps (frames per second)
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   //  sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
   sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
@@ -345,7 +375,7 @@ void display_one_point_params()
   - travel time, s.
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
@@ -379,7 +409,7 @@ void display_two_point_params()
   - travel time, s.
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
@@ -415,7 +445,7 @@ void display_two_points()
  Display the positions (in mm) of two points: foreground, F, and background, B.
  */
 {
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
   float p1 = MM_PER_MICROSTEP * (float)g.point1;
   float p2 = MM_PER_MICROSTEP * (float)g.point2;
@@ -463,7 +493,7 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0)
+  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
@@ -505,7 +535,7 @@ void display_comment_line(char *l)
 #ifdef CAMERA_DEBUG
   return;
 #endif
-  if (g.error)
+  if (g.error || g.alt_flag)
     return;
 #ifdef LCD
   lcd.setCursor(0, 4);

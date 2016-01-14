@@ -284,6 +284,7 @@ const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
 const int ADDR_I_FIRST_DELAY = ADDR_REG2 + SIZE_REG;  // for the FIRST_DELAY parameter
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
+const int ADDR_STRAIGHT = ADDR_I_SECOND_DELAY + 2;  // for g.straight flag
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 uint8_t battery_char [][12] = {
@@ -375,7 +376,6 @@ struct global
   unsigned long int t0_stacking; // time when stacking was initiated;
   short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
-  short first_loop=1; // =1 during the first loop, 0 after that
   short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
   short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
@@ -383,6 +383,9 @@ struct global
   unsigned long t_old;
   float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
   short setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
+  short alt_flag; // 0: normal display; 1: alternative display (when pressing *)
+  short straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
+  short backlash_init; // 1: initializing a full backlash loop
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

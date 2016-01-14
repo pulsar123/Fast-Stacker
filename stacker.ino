@@ -65,6 +65,7 @@ void factory_reset()
   g.backlight = 2;
   g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
   g.reg2 = g.reg1;
+  g.straight = 1;
   // Saving these values in EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
   EEPROM.put( ADDR_CALIBRATE, g.calibrate );
@@ -81,6 +82,7 @@ void factory_reset()
   EEPROM.put( ADDR_REG2, g.reg2);
   EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
   EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+  EEPROM.put( ADDR_STRAIGHT, g.straight);
   return;
 }
 
@@ -159,7 +161,7 @@ void setup() {
   g.pos_stop_flag = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
-  g.AF_on = 0;  
+  g.AF_on = 0;
   g.single_shot = 0;
   g.direction = 1;
   g.comment_flag = 0;
@@ -188,6 +190,7 @@ void setup() {
     EEPROM.get( ADDR_REG2, g.reg2);
     EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
     EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
+    EEPROM.get( ADDR_STRAIGHT, g.straight);
 #ifdef DEBUG
     Serial.println("EEPROM values:");
     Serial.println(g.pos, 2);
@@ -237,23 +240,26 @@ void setup() {
   // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
   g.BL_counter = BACKLASH;
   //  g.BL_counter = 0;
-  g.first_loop == 1;
+  g.backlash_init = 1;
   g.started_moving = 0;
   g.dt_backlash = 0;
   g.continuous_mode = 1;
   g.noncont_flag = 0;
+  g.alt_flag = 0;
+  //!!!
+  g.straight = 1;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
 
 #ifdef ROUND_OFF
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
-  for (int i=0; i<N_PARAMS; i++)
+  for (int i = 0; i < N_PARAMS; i++)
   {
     float fsteps = MM_PER_FRAME[i] / MM_PER_MICROSTEP;
     short steps = nintMy(fsteps);
     if (steps < 20)
-        MM_PER_FRAME[i] = ((float)steps) * MM_PER_MICROSTEP;
+      MM_PER_FRAME[i] = ((float)steps) * MM_PER_MICROSTEP;
   }
 #endif
 
@@ -308,9 +314,7 @@ void loop()
   process_keypad();
 
   // All the processing related to the two extreme limits for the macro rail movements:
-#ifndef MOTOR_DEBUG
   limiters();
-#endif
 
   // Perform calibration of the limiters if requested (only when the rail is at rest):
   calibration();
@@ -325,7 +329,5 @@ void loop()
   timing();
 #endif
 
-  // Should be the last line:
-  g.first_loop = 0;
 }
 
