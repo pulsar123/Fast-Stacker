@@ -16,12 +16,6 @@ void display_stuff()
   {
     g.t_display = g.t;
     battery_status();
-/*
-    if (g.noncont_flag == 0)
-      display_all("  ");
-    else
-      display_all("S ");
-      */
   }
 
   return;

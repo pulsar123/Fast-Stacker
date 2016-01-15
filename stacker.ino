@@ -63,8 +63,8 @@ void factory_reset()
   g.point2 = 3000;
   g.points_byte = 0;
   g.backlight = 2;
-  g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
-  g.reg2 = g.reg1;
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
+//  g.reg2 = g.reg1;
   g.straight = 1;
   // Saving these values in EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
@@ -78,8 +78,8 @@ void factory_reset()
   EEPROM.put( ADDR_POINT2, g.point2);
   EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-  EEPROM.put( ADDR_REG1, g.reg1);
-  EEPROM.put( ADDR_REG2, g.reg2);
+  EEPROM.put( ADDR_REG1, g.reg);
+  EEPROM.put( ADDR_REG2, g.reg);
   EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
   EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.put( ADDR_STRAIGHT, g.straight);
@@ -116,6 +116,7 @@ void setup() {
 #endif
   lcd.begin();  // Always call lcd.begin() first.
   lcd.clear();
+/*
   lcd.setCursor(0, 0);
   lcd.println("  Automated ");
   lcd.println("focus stacker");
@@ -124,8 +125,9 @@ void setup() {
   lcd.println("(c) Sergey");
   lcd.println("Mashchenko");
   lcd.print("  2015");
+  */
 #endif
-  delay(500);
+//  delay(500);
 
   // Writing initial values to the motor pins:
 #ifdef SAVE_ENERGY
@@ -186,8 +188,8 @@ void setup() {
     EEPROM.get( ADDR_POINT2, g.point2);
     EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.get( ADDR_REG1, g.reg1);
-    EEPROM.get( ADDR_REG2, g.reg2);
+//    EEPROM.get( ADDR_REG1, g.reg1);
+//    EEPROM.get( ADDR_REG2, g.reg2);
     EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
     EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
     EEPROM.get( ADDR_STRAIGHT, g.straight);
@@ -278,7 +280,7 @@ void setup() {
   lcd.clear();
 #endif
   // This sets g.speed_limit, among other things:
-  display_all("  ");
+  display_all();
 
 #ifdef TIMING
   if (g.moving == 0)

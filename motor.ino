@@ -7,7 +7,8 @@ void motor_control()
 {
   unsigned long dt, dt_a;
   float dV;
-  short new_accel, instant_stop, i_case;
+  char new_accel;
+  byte instant_stop, i_case;
 
   g.t_old = g.t;
   // Current time in microseconds:
@@ -132,7 +133,7 @@ void motor_control()
     // fixable (see below). If you get a sizable fraction (say, more than 5 percent) of the steps skipped,
     // you need to lower down your SPEED_LIMIT. For an arbitrary rail and motor, make sure the following condition is met:
     // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
-    short d_sign;
+    char d_sign;
     if (d > 1)
     {
       // The single step with a corresponding sign which should have been taken
@@ -146,7 +147,7 @@ void motor_control()
       float pos_a;
       short pos_short_new = g.pos_short_old + d_sign;
       float pos_new = (float)pos_short_new;
-      short solve_square_equation = 0;
+      byte solve_square_equation = 0;
       switch (i_case)
       {
         case 1: // The most difficult case when acceleration changed to zero since t_old, when we hit the target speed

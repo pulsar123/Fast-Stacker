@@ -80,7 +80,7 @@ short roundMy(float x)
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void change_speed(float speed1_loc, short moving_mode1, short accel)
+void change_speed(float speed1_loc, byte moving_mode1, char accel)
 /* Run the function every time you want to change speed. It will figure out required acceleration based on current speed and speed1,
    and will update t0, speed0, pos0, if accel changed here. The parameter "accel" is the suggested acceleration (0, 1, or 2).
    Inputs:
@@ -88,7 +88,7 @@ void change_speed(float speed1_loc, short moving_mode1, short accel)
     When moving_mode1=1, global moving_mode=1 is  enabled (to be used in go_to).
  */
 {
-  short new_accel;
+  char new_accel;
 
   // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
   if (g.breaking || g.calibrate_flag == 2)
@@ -148,7 +148,7 @@ void go_to(float pos1, float speed)
  */
 {
   float speed1_loc;
-  short speed_changes;
+  byte speed_changes;
 
   if (g.breaking || g.backlashing)
     return;
@@ -325,10 +325,11 @@ void stop_now()
   g.backlashing = 0;
   g.speed = 0.0;
   // Refresh the whole display:
-  if (g.noncont_flag == 0)
-    display_all("  ");
-  else
-    display_all("S ");
+  display_all();
+  if (g.noncont_flag > 0)
+  {
+    display_status_line("S ");
+  }
   g.t_display = g.t;
 
   if (g.calibrate_flag == 0 && g.coords_change != 0)
@@ -403,7 +404,7 @@ void coordinate_recalibration()
   g.limit1 = g.limit1 + g.coords_change;
 
   EEPROM.put( ADDR_LIMIT1, g.limit1);
-  display_all("  ");
+  display_all();
 
   return;
 }

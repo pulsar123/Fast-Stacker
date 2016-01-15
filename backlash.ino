@@ -25,8 +25,19 @@ void backlash()
     g.backlashing = 1;
   }
 
+  // This is the special case, only used for the final move of backlash compensation after reversing the rail direction (*1):
+  if (g.backlash_init == 3)
+  {
+    // Backlash compensation.
+    go_to(g.pos + (float)(2 * BACKLASH), g.speed_limit);
+
+    // This should be done after go_to call:
+    g.backlashing = 1;
+    g.backlash_init = 0;
+  }
+
   // First move - only done once, initiated in the very first loop, and only if it's not calibrating, breaking, or moving:
-  if (g.backlash_init == 1)
+  if (g.backlash_init > 0)
   {
     // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
     // Go_to the current position, with BL>0, will result in a full backlash compensation
@@ -34,7 +45,10 @@ void backlash()
 
     // This should be done after go_to call:
     g.backlashing = 1;
-    g.backlash_init = 0;
+    if (g.backlash_init == 1)
+      g.backlash_init = 0;
+    else
+      g.backlash_init = 3;
   }
 
 

@@ -24,7 +24,7 @@ void alt_display()
   return;
 }
 
-void display_all(char* l)
+void display_all()
 /*
  Refreshing the whole screen
  */
@@ -43,7 +43,7 @@ void display_all(char* l)
       display_two_point_params();
       display_two_points();
       display_current_position();
-      display_status_line(l);
+      display_status_line("  ");
     }
     else
     {
@@ -283,8 +283,8 @@ void battery_status()
   lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
-  // A 4-level bitmao indication (between V_LOW and V_HIGH):
-  short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
+  // A 4-level bitmap indication (between V_LOW and V_HIGH):
+  byte level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
   if (level < 0)
     level = 0;
   if (level > 3)

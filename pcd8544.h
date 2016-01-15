@@ -26,7 +26,8 @@
 class pcd8544 : public Print {
 public:
 	// Constructor for harware SPI
-	pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
+//	pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
+  pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
 
 	// Constructor for software SPI.
 	pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin);

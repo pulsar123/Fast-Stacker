@@ -39,7 +39,7 @@ void process_keypad()
           g.calibrate_warning = 1;
           g.calibrate_init = g.calibrate;
           // Displaying the calibrate warning:
-          display_all("  ");
+          display_all();
           break;
 
         case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
@@ -68,64 +68,28 @@ void process_keypad()
         case '2': // #2: Save parameters to first memory bank
           if (g.paused)
             break;
-          g.reg1 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
-          EEPROM.put( ADDR_REG1, g.reg1);
+          save_params(ADDR_REG1);
           display_comment_line("Saved to Reg1 ");
           break;
 
         case '3': // #3: Read parameters from first memory bank
           if (g.paused)
             break;
-          EEPROM.get( ADDR_REG1, g.reg1);
-          g.i_n_shots = g.reg1.i_n_shots;
-          g.i_mm_per_frame = g.reg1.i_mm_per_frame;
-          g.i_fps = g.reg1.i_fps;
-          g.point1 = g.reg1.point1;
-          g.point2 = g.reg1.point2;
-          g.i_first_delay = g.reg1.i_first_delay;
-          g.i_second_delay = g.reg1.i_second_delay;
-          g.msteps_per_frame = Msteps_per_frame();
-          g.Nframes = Nframes();
-          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-          EEPROM.put( ADDR_I_FPS, g.i_fps);
-          EEPROM.put( ADDR_POINT1, g.point1);
-          EEPROM.put( ADDR_POINT2, g.point2);
-          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-          display_all("  ");
+          read_params(ADDR_REG1);
           display_comment_line("Read from Reg1");
           break;
 
         case '5': // #5: Save parameters to second memory bank
           if (g.paused)
             break;
-          g.reg2 = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
-          EEPROM.put( ADDR_REG2, g.reg2);
+          save_params(ADDR_REG2);
           display_comment_line("Saved to Reg2 ");
           break;
 
         case '6': // #6: Read parameters from second memory bank
           if (g.paused)
             break;
-          EEPROM.get( ADDR_REG2, g.reg2);
-          g.i_n_shots = g.reg2.i_n_shots;
-          g.i_mm_per_frame = g.reg2.i_mm_per_frame;
-          g.i_fps = g.reg2.i_fps;
-          g.point1 = g.reg2.point1;
-          g.point2 = g.reg2.point2;
-          g.i_first_delay = g.reg2.i_first_delay;
-          g.i_second_delay = g.reg2.i_second_delay;
-          g.msteps_per_frame = Msteps_per_frame();
-          g.Nframes = Nframes();
-          EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-          EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-          EEPROM.put( ADDR_I_FPS, g.i_fps);
-          EEPROM.put( ADDR_POINT1, g.point1);
-          EEPROM.put( ADDR_POINT2, g.point2);
-          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-          display_all("  ");
+          read_params(ADDR_REG2);
           display_comment_line("Read from Reg2");
           break;
 
@@ -169,7 +133,7 @@ void process_keypad()
           factory_reset();
           g.calibrate_warning = 1;
           g.calibrate_init = g.calibrate;
-          display_all("  ");
+          display_all();
           break;
 
         case '7': // #7: Manual camera shutter triggering
@@ -187,9 +151,8 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            //            if (g.stacking_direction < 0)
-            g.frame_counter = g.frame_counter - g.stacking_direction;
-            pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+            g.frame_counter--;
+            pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
           }
           else
           {
@@ -215,9 +178,8 @@ void process_keypad()
           frame_counter0 = g.frame_counter;
           if (g.paused)
           {
-            if (g.stacking_direction > 0)
-              g.frame_counter = g.frame_counter + g.stacking_direction;
-            pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+            g.frame_counter++;
+            pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
           }
           else
           {
@@ -252,7 +214,6 @@ void process_keypad()
             go_to((float)g.point1 + 0.5, g.speed_limit);
             g.starting_point = g.point1;
             g.destination_point = g.point2;
-            g.stacking_direction = 1;
             g.stacker_mode = 1;
             // This is a non-continuous mode:
             g.continuous_mode = 0;
@@ -285,9 +246,10 @@ void process_keypad()
           alt_display();
           // We need to do a full backlash compensation loop when reversing the rail operation:
           g.BL_counter = BACKLASH;
-          g.backlash_init = 1;
+          // This will instruct the backlash module to do a double BL travel at the end, to compensate for BL in reveresed coordinates
+          g.backlash_init = 2;
           // Updating the current coordinate in the new (reversed) frame of reference:
-          g.pos = g.limit1 + g.limit2 - g.pos;
+          g.pos = g.limit1 + g.limit2 - g.pos - BACKLASH;
           g.pos0 = g.pos;
           g.pos_old = g.pos;
           g.pos_short_old = floorMy(g.pos);
@@ -321,7 +283,7 @@ void process_keypad()
             // Any key pressed when calibrate_warning=1 will initiate calibration:
           {
             g.calibrate_warning = 0;
-            display_all("  ");
+            display_all();
             return;
           }
         }
@@ -370,8 +332,8 @@ void process_keypad()
                 if (g.moving)
                   break;
                 frame_counter0 = g.frame_counter;
-                g.frame_counter = g.frame_counter - 10 * g.stacking_direction;
-                pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                g.frame_counter = g.frame_counter - 10;
+                pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -401,8 +363,8 @@ void process_keypad()
                 if (g.moving)
                   break;
                 frame_counter0 = g.frame_counter;
-                g.frame_counter = g.frame_counter + 10 * g.stacking_direction;
-                pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                g.frame_counter = g.frame_counter + 10;
+                pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -507,7 +469,6 @@ void process_keypad()
                   go_to((float)g.point1 + 0.5, g.speed_limit);
                   g.starting_point = g.point1;
                   g.destination_point = g.point2;
-                  g.stacking_direction = 1;
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
                   g.start_stacking = 0;
@@ -544,7 +505,6 @@ void process_keypad()
                 display_frame_counter();
                 g.pos_to_shoot = g.pos_short_old;
                 g.starting_point = g.pos_short_old;
-                g.stacking_direction = 1;
                 g.stacker_mode = 3;
                 g.continuous_mode = 1;
                 display_comment_line("1-point stack ");
@@ -559,7 +519,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-              display_all("  ");
+              display_all();
               break;
 
             case '3':  // 3: Increase parameter n_shots (for 1-point sstacking)
@@ -583,7 +543,7 @@ void process_keypad()
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
-              display_all("  ");
+              display_all();
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
               break;
 
@@ -608,7 +568,7 @@ void process_keypad()
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-              display_all("  ");
+              display_all();
               break;
 
             case '8':  // 8: Decrease parameter fps
@@ -619,7 +579,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_FPS, g.i_fps);
-              display_all("  ");
+              display_all();
               break;
 
             case '9':  // 9: Increase parameter fps
@@ -640,7 +600,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( ADDR_I_FPS, g.i_fps);
-              display_all("  ");
+              display_all();
               break;
 
             case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
@@ -672,7 +632,7 @@ void process_keypad()
               // Switches the frame counter back to the last accomplished frame
               g.frame_counter--;
               // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-              pos_target = (short)(g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+              pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
               go_to(pos_target + 0.5, g.speed_limit);
             }
           }
@@ -716,7 +676,7 @@ void process_keypad()
         if (g.key_old == '*')
         {
           g.alt_flag = 0;
-          display_all("  ");
+          display_all();
         }
       }
 
@@ -725,6 +685,39 @@ void process_keypad()
   } // End of two-key / one-key if
 
 
+  return;
+}
+
+
+
+void read_params(const int addr)
+{
+  EEPROM.get( addr, g.reg);
+  g.i_n_shots = g.reg.i_n_shots;
+  g.i_mm_per_frame = g.reg.i_mm_per_frame;
+  g.i_fps = g.reg.i_fps;
+  g.point1 = g.reg.point1;
+  g.point2 = g.reg.point2;
+  g.i_first_delay = g.reg.i_first_delay;
+  g.i_second_delay = g.reg.i_second_delay;
+  g.msteps_per_frame = Msteps_per_frame();
+  g.Nframes = Nframes();
+  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+  EEPROM.put( ADDR_I_FPS, g.i_fps);
+  EEPROM.put( ADDR_POINT1, g.point1);
+  EEPROM.put( ADDR_POINT2, g.point2);
+  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+  display_all();
+  return;
+}
+
+
+void save_params(const int addr)
+{
+g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
+  EEPROM.put( addr, g.reg);
   return;
 }
 

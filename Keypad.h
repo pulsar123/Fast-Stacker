@@ -100,7 +100,7 @@ class Keypad : public Key {
     Key key[LIST_MAX];
     unsigned long holdTimer;
     //stacker: flag used to have row pins initialized only once (to save time):
-    short init = 1;
+    byte init = 1;
 
     char getKey();
     bool getKeys();

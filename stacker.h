@@ -51,7 +51,7 @@ const unsigned long CONT_STACKING_DELAY = 100000;  // 100000
 const unsigned long SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
 const unsigned long SHUTTER_ON_DELAY = 5000; // Delay in microseconds between setting AF on and shutter on  5000
 const unsigned long SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between setting shutter off and AF off  5000
-// The mode of AF synching with the shutter: 
+// The mode of AF synching with the shutter:
 //  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
@@ -90,13 +90,13 @@ const short PIN_LCD_RST = 100;
 // Assuming R3 is the one directly connected to "+" of the battery, the scaler is (R3+R4)/R4. R3+R4 should be ~0.5M)
 // To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R4.
 // The second factor is 5.0V/1024/8 (assumes 8 AA batteries) - don't change it.
-const float VOLTAGE_SCALER = 2.7273 * 5.0/1024.0/8.0;
+const float VOLTAGE_SCALER = 2.7273 * 5.0 / 1024.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
 const float V_LOW = 1.125;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
-// The speed related critical voltage value; if the power voltage is above this value, we assume that we are 
+// The speed related critical voltage value; if the power voltage is above this value, we assume that we are
 // running from AC power, and will be using the larger speed limit SPEED_LIMIT_MM_S; if it is below this value,
 // we assume that we are using the battery power and will be using SPEED_LIMIT2_MM_S speed limit.
 // The acceleration limit is always computed from SPEED_LIMIT_MM_S.
@@ -155,7 +155,7 @@ const float BACKLASH_MM = 0.2;
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
-// For an arbitrary rail and motor, make sure the following condition is met: 
+// For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 // This speed limits is normally used only with AC power (which provides mor torque).
 const float SPEED_LIMIT_MM_S = 5;
@@ -175,7 +175,7 @@ const float ACCEL_FACTOR = 3.0;
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 const short LIMITER_PAD2 = 100;
-const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction, 
+const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
 // travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
 const short STEP_LOW_DT = 3;
@@ -250,7 +250,7 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 // Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
 // amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
 // If undefined, to rewind by the same amount,
-// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation. 
+// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation.
 #define EXTENDED_REWIND
 
 
@@ -265,7 +265,7 @@ struct regist
   short point1;
   short point2;
 };
-short SIZE_REG=sizeof(regist);
+short SIZE_REG = sizeof(regist);
 
 // EEPROM addresses:
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -287,26 +287,26 @@ const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY
 const int ADDR_STRAIGHT = ADDR_I_SECOND_DELAY + 2;  // for g.straight flag
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
-uint8_t battery_char [][12] = {
-{0xfe, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 0 (empty)
-{0xfe, 0x82, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 1 (1/3 charge)
-{0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0xfe, 0x38}, // level 2 (2/3 charge)
-{0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0x82, 0xfe, 0x38}  // level 3 (full charge)
+const uint8_t battery_char [][12] = {
+  {0xfe, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 0 (empty)
+  {0xfe, 0x82, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 1 (1/3 charge)
+  {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0xfe, 0x38}, // level 2 (2/3 charge)
+  {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0x82, 0xfe, 0x38}  // level 3 (full charge)
 };
 // 2-char bitmaps to display rewind/fast-forward symbols:
-uint8_t rewind_char[] = {0x10, 0x38, 0x54, 0x92, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00};
-uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 0x54, 0x38, 0x10, 0x00};
+const uint8_t rewind_char[] = {0x10, 0x38, 0x54, 0x92, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00};
+const uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 0x54, 0x38, 0x10, 0x00};
 
 // All global variables belong to one structure - global:
 struct global
 {
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
-  short moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
+  byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
-  short accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
-  float accel_v[5] = {-ACCEL_LIMIT,-ACCEL_SMALL,0.0,ACCEL_SMALL,ACCEL_LIMIT}; // Five possible floating point values for acceleration
+  char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL
+  const float accel_v[5] = { -ACCEL_LIMIT, -ACCEL_SMALL, 0.0, ACCEL_SMALL, ACCEL_LIMIT}; // Five possible floating point values for acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
   float pos_old; // Last position, in the previous arduino loop
   short pos_short_old;  // Previously computed position
@@ -319,9 +319,8 @@ struct global
   short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
   unsigned long t_key_pressed; // Last time when a key was pressed
   unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
-  int N_repeats; // Counter of key repeats
+  short N_repeats; // Counter of key repeats
   unsigned long int t_display; // time since the last display refresh (only when not moving)
-
   unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
   unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
   unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
@@ -333,59 +332,56 @@ struct global
   unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
-  short moving_mode; // =0 when using speed_change, =1 when using go_to
-  short pos_stop_flag; // flag to detect when motor_control is run first time
+  byte moving_mode; // =0 when using speed_change, =1 when using go_to
+  byte pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
   short point1;  // foreground point for 2-point focus stacking
   short point2;  // background point for 2-point focus stacking
   short starting_point; // The starting point in the focus stacking with two points
   short destination_point; // The destination point in the focus stacking with two points
-  short stacking_direction; // 1/-1 for direct/reverse stacking direction
-  short stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
+  byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
   float msteps_per_frame; // Microsteps per frame for focus stacking
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
   short pos_to_shoot; // Position to shoot the next shot during focus stacking
-  short shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
-  short AF_on; // flag for camera AF state: 0/1 corresponds to off/on
-  short single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
+  byte shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
+  byte AF_on; // flag for camera AF state: 0/1 corresponds to off/on
+  byte single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
   unsigned long t_shutter; // Time when the camera shutter was triggered
   unsigned long t_shutter_off; // Time when the camera shutter was switched off
   unsigned long t_AF; // Time when the camera AF was triggered
-  short i_mm_per_frame; // counter for mm_per_frame parameter;
-  short i_fps; // counter for fps parameter;
-  short i_n_shots; // counter for n_shots parameter;
-  short i_first_delay; // counter for FIRST_DELAY parameter
-  short i_second_delay; // counter for SECOND_DELAY parameter
-  short direction; // -1/1 for reverse/forward directions of moving
+  byte i_mm_per_frame; // counter for mm_per_frame parameter;
+  byte i_fps; // counter for fps parameter;
+  byte i_n_shots; // counter for n_shots parameter;
+  byte i_first_delay; // counter for FIRST_DELAY parameter
+  byte i_second_delay; // counter for SECOND_DELAY parameter
+  char direction; // -1/1 for reverse/forward directions of moving
   char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
-  short points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
+  byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   KeyState state_old;  // keeping old key[0] state
   KeyState state1_old;  // keeping old key[1] state
-  short error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
-  short backlight; // backlight level; 0,1 for now
-  struct regist reg1; // Custom parameters saved in register1
-  struct regist reg2; // Custom parameters saved in register2
-  struct regist reg3; // Custom parameters saved in register3
+  byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
+  byte backlight; // backlight level; 0,1 for now
+  struct regist reg; // Custom parameters register
   short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
-  short start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
-  short make_shot; // =1 if we just initiated a shot; 0 otherwise
-  unsigned long t_shot; // the time shot was initiated  
+  byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
+  byte make_shot; // =1 if we just initiated a shot; 0 otherwise
+  unsigned long t_shot; // the time shot was initiated
   unsigned long int t0_stacking; // time when stacking was initiated;
-  short paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
+  byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
-  short started_moving; // =1 when we just started moving (the first loop), 0 otherwise
-  short backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
-  short continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
-  short noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
+  byte started_moving; // =1 when we just started moving (the first loop), 0 otherwise
+  byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
+  byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
+  byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
   float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
-  short setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
-  short alt_flag; // 0: normal display; 1: alternative display (when pressing *)
-  short straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
-  short backlash_init; // 1: initializing a full backlash loop
+  byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
+  byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
+  byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
+  byte backlash_init; // 1: initializing a full backlash loop
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
@@ -401,14 +397,14 @@ struct global
 struct global g;
 
 #ifdef MOTOR_DEBUG
-  short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;  
-  short n_fixed, n_failed, n1, n2, n3, n4, k1, k2, k3;
+short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;
+short n_fixed, n_failed, n1, n2, n3, n4, k1, k2, k3;
 #ifdef PRECISE_STEPPING
-  unsigned long dt_backlash;
+unsigned long dt_backlash;
 #endif
 #endif
 #ifdef DEBUG
-  short flag=0;
+short flag = 0;
 #endif
 
 #endif

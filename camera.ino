@@ -44,10 +44,7 @@ void camera()
       if (g.stacker_mode == 3)
         // 1-point stacking
       {
-        if (g.stacking_direction == -1)
-          go_to((float)g.limit1 + 0.5, speed);
-        else
-          go_to((float)g.limit2 + 0.5, speed);
+        go_to((float)g.limit2 + 0.5, speed);
       }
       else if (g.stacker_mode == 2)
         // 2-point stacking (after moving to the starting point)
@@ -110,7 +107,7 @@ void camera()
       display_frame_counter();
       g.frame_counter++;
       // Position at which to shoot the next shot:
-      g.pos_to_shoot = g.starting_point + g.stacking_direction * nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+      g.pos_to_shoot = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])
       {
         // End of one-point stacking
