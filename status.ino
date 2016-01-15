@@ -2,28 +2,6 @@
  All LCD related functions
 */
 
-void alt_display()
-/* Alternative display when pressing * key)
- */
-{
-  if (g.alt_flag == 0)
-    return;
-
-#ifdef LCD
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  sprintf(g.buffer, "R=%1d           ",1-g.straight);
-  lcd.print(g.buffer);
-  lcd.print("              ");
-  lcd.print("              ");
-  lcd.print("              ");
-  lcd.print("              ");
-  lcd.print("              ");
-#endif
-
-  return;
-}
-
 void display_all()
 /*
  Refreshing the whole screen
@@ -32,76 +10,98 @@ void display_all()
 #ifdef TIMING
   return;
 #endif
+
+#ifdef LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+#endif
+
   if (g.alt_flag)
-    return;
-  if (g.error == 0)
   {
-    if (g.calibrate_warning == 0)
-    {
-      display_u_per_f();  display_fps();
-      display_one_point_params();
-      display_two_point_params();
-      display_two_points();
-      display_current_position();
-      display_status_line("  ");
-    }
-    else
-    {
-#ifdef DEBUG
-      Serial.println("Press any key to start calibration");
-#endif
 #ifdef LCD
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("  Calibration ");
-      lcd.print("  required!   ");
-      lcd.print("              ");
-      lcd.print("Press any key ");
-      lcd.print("to start      ");
-      lcd.print("calibration.  ");
+    sprintf(g.buffer, "Rev=%1d Mirror=%1d", 1 - g.straight, g.mirror_lock);
+    lcd.print(g.buffer);
+    lcd.print("              ");
+    lcd.print("              ");
+    lcd.print("              ");
+    lcd.print("              ");
+    sprintf(g.buffer, "         s%s", VERSION);
+    lcd.print(g.buffer);
 #endif
-    }
   }
-
   else
-    // Error code displaying:
   {
-    switch (g.error)
+    //    lcd.clear();
+    //    lcd.setCursor(0, 0);
+
+    if (g.error == 0)
     {
-      case 1:
+      if (g.calibrate_warning == 0)
+      {
+        display_u_per_f();  display_fps();
+        display_one_point_params();
+        display_two_point_params();
+        display_two_points();
+        display_current_position();
+        display_status_line("  ");
+      }
+      else
+      {
 #ifdef DEBUG
-        Serial.println("Cable disconnected or limiter is on!");
-        Serial.println("Connect the cable if it is disconnected.");
-        Serial.println("If cable is connected, rewind to safe area");
+        Serial.println("Press any key to start calibration");
 #endif
 #ifdef LCD
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Cable discon- ");
-        lcd.print("nected, or    ");
-        lcd.print("limiter is on!");
-        lcd.print("Only if cable ");
-        lcd.print("is connected, ");
-        lcd.print("rewind.       ");
+        //      lcd.clear();
+        //      lcd.setCursor(0, 0);
+        lcd.print("  Calibration ");
+        lcd.print("  required!   ");
+        lcd.print("              ");
+        lcd.print("Press any key ");
+        lcd.print("to start      ");
+        lcd.print("calibration.  ");
 #endif
-        break;
+      }
+    }
 
-      case 2: // Critically low battery level; not used when debugging
+    else
+      // Error code displaying:
+    {
+      switch (g.error)
+      {
+        case 1:
+#ifdef DEBUG
+          Serial.println("Cable disconnected or limiter is on!");
+          Serial.println("Connect the cable if it is disconnected.");
+          Serial.println("If cable is connected, rewind to safe area");
+#endif
 #ifdef LCD
-        lcd.clear();
-        lcd.setCursor(0, 0);  
-        lcd.print("Critically low");
-        lcd.print("battery level!");
-        lcd.print("              ");
-        lcd.print("Replace the   ");
-        lcd.print("batteries.    ");
-        lcd.print("              ");
+          //        lcd.clear();
+          //        lcd.setCursor(0, 0);
+          lcd.print("Cable discon- ");
+          lcd.print("nected, or    ");
+          lcd.print("limiter is on!");
+          lcd.print("Only if cable ");
+          lcd.print("is connected, ");
+          lcd.print("rewind.       ");
 #endif
-        break;
+          break;
 
-    } // case
-  }
+        case 2: // Critically low battery level; not used when debugging
+#ifdef LCD
+          //        lcd.clear();
+          //        lcd.setCursor(0, 0);
+          lcd.print("Critically low");
+          lcd.print("battery level!");
+          lcd.print("              ");
+          lcd.print("Replace the   ");
+          lcd.print("batteries.    ");
+          lcd.print("              ");
+#endif
+          break;
 
+      } // case
+    }
+  }  // if alt_flag
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -535,7 +535,7 @@ void display_comment_line(char *l)
 #ifdef CAMERA_DEBUG
   return;
 #endif
-  if (g.error || g.alt_flag)
+  if (g.error)
     return;
 #ifdef LCD
   lcd.setCursor(0, 4);

@@ -93,11 +93,9 @@ void camera()
     if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
-#ifndef MIRROR_LOCK
       // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
       // If it is defined, it will also happen in non-continuous mode, where it will be used to lock the mirror
-      if (g.continuous_mode)
-#endif
+      if (g.continuous_mode || g.mirror_lock)
       {
         g.make_shot = 1;
         g.t_shot = g.t;

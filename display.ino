@@ -6,9 +6,9 @@ void display_stuff()
   // Disabling the last comment line displaying after COMMENT_DELAY interval:
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
   {
-    g.comment_flag == 0;
+    g.comment_flag = 0;
     if (g.moving == 0)
-      display_current_position();
+        display_all();
   }
 
   // Refreshing whole display regularly (only when not moving, as it is slow):

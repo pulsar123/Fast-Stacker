@@ -243,7 +243,7 @@ void process_keypad()
       {
         case '1': // *1: Rail reverse
           g.straight = 1 - g.straight;
-          alt_display();
+          display_all();
           // We need to do a full backlash compensation loop when reversing the rail operation:
           g.BL_counter = BACKLASH;
           // This will instruct the backlash module to do a double BL travel at the end, to compensate for BL in reveresed coordinates
@@ -253,6 +253,32 @@ void process_keypad()
           g.pos0 = g.pos;
           g.pos_old = g.pos;
           g.pos_short_old = floorMy(g.pos);
+          break;
+
+        case '2': // *2: Save parameters to third memory bank
+          save_params(ADDR_REG3);
+          display_comment_line("Saved to Reg3 ");
+          break;
+
+        case '3': // *3: Read parameters from third memory bank
+          read_params(ADDR_REG3);
+          display_comment_line("Read from Reg3");
+          break;
+
+        case '5': // *5: Save parameters to fourth memory bank
+          save_params(ADDR_REG4);
+          display_comment_line("Saved to Reg4 ");
+          break;
+
+        case '6': // *6: Read parameters from fourth memory bank
+          read_params(ADDR_REG4);
+          display_comment_line("Read from Reg4");
+          break;
+
+        case 'A': // *A: Mirror lock on/off
+          g.mirror_lock = 1 - g.mirror_lock;
+          display_all();
+          EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
           break;
 
       } // switch
@@ -485,10 +511,10 @@ void process_keypad()
             case '*':  // *: Show alternative display (for *X commands)
               if (g.paused)
                 break;
-              if (!g.moving)
+              if (!g.moving && g.alt_flag == 0)
               {
                 g.alt_flag = 1;
-                alt_display();
+                display_all();
               }
               break;
 
@@ -716,7 +742,7 @@ void read_params(const int addr)
 
 void save_params(const int addr)
 {
-g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
   EEPROM.put( addr, g.reg);
   return;
 }

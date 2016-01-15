@@ -42,9 +42,6 @@ Issues to address:
 
 
 //////// Camera related parameters: ////////
-// If defined, mirror lock is assumed for non-continuous stacking ("#0" key): namely, two shutter actuations are done per frame (the first one lock the mirror,
-// the second one takes the shot). Comment this out if you want a single shutter press per frame in non-continuous stacking
-#define MIRROR_LOCK
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
 // (If your continuous focus stacking skips the very first shot, increase this parameter)
 const unsigned long CONT_STACKING_DELAY = 100000;  // 100000
@@ -257,11 +254,11 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 // Structure to have custom parameters saved to EEPROM
 struct regist
 {
-  short i_n_shots;
-  short i_mm_per_frame;
-  short i_fps;
-  short i_first_delay;
-  short i_second_delay;
+  byte i_n_shots;
+  byte i_mm_per_frame;
+  byte i_fps;
+  byte i_first_delay;
+  byte i_second_delay;
   short point1;
   short point2;
 };
@@ -282,9 +279,12 @@ const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
 const int ADDR_BACKLIGHT = ADDR_POINTS_BYTE + 2;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
-const int ADDR_I_FIRST_DELAY = ADDR_REG2 + SIZE_REG;  // for the FIRST_DELAY parameter
+const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
+const int ADDR_REG4 = ADDR_REG3 + SIZE_REG;  // register4
+const int ADDR_I_FIRST_DELAY = ADDR_REG4 + SIZE_REG;  // for the FIRST_DELAY parameter
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
 const int ADDR_STRAIGHT = ADDR_I_SECOND_DELAY + 2;  // for g.straight flag
+const int ADDR_MIRROR_LOCK = ADDR_STRAIGHT + 2;  // for g.mirror_lock
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -382,6 +382,7 @@ struct global
   byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte backlash_init; // 1: initializing a full backlash loop
+  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
