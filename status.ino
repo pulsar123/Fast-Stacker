@@ -19,9 +19,10 @@ void display_all()
   if (g.alt_flag)
   {
 #ifdef LCD
-    sprintf(g.buffer, "Rev=%1d Mirror=%1d", 1 - g.straight, g.mirror_lock);
+    sprintf(g.buffer, "Rev=%1d  Accel=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
     lcd.print(g.buffer);
-    lcd.print("              ");
+    sprintf(g.buffer, "      Mirror=%1d", g.mirror_lock);
+    lcd.print(g.buffer);
     lcd.print("              ");
     lcd.print("              ");
     lcd.print("              ");

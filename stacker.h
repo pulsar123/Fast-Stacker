@@ -167,7 +167,7 @@ const float BREAKING_DISTANCE_MM = 2.0;
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
 // Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
-const float ACCEL_FACTOR = 3.0;
+//const float ACCEL_FACTOR = 3.0;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const short LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
@@ -208,6 +208,9 @@ const short N_SECOND_DELAY = 6;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
 const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
+// Table of possible values for accel_factor parameter:
+const byte N_ACCEL_FACTOR = 3;
+const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};
 
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -225,8 +228,6 @@ const float SPEED_LIMIT2 = SPEED_SCALE * SPEED_LIMIT2_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
-// Acceleration used only during rewind or fast-forward ("1" / "A" keys)
-const float ACCEL_SMALL = ACCEL_LIMIT / ACCEL_FACTOR;
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
 // 2* - to make goto accurate, but with higher decelerations at the end
 // Currently not used
@@ -259,10 +260,13 @@ struct regist
   byte i_fps;
   byte i_first_delay;
   byte i_second_delay;
+  byte i_accel_factor;
+  byte mirror_lock;
   short point1;
   short point2;
 };
-short SIZE_REG = sizeof(regist);
+  // Just in case adding a 1-byte, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
+short SIZE_REG = sizeof(regist) + 1;
 
 // EEPROM addresses:
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -281,10 +285,12 @@ const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
 const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
 const int ADDR_REG4 = ADDR_REG3 + SIZE_REG;  // register4
-const int ADDR_I_FIRST_DELAY = ADDR_REG4 + SIZE_REG;  // for the FIRST_DELAY parameter
+const int ADDR_REG5 = ADDR_REG4 + SIZE_REG;  // register5
+const int ADDR_I_FIRST_DELAY = ADDR_REG5 + SIZE_REG;  // for the FIRST_DELAY parameter
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
 const int ADDR_STRAIGHT = ADDR_I_SECOND_DELAY + 2;  // for g.straight flag
 const int ADDR_MIRROR_LOCK = ADDR_STRAIGHT + 2;  // for g.mirror_lock
+const int ADDR_I_ACCEL_FACTOR = ADDR_MIRROR_LOCK + 2; // for g.i_accel_factor
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -306,7 +312,9 @@ struct global
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
   char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL
-  const float accel_v[5] = { -ACCEL_LIMIT, -ACCEL_SMALL, 0.0, ACCEL_SMALL, ACCEL_LIMIT}; // Five possible floating point values for acceleration
+  
+  byte i_accel_factor; // Index for accel_factor  
+  float accel_v[5]; // Five possible floating point values for acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
   float pos_old; // Last position, in the previous arduino loop
   short pos_short_old;  // Previously computed position

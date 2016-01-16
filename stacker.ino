@@ -1,5 +1,4 @@
-/* Sergey Mashchenko 2015, 2016
-
+/*
    Automated macro rail for focus stacking
 
    Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
@@ -42,57 +41,9 @@
 #include "stdio.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void factory_reset()
-{
-  g.pos = 0.0;
-#ifdef MOTOR_DEBUG
-  g.calibrate = 0;
-  g.calibrate_warning = 0;
-  g.calibrate_init = g.calibrate;
-#else
-  g.calibrate = 3;
-#endif
-  g.limit1 = 0;
-  g.limit2 = 32767;
-  g.i_n_shots = 9;
-  g.i_mm_per_frame = 5;
-  g.i_fps = 16;
-  g.i_first_delay = 4;
-  g.i_second_delay = 3;
-  g.point1 = 2000;
-  g.point2 = 3000;
-  g.points_byte = 0;
-  g.backlight = 2;
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
-  g.straight = 1;
-  g.mirror_lock = 1;
-  // Saving these values in EEPROM:
-  EEPROM.put( ADDR_POS, g.pos );
-  EEPROM.put( ADDR_CALIBRATE, g.calibrate );
-  EEPROM.put( ADDR_LIMIT1, g.limit1);
-  EEPROM.put( ADDR_LIMIT2, g.limit2);
-  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-  EEPROM.put( ADDR_I_FPS, g.i_fps);
-  EEPROM.put( ADDR_POINT1, g.point1);
-  EEPROM.put( ADDR_POINT2, g.point2);
-  EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
-  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-  EEPROM.put( ADDR_REG1, g.reg);
-  EEPROM.put( ADDR_REG2, g.reg);
-  EEPROM.put( ADDR_REG3, g.reg);
-  EEPROM.put( ADDR_REG4, g.reg);
-  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-  EEPROM.put( ADDR_STRAIGHT, g.straight);
-  EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
-  return;
-}
 
 void setup() {
-
-  g.error = 0;
-  g.calibrate_warning = 0;
+  // Should be the first line in setup():
   g.setup_flag = 1;
 
   // Setting pins for EasyDriver to OUTPUT:
@@ -118,143 +69,19 @@ void setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 #endif
   lcd.begin();  // Always call lcd.begin() first.
-  lcd.clear();
-  /*
-    lcd.setCursor(0, 0);
-    lcd.println("  Automated ");
-    lcd.println("focus stacker");
-    lcd.print(" ver. ");
-    lcd.println(VERSION);
-    lcd.println("(c) Sergey");
-    lcd.println("Mashchenko");
-    lcd.print("  2015");
-    */
 #endif
-  //  delay(500);
-
-  // Writing initial values to the motor pins:
-#ifdef SAVE_ENERGY
-  digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
-#else
-  digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
-#endif
-
-  digitalWrite(PIN_SHUTTER, LOW);
-  digitalWrite(PIN_AF, LOW);
-
-  // Keypad stuff:
-  // No locking for keys:
-  keypad.setHoldTime(1000000);
-  keypad.setDebounceTime(50);
-  g.key_old = '=';
-
-#ifndef MOTOR_DEBUG
-  // Limiting switches should not be on when powering up:
-  unsigned char limit_on = digitalRead(PIN_LIMITERS);
-  if (limit_on == HIGH)
-  {
-    g.error = 1;
-  }
-#endif
-
-  // Initializing program parameters:
-  g.moving = 0;
-  g.speed1 = 0.0;
-  g.accel = 0;
-  g.speed0 = 0.0;
-  g.speed = 0.0;
-  g.pos_stop_flag = 0;
-  g.stacker_mode = 0;
-  g.shutter_on = 0;
-  g.AF_on = 0;
-  g.single_shot = 0;
-  g.direction = 1;
-  g.comment_flag = 0;
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
   {
-    // Values for the very first run:
-    factory_reset();
+    // Initializing with a factory reset (setting EEPROM values to the initial state):
+    initialize(1);
   }
   else
   {
-    // Reading the values from EEPROM:
-    EEPROM.get( ADDR_POS, g.pos );
-    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
-    EEPROM.get( ADDR_LIMIT1, g.limit1);
-    EEPROM.get( ADDR_LIMIT2, g.limit2);
-    EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
-    EEPROM.get( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-    EEPROM.get( ADDR_I_FPS, g.i_fps);
-    EEPROM.get( ADDR_POINT1, g.point1);
-    EEPROM.get( ADDR_POINT2, g.point2);
-    EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
-    EEPROM.get( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
-    EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
-    EEPROM.get( ADDR_STRAIGHT, g.straight);
-    EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
-#ifdef DEBUG
-    Serial.println("EEPROM values:");
-    Serial.println(g.pos, 2);
-    Serial.println(g.calibrate);
-    Serial.println(g.limit1);
-    Serial.println(g.limit2);
-    Serial.println(g.i_n_shots);
-    Serial.println(g.i_mm_per_frame);
-    Serial.println(g.i_fps);
-    Serial.println(g.point1);
-    Serial.println(g.point2);
-    Serial.println(g.points_byte);
-#endif
+    // Initializing, with EEPROM data read from the device
+    initialize(0);
   }
-
-  set_backlight();
-
-  g.calibrate_flag = 0;
-  if (g.calibrate == 3)
-    g.calibrate_warning = 1;
-  // Memorizing the initial value of g.calibrate:
-  g.calibrate_init = g.calibrate;
-  g.pos0 = g.pos;
-  g.pos_old = g.pos;
-  g.pos_short_old = floorMy(g.pos);
-  g.t0 = micros();
-  g.t = g.t0;
-  g.t_old = g.t0;
-  g.t_key_pressed = g.t0;
-  g.t_last_repeat = g.t0;
-  g.t_display = g.t0;
-  g.t_shutter = g.t0;
-  g.t_shutter_off = g.t0;
-  g.t_AF = g.t0;
-  g.N_repeats = 0;
-  g.breaking = 0;
-  g.backlashing = 0;
-  g.pos_stop_flag = 0;
-  g.frame_counter = 0;
-  g.state_old = (KeyState)0;
-  g.state1_old = (KeyState)0;
-  g.coords_change = 0;
-  g.start_stacking = 0;
-  g.make_shot = 0;
-  g.paused = 0;
-  g.starting_point = g.point1;
-  // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
-  g.BL_counter = BACKLASH;
-  //  g.BL_counter = 0;
-  g.backlash_init = 1;
-  g.started_moving = 0;
-  g.dt_backlash = 0;
-  g.continuous_mode = 1;
-  g.noncont_flag = 0;
-  g.alt_flag = 0;
-  //!!!
-  g.straight = 1;
-
-  g.msteps_per_frame = Msteps_per_frame();
-  g.Nframes = Nframes();
 
 #ifdef ROUND_OFF
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
@@ -265,39 +92,6 @@ void setup() {
     if (steps < 20)
       MM_PER_FRAME[i] = ((float)steps) * MM_PER_MICROSTEP;
   }
-#endif
-
-#ifdef MOTOR_DEBUG
-  g.calibrate = 0;
-  g.calibrate_warning = 0;
-  g.calibrate_init = g.calibrate;
-  skipped_total = 0;
-  n_fixed = 0;
-  n_failed = 0;
-  n1 = n2 = n3 = n4 = 0;
-#endif
-
-  // Default lcd layout:
-#ifdef LCD
-  lcd.clear();
-#endif
-  // This sets g.speed_limit, among other things:
-  display_all();
-
-#ifdef TIMING
-  if (g.moving == 0)
-  {
-    g.i_timing = (unsigned long)0;
-    g.dt_max = (short)0;
-    g.dt_min = (short)10000;
-    g.bad_timing_counter = (short)0;
-  }
-#endif
-#ifdef CAMERA_DEBUG
-  shutter_status(0);
-  AF_status(0);
-  g.i_first_delay = 4;
-  g.i_second_delay = 3;
 #endif
 
   // Should be the last line in setup:

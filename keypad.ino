@@ -130,10 +130,10 @@ void process_keypad()
         case '*': // #*: Factory reset
           if (g.paused)
             break;
-          factory_reset();
-          g.calibrate_warning = 1;
-          g.calibrate_init = g.calibrate;
-          display_all();
+          // Setup flag is needed for the initial AC vs. battery power test:
+          g.setup_flag = 1;
+          initialize(1);
+          g.setup_flag = 0;
           break;
 
         case '7': // #7: Manual camera shutter triggering
@@ -275,7 +275,28 @@ void process_keypad()
           display_comment_line("Read from Reg4");
           break;
 
-        case 'A': // *A: Mirror lock on/off
+        case '8': // *8: Save parameters to fifth memory bank
+          save_params(ADDR_REG5);
+          display_comment_line("Saved to Reg5 ");
+          break;
+
+        case '9': // *9: Read parameters from fifth memory bank
+          read_params(ADDR_REG5);
+          display_comment_line("Read from Reg5");
+          break;
+
+        case 'A': // *A: Change accel_factor
+          if (g.i_accel_factor < N_ACCEL_FACTOR - 1)
+            g.i_accel_factor++;
+          else
+            g.i_accel_factor = 0;
+          EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+          display_all();
+          // Five possible floating point values for acceleration
+          set_accel_v();
+          break;
+
+        case 'B': // *B: Mirror lock on/off
           g.mirror_lock = 1 - g.mirror_lock;
           display_all();
           EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
@@ -719,22 +740,10 @@ void process_keypad()
 void read_params(const int addr)
 {
   EEPROM.get( addr, g.reg);
-  g.i_n_shots = g.reg.i_n_shots;
-  g.i_mm_per_frame = g.reg.i_mm_per_frame;
-  g.i_fps = g.reg.i_fps;
-  g.point1 = g.reg.point1;
-  g.point2 = g.reg.point2;
-  g.i_first_delay = g.reg.i_first_delay;
-  g.i_second_delay = g.reg.i_second_delay;
+  from_reg();
+  put_reg();
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
-  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-  EEPROM.put( ADDR_I_FPS, g.i_fps);
-  EEPROM.put( ADDR_POINT1, g.point1);
-  EEPROM.put( ADDR_POINT2, g.point2);
-  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   display_all();
   return;
 }
@@ -742,7 +751,7 @@ void read_params(const int addr)
 
 void save_params(const int addr)
 {
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.point1, g.point2};
+  to_reg();
   EEPROM.put( addr, g.reg);
   return;
 }

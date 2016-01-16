@@ -409,3 +409,71 @@ void coordinate_recalibration()
   return;
 }
 
+
+void set_accel_v()
+{
+  // Five possible floating point values for acceleration
+  g.accel_v[0] = -ACCEL_LIMIT;
+  g.accel_v[1] = -ACCEL_LIMIT / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[2] = 0.0;
+  g.accel_v[3] =  ACCEL_LIMIT / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[4] =  ACCEL_LIMIT;
+  return;
+}
+
+
+void to_reg()
+// Parameters -> to reg structure
+{
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.point1, g.point2};
+  return;
+}
+
+
+void from_reg()
+// reg structure -> parameters
+{
+  g.i_n_shots = g.reg.i_n_shots;
+  g.i_mm_per_frame = g.reg.i_mm_per_frame;
+  g.i_fps = g.reg.i_fps;
+  g.point1 = g.reg.point1;
+  g.point2 = g.reg.point2;
+  g.i_first_delay = g.reg.i_first_delay;
+  g.i_second_delay = g.reg.i_second_delay;
+  g.mirror_lock = g.reg.mirror_lock;
+  g.i_accel_factor = g.reg.i_accel_factor;
+  return;
+}
+
+
+void put_reg()
+// Putting all parameters which are part of reg structure to EEPROM
+{
+  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+  EEPROM.put( ADDR_I_FPS, g.i_fps);
+  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+  EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+  EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.put( ADDR_POINT1, g.point1);
+  EEPROM.put( ADDR_POINT2, g.point2);
+  return;
+}
+
+
+void get_reg()
+// Getting all parameters which are part of reg structure from EEPROM
+{
+  EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
+  EEPROM.get( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+  EEPROM.get( ADDR_I_FPS, g.i_fps);
+  EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
+  EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
+  EEPROM.get( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+  EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.get( ADDR_POINT1, g.point1);
+  EEPROM.get( ADDR_POINT2, g.point2);
+  return;
+}
+
