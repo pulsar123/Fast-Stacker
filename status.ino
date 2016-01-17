@@ -19,21 +19,26 @@ void display_all()
   if (g.alt_flag)
   {
 #ifdef LCD
+    // Line 1:
     sprintf(g.buffer, "Rev=%1d  Accel=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
     lcd.print(g.buffer);
+    // Line 2:
     sprintf(g.buffer, "      Mirror=%1d", g.mirror_lock);
     lcd.print(g.buffer);
+    // Line 3:
     lcd.print("              ");
+    // Line 4:
+    sprintf(g.buffer, "       Debug=%1d", g.disable_limiters);
+    lcd.print(g.buffer);
+    // Line 5:
     lcd.print("              ");
-    lcd.print("              ");
+    // Line 6:
     sprintf(g.buffer, "         s%s", VERSION);
     lcd.print(g.buffer);
 #endif
   }
   else
   {
-    //    lcd.clear();
-    //    lcd.setCursor(0, 0);
 
     if (g.error == 0)
     {
@@ -44,7 +49,7 @@ void display_all()
         display_two_point_params();
         display_two_points();
         display_current_position();
-        display_status_line("  ");
+        display_status_line();
       }
       else
       {
@@ -52,8 +57,6 @@ void display_all()
         Serial.println("Press any key to start calibration");
 #endif
 #ifdef LCD
-        //      lcd.clear();
-        //      lcd.setCursor(0, 0);
         lcd.print("  Calibration ");
         lcd.print("  required!   ");
         lcd.print("              ");
@@ -76,8 +79,6 @@ void display_all()
           Serial.println("If cable is connected, rewind to safe area");
 #endif
 #ifdef LCD
-          //        lcd.clear();
-          //        lcd.setCursor(0, 0);
           lcd.print("Cable discon- ");
           lcd.print("nected, or    ");
           lcd.print("limiter is on!");
@@ -89,8 +90,6 @@ void display_all()
 
         case 2: // Critically low battery level; not used when debugging
 #ifdef LCD
-          //        lcd.clear();
-          //        lcd.setCursor(0, 0);
           lcd.print("Critically low");
           lcd.print("battery level!");
           lcd.print("              ");
@@ -112,14 +111,18 @@ void letter_status(char* l)
  Display a letter code "l" at the beginning of the status line
  */
 {
-  if (g.error || g.paused || g.alt_flag)
+  if (g.error || g.alt_flag)
     return;
 #ifdef LCD
   lcd.setCursor(0, 5);
-  lcd.print(l);
+  if (g.paused)
+    lcd.print("P");
+  else
+    lcd.print(*l);
+  lcd.print(" ");
 #endif
 #ifdef DEBUG
-  Serial.println(l);
+  Serial.println(*l);
 #endif
   return;
 }
@@ -310,14 +313,14 @@ void battery_status()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void display_status_line(char* l)
+void display_status_line()
 /*
  Display the whole status line
  */
 {
   if (g.error || g.alt_flag)
     return;
-  letter_status(l);
+  letter_status(" ");
   motion_status();
   display_frame_counter();
   points_status();

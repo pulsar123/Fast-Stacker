@@ -5,7 +5,7 @@ void limiters()
 {
   short dx, dx_break;
 
-  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0)
+  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1)
     return;
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
@@ -16,8 +16,8 @@ void limiters()
   // Read the input from the limiting switches:
 #ifdef MOTOR_DEBUG
   unsigned char limit_on = 0;
-#else  
-  unsigned char limit_on = digitalRead(PIN_LIMITERS);  
+#else
+  unsigned char limit_on = digitalRead(PIN_LIMITERS);
 #endif
 
   //////// Hard limits //////
@@ -40,7 +40,7 @@ void limiters()
     change_speed(0.0, 0, 2);
     // This should be after change_speed(0.0):
     g.breaking = 1;
-    letter_status("B ");
+    letter_status("B");
     display_comment_line("Hit a limiter ");
 
     if (g.calibrate_flag == 0)
@@ -122,7 +122,7 @@ void limiters()
         {
           change_speed(0.0, 0, 2);
           g.breaking = 1;
-          letter_status("B ");
+          letter_status("B");
         }
       }
     }

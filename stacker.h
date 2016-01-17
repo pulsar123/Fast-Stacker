@@ -30,7 +30,7 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
@@ -391,6 +391,7 @@ struct global
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte backlash_init; // 1: initializing a full backlash loop
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
+  byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

@@ -8,7 +8,8 @@ void process_keypad()
 
 
   // Ignore keypad during emergency breaking
-  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
+//  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
+  if (g.breaking == 1 || g.error > 1)
     return;
 
 
@@ -48,7 +49,7 @@ void process_keypad()
             g.paused = 0;
             g.frame_counter = 0;
             display_frame_counter();
-            letter_status("  ");
+            letter_status(" ");
             g.noncont_flag = 0;
             g.stacker_mode = 0;
           }
@@ -57,7 +58,7 @@ void process_keypad()
             change_speed(0.0, 0, 2);
             // This should be done after change_speed(0.0):
             g.breaking = 1;
-            letter_status("B ");
+            letter_status("B");
             g.calibrate = 0;
             g.calibrate_flag = 0;
             g.calibrate_warning = 0;
@@ -130,10 +131,7 @@ void process_keypad()
         case '*': // #*: Factory reset
           if (g.paused)
             break;
-          // Setup flag is needed for the initial AC vs. battery power test:
-          g.setup_flag = 1;
           initialize(1);
-          g.setup_flag = 0;
           break;
 
         case '7': // #7: Manual camera shutter triggering
@@ -302,11 +300,15 @@ void process_keypad()
           EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
           break;
 
+        case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
+          g.disable_limiters = 1 - g.disable_limiters;
+          display_all();
+          break;
+
       } // switch
     }
     g.state1_old = state1;
   }
-
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   else
@@ -368,7 +370,7 @@ void process_keypad()
           switch (key)
           {
             case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
-              if (g.pos_short_old <= g.limit1)
+              if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0)
                 break;
 #ifdef MOTOR_DEBUG
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
@@ -399,7 +401,7 @@ void process_keypad()
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
-              if (g.pos_short_old >= g.limit2)
+              if (g.pos_short_old >= g.limit2 && g.disable_limiters == 0)
                 break;
 #ifdef MOTOR_DEBUG
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
@@ -497,12 +499,12 @@ void process_keypad()
                   if (g.continuous_mode)
                   {
                     // The flag means we just initiated stacking:
-                    letter_status("  ");
+                    letter_status(" ");
                   }
                   else
                   {
                     g.noncont_flag = 1;
-                    letter_status("S ");
+                    letter_status("S");
                   }
                   // Time when stacking was initiated:
                   g.t0_stacking = g.t;
@@ -670,7 +672,7 @@ void process_keypad()
             // In 2-point stacking, we pause
           {
             display_comment_line("    Paused    ");
-            letter_status("P ");
+            letter_status("P");
             g.paused = 1;
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
             g.state1_old = (KeyState)0;

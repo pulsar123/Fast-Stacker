@@ -311,7 +311,7 @@ void stop_now()
   {
     g.calibrate_warning = 0;
     // To clear garbage in the status line:
-    display_status_line("              ");
+    display_status_line();
   }
 
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
@@ -328,7 +328,7 @@ void stop_now()
   display_all();
   if (g.noncont_flag > 0)
   {
-    display_status_line("S ");
+    letter_status("S");
   }
   g.t_display = g.t;
 

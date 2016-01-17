@@ -83,6 +83,10 @@ void setup() {
     initialize(0);
   }
 
+// This should not be in initialize():
+  g.state_old = (KeyState)0;
+  g.state1_old = (KeyState)0;
+
 #ifdef ROUND_OFF
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
   for (int i = 0; i < N_PARAMS; i++)

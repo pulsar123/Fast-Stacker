@@ -15,11 +15,13 @@ void initialize(byte factory_reset)
   digitalWrite(PIN_SHUTTER, LOW);
   digitalWrite(PIN_AF, LOW);
 
+
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(1000000);
   keypad.setDebounceTime(50);
   g.key_old = '=';
+
 
 #ifndef MOTOR_DEBUG
   // Limiting switches should not be on when powering up:
@@ -114,6 +116,7 @@ void initialize(byte factory_reset)
     Serial.println(g.points_byte);
 #endif
   }
+ 
   // Five possible floating point values for acceleration
   set_accel_v();
 
@@ -136,27 +139,35 @@ void initialize(byte factory_reset)
   g.t_shutter = g.t0;
   g.t_shutter_off = g.t0;
   g.t_AF = g.t0;
+  
   g.N_repeats = 0;
   g.breaking = 0;
   g.backlashing = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
-  g.state_old = (KeyState)0;
-  g.state1_old = (KeyState)0;
   g.coords_change = 0;
   g.start_stacking = 0;
   g.make_shot = 0;
   g.paused = 0;
   g.starting_point = g.point1;
-  // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
-  g.BL_counter = BACKLASH;
-  //  g.BL_counter = 0;
-  g.backlash_init = 1;
+
+  if (factory_reset)
+  {
+    g.BL_counter = 0;
+    g.backlash_init = 0;
+  }
+  else
+  {
+    // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
+    g.BL_counter = BACKLASH;
+    g.backlash_init = 1;
+  }
   g.started_moving = 0;
   g.dt_backlash = 0;
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
+  g.disable_limiters = 0;
 
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
@@ -182,9 +193,6 @@ void initialize(byte factory_reset)
 #endif
 
   // Default lcd layout:
-#ifdef LCD
-  lcd.clear();
-#endif
   // This sets g.speed_limit, among other things:
   display_all();
 

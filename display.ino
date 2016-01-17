@@ -8,7 +8,10 @@ void display_stuff()
   {
     g.comment_flag = 0;
     if (g.moving == 0)
+      if (g.alt_flag)
         display_all();
+      else
+        display_current_position();
   }
 
   // Refreshing whole display regularly (only when not moving, as it is slow):

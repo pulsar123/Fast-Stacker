@@ -15,12 +15,12 @@ void camera()
     if (g.continuous_mode)
     {
       // The flag means we just initiated stacking:
-      letter_status("  ");
+      letter_status(" ");
     }
     else
     {
       g.noncont_flag = 1;
-      letter_status("S ");
+      letter_status("S");
     }
     // Time when stacking was initiated:
     g.t0_stacking = g.t;
@@ -81,7 +81,7 @@ void camera()
         g.stacker_mode = 0;
         g.frame_counter = 0;
         display_frame_counter();
-        letter_status("  ");
+        letter_status(" ");
       }
     }
   }
