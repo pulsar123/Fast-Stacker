@@ -73,6 +73,8 @@ void initialize(byte factory_reset)
     g.limit2 = 32767;
     g.pos = (g.point1 + g.point2) / 2;
     g.backlight = 2;
+    g.i_n_timelapse = 0;
+    g.i_dt_timelapse = 5;
     // Assigning values to the reg structure:
     to_reg();
     // Saving these values in EEPROM:
@@ -81,6 +83,8 @@ void initialize(byte factory_reset)
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+    EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse );
+    EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse );
     EEPROM.put( ADDR_REG1, g.reg);
     EEPROM.put( ADDR_REG2, g.reg);
     EEPROM.put( ADDR_REG3, g.reg);
@@ -96,6 +100,8 @@ void initialize(byte factory_reset)
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
+    EEPROM.get( ADDR_I_N_TIMELAPSE, g.i_n_timelapse );
+    EEPROM.get( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse );
     get_reg();
 #ifdef DEBUG
     Serial.println("EEPROM values:");
@@ -133,6 +139,7 @@ void initialize(byte factory_reset)
   g.t_shutter = g.t0;
   g.t_shutter_off = g.t0;
   g.t_AF = g.t0;
+  g.t_mil = millis();
   
   g.N_repeats = 0;
   g.breaking = 0;

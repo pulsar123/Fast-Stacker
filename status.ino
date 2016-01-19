@@ -20,15 +20,16 @@ void display_all()
   {
 #ifdef LCD
     // Line 1:
-    sprintf(g.buffer, "Rev=%1d  Accel=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
+    sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
     lcd.print(g.buffer);
     // Line 2:
-    sprintf(g.buffer, "      Mirror=%1d", g.mirror_lock);
+    sprintf(g.buffer, "N=%-3d    Mir=%1d", N_TIMELAPSE[g.i_n_timelapse], g.mirror_lock);
     lcd.print(g.buffer);
     // Line 3:
-    lcd.print("              ");
+    sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.i_dt_timelapse]);
+    lcd.print(g.buf6);   lcd.clearRestOfLine();
     // Line 4:
-    sprintf(g.buffer, "       Debug=%1d", g.disable_limiters);
+    sprintf(g.buffer, "         Deb=%1d", g.disable_limiters);
     lcd.print(g.buffer);
     // Line 5:
     lcd.print("              ");
@@ -354,13 +355,13 @@ void display_one_point_params()
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
   if (dt < 1000.0)
-    sprintf(g.dt_char, "%3ds", dt);
+    sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0)
-    sprintf(g.dt_char, "%4d", dt);
+    sprintf(g.buf6, "%4d", dt);
   else
-    sprintf(g.dt_char, "****");
+    sprintf(g.buf6, "****");
 
-  sprintf(g.buffer, "%4d %2d.%01d %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), g.dt_char);
+  sprintf(g.buffer, "%4d %2d.%01d %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), g.buf6);
 #ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
@@ -386,13 +387,13 @@ void display_two_point_params()
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   if (dt < 1000.0)
-    sprintf(g.dt_char, "%3ds", dt);
+    sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0)
-    sprintf(g.dt_char, "%4d", dt);
+    sprintf(g.buf6, "%4d", dt);
   else
-    sprintf(g.dt_char, "****");
+    sprintf(g.buf6, "****");
 
-  sprintf(g.buffer, "%4d %2d.%01d %4s", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), g.dt_char);
+  sprintf(g.buffer, "%4d %2d.%01d %4s", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), g.buf6);
 #ifdef LCD
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
@@ -412,11 +413,20 @@ void display_two_points()
 {
   if (g.error || g.alt_flag)
     return;
-  float p1 = MM_PER_MICROSTEP * (float)g.point1;
-  float p2 = MM_PER_MICROSTEP * (float)g.point2;
-  sprintf(g.buffer, "F%2d.%02d  B%2d.%02d", (int)p1, (int)(100.0 * (p1 - (int)p1)), (int)p2, (int)(100.0 * (p2 - (int)p2)));
 #ifdef LCD
+  float p = MM_PER_MICROSTEP * (float)g.point1;
+  if (p >= 0.0)
+    sprintf(g.buffer, "F%d.%02d", (int)p, (int)(100.0 * (p - (int)p)));
+  else
+    sprintf(g.buffer, "F*****");
   lcd.setCursor(0, 3);
+  lcd.print(g.buffer);
+  p = MM_PER_MICROSTEP * (float)g.point2;
+  if (p >= 0.0)
+    sprintf(g.buffer, "B%d.%02d", (int)p, (int)(100.0 * (p - (int)p)));
+  else
+    sprintf(g.buffer, "B*****");
+  lcd.setCursor(8, 3);
   lcd.print(g.buffer);
 #endif
 #ifdef DEBUG
@@ -466,6 +476,11 @@ void display_current_position()
   else
     g.rev_char = "R";
 
+  if (N_TIMELAPSE[g.i_n_timelapse] == 1)
+    sprintf(g.buf6, "   ");
+  else
+    sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
+
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
 #ifdef PRECISE_STEPPING
@@ -473,8 +488,8 @@ void display_current_position()
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
   //  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
-//  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
-  sprintf(g.buffer, "%2d.%03dmm %s %3d", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.timelapse_counter);
+  //  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
+  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif
@@ -482,7 +497,7 @@ void display_current_position()
 #ifdef CAMERA_DEBUG
   sprintf(g.buffer, " %2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
 #else
-  sprintf(g.buffer, "%2d.%03dmm %s %3d", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.timelapse_counter);
+  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
 #endif
 #endif
 

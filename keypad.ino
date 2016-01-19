@@ -310,6 +310,24 @@ void process_keypad()
           display_all();
           break;
 
+        case '4': // *4: Change N_timelapse
+          if (g.i_n_timelapse < N_N_TIMELAPSE - 1)
+            g.i_n_timelapse++;
+          else
+            g.i_n_timelapse = 0;
+          EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
+          display_all();
+          break;
+
+        case '7': // *7: Change dt_timelapse
+          if (g.i_dt_timelapse < N_DT_TIMELAPSE - 1)
+            g.i_dt_timelapse++;
+          else
+            g.i_dt_timelapse = 0;
+          EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
+          display_all();
+          break;
+
       } // switch
     }
     g.state1_old = state1;

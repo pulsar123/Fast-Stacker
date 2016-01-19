@@ -221,6 +221,12 @@ const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 3;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};
+// Table for N_timelapse parameter (number of stacking sequences in the timelapse mode); 1 means no timelapse (just one stack):
+const byte N_N_TIMELAPSE = 7;
+const short N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
+// Table for dt_timelapse parameter (time in seconds between different stacks in timelapse mode; if it is shorter than a single stack time, the latter is used)
+const byte N_DT_TIMELAPSE = 9;
+const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
 
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -310,6 +316,8 @@ const int ADDR_I_FIRST_DELAY = ADDR_REG5 + SIZE_REG;  // for the FIRST_DELAY par
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
 const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.mirror_lock
 const int ADDR_I_ACCEL_FACTOR = ADDR_MIRROR_LOCK + 2; // for g.i_accel_factor
+const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
+const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -382,6 +390,8 @@ struct global
   byte i_n_shots; // counter for n_shots parameter;
   byte i_first_delay; // counter for FIRST_DELAY parameter
   byte i_second_delay; // counter for SECOND_DELAY parameter
+  byte i_n_timelapse; // counter for N_TIMELAPSE parameter
+  byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
   char direction; // -1/1 for reverse/forward directions of moving
   char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
   unsigned long t_comment; // time when commment line was triggered
@@ -411,8 +421,9 @@ struct global
   byte backlash_init; // 1: initializing a full backlash loop
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
-  char dt_char[5]; // Buffer to store the stacking length for displaying
+  char buf6[6]; // Buffer to store the stacking length for displaying
   short timelapse_counter; // Counter for the time lapse feature
+  unsigned long t_mil; // millisecond accuracy timer; used to set up tiemlapse stacks
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

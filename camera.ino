@@ -8,6 +8,8 @@ void camera()
   if (g.error > 0)
     return;
 
+  g.t_mil = millis();
+
   if (g.stacker_mode == 1 && g.moving == 0 && g.started_moving == 0 && g.backlashing == 0 && g.start_stacking == 0)
     // We are here if the rail had to travel to the starting point for stacking, and now is ready for stacking
   {
