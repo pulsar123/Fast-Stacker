@@ -8,12 +8,13 @@ void camera()
   if (g.error > 0)
     return;
 
-  g.t_mil = millis();
 
   if (g.stacker_mode == 1 && g.moving == 0 && g.started_moving == 0 && g.backlashing == 0 && g.start_stacking == 0)
     // We are here if the rail had to travel to the starting point for stacking, and now is ready for stacking
   {
+    g.t0_mil = millis();
     g.start_stacking = 1;
+    g.end_of_stacking = 0;
     if (g.continuous_mode)
     {
       // The flag means we just initiated stacking:
@@ -84,6 +85,7 @@ void camera()
         g.frame_counter = 0;
         display_frame_counter();
         letter_status(" ");
+        g.end_of_stacking = 1;
       }
     }
   }
@@ -123,6 +125,7 @@ void camera()
         g.stacker_mode = 0;
         g.frame_counter = 0;
         display_frame_counter();
+        g.end_of_stacking = 1;
       }
     }
   }
@@ -192,6 +195,31 @@ void camera()
 #endif
     g.AF_on = 0;
     g.single_shot = 0;
+  }
+
+
+  // Timelapse module:
+  if (g.end_of_stacking && g.moving == 0)
+  {
+    if (g.timelapse_counter < N_TIMELAPSE[g.i_n_timelapse] - 1)
+    {
+      g.t_mil = millis();
+      if (((float)(g.t_mil - g.t0_mil))/1000.0 > (float)DT_TIMELAPSE[g.i_dt_timelapse])
+        // We are initiating the next stacking in the timelapse sequence
+      {
+        g.end_of_stacking = 0;
+        g.t0_mil = g.t_mil;
+        g.timelapse_counter++;
+        go_to((float)g.point1 + 0.5, g.speed_limit);
+        g.stacker_mode = 1;
+        g.start_stacking = 0;
+      }
+    }
+    else
+      // End of timelapse, or when no timelapse (N_timelapse=1)
+    {
+      g.end_of_stacking = 0;
+    }
   }
 
   return;

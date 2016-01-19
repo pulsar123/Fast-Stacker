@@ -424,6 +424,8 @@ struct global
   char buf6[6]; // Buffer to store the stacking length for displaying
   short timelapse_counter; // Counter for the time lapse feature
   unsigned long t_mil; // millisecond accuracy timer; used to set up tiemlapse stacks
+  unsigned long t0_mil; // millisecond accuracy timer; used to set up tiemlapse stacks
+  byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

@@ -216,6 +216,7 @@ void process_keypad()
             // This is a non-continuous mode:
             g.continuous_mode = 0;
             g.start_stacking = 0;
+            g.timelapse_counter = 0;
             display_comment_line("2-points stack");
           }
           else
@@ -538,6 +539,7 @@ void process_keypad()
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
                   g.start_stacking = 0;
+                  g.timelapse_counter = 0;
                   display_comment_line("2-points stack");
                 }
               }

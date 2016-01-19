@@ -476,10 +476,10 @@ void display_current_position()
   else
     g.rev_char = "R";
 
-  if (N_TIMELAPSE[g.i_n_timelapse] == 1)
-    sprintf(g.buf6, "   ");
-  else
+  if (N_TIMELAPSE[g.i_n_timelapse] > 1 && g.stacker_mode > 0)
     sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
+  else
+    sprintf(g.buf6, "   ");
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
