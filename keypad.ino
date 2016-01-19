@@ -4,11 +4,11 @@ void process_keypad()
  */
 {
   float speed;
-  short frame_counter0, pos_target;
+  short frame_counter0, pos_target, d_pos;
 
 
   // Ignore keypad during emergency breaking
-//  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
+  //  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
   if (g.breaking == 1 || g.error > 1)
     return;
 
@@ -244,13 +244,18 @@ void process_keypad()
           display_all();
           // We need to do a full backlash compensation loop when reversing the rail operation:
           g.BL_counter = BACKLASH;
-          // This will instruct the backlash module to do a double BL travel at the end, to compensate for BL in reveresed coordinates
+          // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
           g.backlash_init = 2;
+          d_pos = g.limit1 + g.limit2 + BACKLASH - BACKLASH_2;
           // Updating the current coordinate in the new (reversed) frame of reference:
-          g.pos = g.limit1 + g.limit2 - g.pos - BACKLASH;
+          g.pos = d_pos - g.pos;
           g.pos0 = g.pos;
           g.pos_old = g.pos;
           g.pos_short_old = floorMy(g.pos);
+          // Updating the current two points positions:
+          pos_target = d_pos - g.point2;
+          g.point2 = d_pos - g.point1;
+          g.point1 = pos_target;
           break;
 
         case '2': // *2: Save parameters to third memory bank
@@ -382,7 +387,7 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
-                pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -413,7 +418,7 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
-                pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+                pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -435,8 +440,6 @@ void process_keypad()
               if (g.paused || g.moving)
                 break;
               g.point1 = g.pos_short_old;
-              if (g.points_byte == 0 || g.points_byte == 2)
-                g.points_byte = g.points_byte + 1;
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
@@ -444,15 +447,12 @@ void process_keypad()
               display_two_points();
               display_comment_line("  P1 was set  ");
               EEPROM.put( ADDR_POINT1, g.point1);
-              EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
               break;
 
             case 'B':  // B: Set background point
               if (g.paused || g.moving)
                 break;
               g.point2 = g.pos_short_old;
-              if (g.points_byte == 0 || g.points_byte == 1)
-                g.points_byte = g.points_byte + 2;
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
@@ -460,7 +460,6 @@ void process_keypad()
               display_two_points();
               display_comment_line("  P2 was set  ");
               EEPROM.put( ADDR_POINT2, g.point2);
-              EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
               break;
 
             case '7':  // 7: Go to the foreground point
@@ -563,23 +562,37 @@ void process_keypad()
             case '2':  // 2: Decrease parameter n_shots (for 1-point sstacking)
               if (g.paused)
                 break;
+#ifndef BL_DEBUG
               if (g.i_n_shots > 0)
                 g.i_n_shots--;
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+#else
+              // The meaning of "2" changes when BL_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
+              BACKLASH_2 = BACKLASH_2 - BL2_STEP;
+              if (BACKLASH_2 < 0)
+                BACKLASH_2 = 0;
+#endif
               display_all();
               break;
 
             case '3':  // 3: Increase parameter n_shots (for 1-point sstacking)
               if (g.paused)
                 break;
+#ifndef BL_DEBUG
               if (g.i_n_shots < N_PARAMS - 1)
                 g.i_n_shots++;
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-              display_one_point_params();
+#else
+              // The meaning of "3" changes when BL_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
+              BACKLASH_2 = BACKLASH_2 + BL2_STEP;
+              if (BACKLASH_2 > 2 * BACKLASH)
+                BACKLASH_2 = 2 * BACKLASH;
+#endif
+              display_all();
               break;
 
             case '5':  // 5: Decrease parameter mm_per_frame
@@ -592,6 +605,14 @@ void process_keypad()
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
+              if (g.Nframes > 9999)
+                // Too many frames; recovering the old values
+              {
+                g.i_mm_per_frame++;
+                g.msteps_per_frame = Msteps_per_frame();
+                g.Nframes = Nframes();
+                break;
+              }
               display_all();
               EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
               break;
@@ -681,7 +702,7 @@ void process_keypad()
               // Switches the frame counter back to the last accomplished frame
               g.frame_counter--;
               // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-              pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+              pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
               go_to(pos_target + 0.5, g.speed_limit);
             }
           }

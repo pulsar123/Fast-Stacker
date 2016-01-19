@@ -425,7 +425,7 @@ void set_accel_v()
 void to_reg()
 // Parameters -> to reg structure
 {
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.point1, g.point2};
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.straight, g.point1, g.point2};
   return;
 }
 
@@ -441,6 +441,7 @@ void from_reg()
   g.i_first_delay = g.reg.i_first_delay;
   g.i_second_delay = g.reg.i_second_delay;
   g.mirror_lock = g.reg.mirror_lock;
+  g.straight = g.reg.straight;
   g.i_accel_factor = g.reg.i_accel_factor;
   return;
 }
@@ -456,6 +457,7 @@ void put_reg()
   EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
   EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.put( ADDR_STRAIGHT, g.straight);
   EEPROM.put( ADDR_POINT1, g.point1);
   EEPROM.put( ADDR_POINT2, g.point2);
   return;
@@ -472,8 +474,10 @@ void get_reg()
   EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.get( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
   EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.get( ADDR_STRAIGHT, g.straight);
   EEPROM.get( ADDR_POINT1, g.point1);
   EEPROM.get( ADDR_POINT2, g.point2);
   return;
 }
+
 

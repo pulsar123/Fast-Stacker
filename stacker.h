@@ -30,7 +30,7 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit and when powered via USB)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If undefined, lcd will not be used
@@ -39,6 +39,9 @@ Issues to address:
 //#define CAMERA_DEBUG
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
+// Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
+// When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
+//#define BL_DEBUG
 
 
 //////// Camera related parameters: ////////
@@ -148,6 +151,13 @@ const float MM_PER_ROTATION = 3.98;
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2;
+// This is the second backlash related parameter you need to measure for you rail (or just use the value provided if your rail is Velbon Super Mag Slider)
+// This parameter is only relevant for one operation - rail reversal (*1 function). Unlike the above parameter (BACKLASH_MM) which can be equal to or
+// larger than the actual backlash value for the rail movements to be perfectly accurate, the BACKLASH_2 parameter has to have a specific value (not larger, no smaller); if
+// your rail backlash changes as a function of the rail angle, position on the rail, camera weight etc., BACKLASH_2 would have to change as well.
+// Because it is not practical, your value of BACKLASH_2 should be a compromise, giving reasonable results under normal usage scenario. In any case
+// rail reversal (*1) wasn't meant to be a perfectly accurate operation, whereas the standard backlash compensation is.
+const float BACKLASH_2_MM = 0.3;
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
@@ -234,8 +244,17 @@ const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
-// Backlash in microsteps:
-const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP);
+// Backlash in microsteps (+0.5 for proper round-off):
+const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
+#ifdef BL_DEBUG
+// Initial value for BACKLASH_2:
+short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
+// Step for changing BACKLASH_2, in microsteps:
+const short BL2_STEP = 4;
+#else
+// Backlash correction for rail reversal (*1) in microsteps:
+const short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
+#endif
 // Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
 // If defined, will be using my module to make sure that my physical microsteps always correspond to the program coordinates
@@ -262,13 +281,14 @@ struct regist
   byte i_second_delay;
   byte i_accel_factor;
   byte mirror_lock;
+  byte straight;
   short point1;
   short point2;
 };
-  // Just in case adding a 1-byte, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
-short SIZE_REG = sizeof(regist) + 1;
+  // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
+short SIZE_REG = sizeof(regist);
 
-// EEPROM addresses:
+// EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
 const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will be done at the beginning (1 byte)
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
@@ -279,8 +299,8 @@ const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame pa
 const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
 const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
 const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
-const int ADDR_POINTS_BYTE = ADDR_POINT2 + 2; // points_byte value
-const int ADDR_BACKLIGHT = ADDR_POINTS_BYTE + 2;  // backlight level
+const int ADDR_STRAIGHT = ADDR_POINT2 + 2; // g.straight value
+const int ADDR_BACKLIGHT = ADDR_STRAIGHT + 2;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
 const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
@@ -288,8 +308,7 @@ const int ADDR_REG4 = ADDR_REG3 + SIZE_REG;  // register4
 const int ADDR_REG5 = ADDR_REG4 + SIZE_REG;  // register5
 const int ADDR_I_FIRST_DELAY = ADDR_REG5 + SIZE_REG;  // for the FIRST_DELAY parameter
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
-const int ADDR_STRAIGHT = ADDR_I_SECOND_DELAY + 2;  // for g.straight flag
-const int ADDR_MIRROR_LOCK = ADDR_STRAIGHT + 2;  // for g.mirror_lock
+const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.mirror_lock
 const int ADDR_I_ACCEL_FACTOR = ADDR_MIRROR_LOCK + 2; // for g.i_accel_factor
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
@@ -365,7 +384,6 @@ struct global
   byte i_second_delay; // counter for SECOND_DELAY parameter
   char direction; // -1/1 for reverse/forward directions of moving
   char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
-  byte points_byte; // two-points status encoded: 0/1/2/3 when no / only fg / only bg / both points are defined
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   KeyState state_old;  // keeping old key[0] state
@@ -389,9 +407,12 @@ struct global
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
+  char* rev_char; // "R" if rail revered, " " otherwise
   byte backlash_init; // 1: initializing a full backlash loop
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
+  char dt_char[5]; // Buffer to store the stacking length for displaying
+  short timelapse_counter; // Counter for the time lapse feature
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
@@ -401,6 +422,9 @@ struct global
   short dt_max;
   short dt_min;
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
+#endif
+#ifdef BL_DEBUG
+
 #endif
 };
 

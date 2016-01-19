@@ -29,7 +29,7 @@ void backlash()
   if (g.backlash_init == 3)
   {
     // Backlash compensation.
-    go_to(g.pos + (float)(2 * BACKLASH), g.speed_limit);
+    go_to(g.pos + (float)BACKLASH_2, g.speed_limit);
 
     // This should be done after go_to call:
     g.backlashing = 1;

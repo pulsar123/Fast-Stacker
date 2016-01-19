@@ -65,30 +65,27 @@ void initialize(byte factory_reset)
     g.i_second_delay = 3;
     g.i_accel_factor = 1;
     g.mirror_lock = 1;
+    g.straight = 1;
     g.point1 = 2000;
     g.point2 = 3000;
 
     g.limit1 = 0;
     g.limit2 = 32767;
     g.pos = (g.point1 + g.point2) / 2;
-    g.points_byte = 0;
     g.backlight = 2;
     // Assigning values to the reg structure:
     to_reg();
-    g.straight = 1;
     // Saving these values in EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     EEPROM.put( ADDR_LIMIT2, g.limit2);
-    EEPROM.put( ADDR_POINTS_BYTE, g.points_byte);
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
     EEPROM.put( ADDR_REG1, g.reg);
     EEPROM.put( ADDR_REG2, g.reg);
     EEPROM.put( ADDR_REG3, g.reg);
     EEPROM.put( ADDR_REG4, g.reg);
     EEPROM.put( ADDR_REG5, g.reg);
-    EEPROM.put( ADDR_STRAIGHT, g.straight);
     put_reg();
   }
   else
@@ -98,9 +95,7 @@ void initialize(byte factory_reset)
     EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
-    EEPROM.get( ADDR_POINTS_BYTE, g.points_byte);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.get( ADDR_STRAIGHT, g.straight);
     get_reg();
 #ifdef DEBUG
     Serial.println("EEPROM values:");
@@ -113,7 +108,6 @@ void initialize(byte factory_reset)
     Serial.println(g.i_fps);
     Serial.println(g.point1);
     Serial.println(g.point2);
-    Serial.println(g.points_byte);
 #endif
   }
  
@@ -150,6 +144,7 @@ void initialize(byte factory_reset)
   g.make_shot = 0;
   g.paused = 0;
   g.starting_point = g.point1;
+  g.timelapse_counter = 0;
 
   if (factory_reset)
   {

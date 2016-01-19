@@ -177,11 +177,9 @@ void display_frame_counter()
     return;
   // Printing frame counter:
   if (g.stacker_mode == 0 && g.paused == 0)
-    sprintf (g.buffer, "  0 ");
-  else if (g.frame_counter > -100 && g.frame_counter + 1 < 1000)
-    sprintf (g.buffer, "%3d ",  g.frame_counter + 1);
+    sprintf (g.buffer, "   0 ");
   else
-    sprintf (g.buffer, "*** ");
+    sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
 #ifdef LCD
   lcd.setCursor(5, 5);
   lcd.print (g.buffer); // display line on buffer
@@ -196,50 +194,21 @@ void display_frame_counter()
 
 
 void points_status()
-/* Display status of two points in two-point stacking mode. Empty space
-  means the point wasn't set yet since bootup. Capital letter means
-  we are exactly at that position now. f/b stans for foreground/background
-  points (point1/point2).
+/* Displays F or B if tyhe current coordiante is exactly the foreground (g.point1) or background (g.point2) point.
  */
 {
   if (g.error || g.alt_flag)
     return;
 #ifdef LCD
-  lcd.setCursor(9, 5);
+  lcd.setCursor(10, 5);
 
-  switch (g.points_byte)
-  {
+  if (g.pos_short_old == g.point1)
+    lcd.print("F ");
+  else if (g.pos_short_old == g.point2)
+    lcd.print("B ");
+  else
+    lcd.print("  ");
 
-    case 0:
-      lcd.print("   ");
-      break;
-
-    case 1:
-      if (g.pos_short_old == g.point1)
-        lcd.print("F  ");
-      else
-        lcd.print("f  ");
-      break;
-
-    case 2:
-      if (g.pos_short_old == g.point2)
-        lcd.print(" B ");
-      else
-        lcd.print("b  ");
-      break;
-
-    case 3:
-      if (g.pos_short_old == g.point1)
-        lcd.print("Fb ");
-      else if (g.pos_short_old == g.point2)
-        lcd.print("fB ");
-      else
-        lcd.print("fb ");
-      break;
-
-      //    default:
-      //      lcd.print(g.points_byte);
-  }
 #endif
   return;
 }
@@ -384,15 +353,14 @@ void display_one_point_params()
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
   short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
-  char dt_char[5];
   if (dt < 1000.0)
-    sprintf(dt_char, "%3ds", dt);
+    sprintf(g.dt_char, "%3ds", dt);
   else if (dt < 10000.0)
-    sprintf(dt_char, "%4d", dt);
+    sprintf(g.dt_char, "%4d", dt);
   else
-    sprintf(dt_char, "****");
+    sprintf(g.dt_char, "****");
 
-  sprintf(g.buffer, "%3d %2d.%01dm %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), dt_char);
+  sprintf(g.buffer, "%4d %2d.%01d %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), g.dt_char);
 #ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
@@ -417,21 +385,14 @@ void display_two_point_params()
     return;
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
-  char dt_char[5];
   if (dt < 1000.0)
-    sprintf(dt_char, "%3ds", dt);
+    sprintf(g.dt_char, "%3ds", dt);
   else if (dt < 10000.0)
-    sprintf(dt_char, "%4d", dt);
+    sprintf(g.dt_char, "%4d", dt);
   else
-    sprintf(dt_char, "****");
+    sprintf(g.dt_char, "****");
 
-  char Nframes_char[4];
-  if (g.Nframes < 1000)
-    sprintf(Nframes_char, "%3d", g.Nframes);
-  else
-    sprintf(Nframes_char, "***");
-
-  sprintf(g.buffer, "%3s %2d.%01dm %4s", Nframes_char, (int)dx, (int)((dx - (int)dx) * 10.0), dt_char);
+  sprintf(g.buffer, "%4d %2d.%01d %4s", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), g.dt_char);
 #ifdef LCD
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
@@ -500,6 +461,11 @@ void display_current_position()
   if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
+  if (g.straight)
+    g.rev_char = " ";
+  else
+    g.rev_char = "R";
+
   float p = MM_PER_MICROSTEP * (float)g.pos;
 #ifdef MOTOR_DEBUG
 #ifdef PRECISE_STEPPING
@@ -507,17 +473,23 @@ void display_current_position()
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
   //  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
-  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
+//  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
+  sprintf(g.buffer, "%2d.%03dmm %s %3d", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.timelapse_counter);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif
 #else
 #ifdef CAMERA_DEBUG
-  sprintf(g.buffer, " P=%2d.%02dmm", (int)p, (int)(100.0 * (p - (int)p)));
+  sprintf(g.buffer, " %2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
 #else
-  sprintf(g.buffer, "   P=%2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
+  sprintf(g.buffer, "%2d.%03dmm %s %3d", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.timelapse_counter);
 #endif
 #endif
+
+#ifdef BL_DEBUG
+  sprintf(g.buffer, "%2d.%03dmm %3d  ", (int)p, (int)(1000.0 * (p - (int)p)), roundMy(1000.0 * MM_PER_MICROSTEP * BACKLASH_2));
+#endif
+
 #ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);
