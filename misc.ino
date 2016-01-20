@@ -534,3 +534,34 @@ short frame_coordinate()
   return g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
 }
 
+
+
+void read_params(const int addr, byte n)
+{
+  EEPROM.get( addr, g.reg);
+  if (g.reg.straight != g.straight)
+    // If the rail needs a rail reverse, initiate it:
+  {
+    // Not updating point1,2:
+    rail_reverse(0);
+  }
+  from_reg();
+  put_reg();
+  g.msteps_per_frame = Msteps_per_frame();
+  g.Nframes = Nframes();
+  display_all();
+  display_comment_line("Read from Reg");
+  lcd.print(n);
+  return;
+}
+
+
+void save_params(const int addr, byte n)
+{
+  to_reg();
+  EEPROM.put( addr, g.reg);
+  display_comment_line("Saved to Reg");
+  lcd.print(n);
+  return;
+}
+

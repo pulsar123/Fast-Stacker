@@ -45,15 +45,19 @@ void process_keypad()
 
         case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
           if (g.paused && g.moving == 0)
+            // Aborting stacking:
           {
             g.paused = 0;
             g.frame_counter = 0;
             display_frame_counter();
-            letter_status(" ");
             g.noncont_flag = 0;
             g.stacker_mode = 0;
+            g.timelapse_mode = 0;
+            g.end_of_stacking = 0;
+            display_all();
           }
           else
+            // Emergency breaking:
           {
             change_speed(0.0, 0, 2);
             // This should be done after change_speed(0.0):
@@ -140,7 +144,7 @@ void process_keypad()
           break;
 
         case '1': // #1: Rewind a single frame step (no shooting)
-          if (g.moving)
+          if (g.moving || g.paused > 1)
             break;
           frame_counter0 = g.frame_counter;
           if (g.paused)
@@ -166,7 +170,7 @@ void process_keypad()
           break;
 
         case 'A': // #A: Fast-forward a single frame step (no shooting)
-          if (g.moving)
+          if (g.moving || g.paused > 1)
             break;
           // Required microsteps per frame:
           frame_counter0 = g.frame_counter;
@@ -374,7 +378,7 @@ void process_keypad()
           switch (key)
           {
             case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
-              if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0)
+              if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0 || g.paused > 1)
                 break;
 #ifdef MOTOR_DEBUG
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
@@ -405,7 +409,7 @@ void process_keypad()
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
-              if (g.pos_short_old >= g.limit2 && g.disable_limiters == 0)
+              if (g.pos_short_old >= g.limit2 && g.disable_limiters == 0 || g.paused > 1)
                 break;
 #ifdef MOTOR_DEBUG
               cplus1 = cminus1 = cplus2 = cminus2 = skipped_current = 0;
@@ -484,14 +488,14 @@ void process_keypad()
               break;
 
             case '0': // 0: Start shooting (2-point focus stacking) from the foreground point (backlash compensated)
+              if (g.moving)
+                break;
               // Checking the correctness of point1/2
               if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
               {
-                if (g.paused)
+                if (g.paused == 1)
                   // Resuming 2-point stacking from a paused state
                 {
-                  if (g.moving)
-                    break;
                   g.paused = 0;
                   g.start_stacking = 1;
                   if (g.continuous_mode)
@@ -509,7 +513,23 @@ void process_keypad()
                   g.pos_to_shoot = g.pos_short_old;
                   g.stacker_mode = 2;
                 }
+                else if (g.paused == 3)
+                  // Restarting from a pause which happened between stacks (in timelapse mode)
+                {
+                  g.paused = 0;
+                  display_all();
+                }
+                else if (g.paused == 2)
+                  // Restarting from a pause which happened during the initial travel to the starting point
+                {
+                  go_to((float)g.point1 + 0.5, g.speed_limit);
+                  g.stacker_mode = 1;
+                  g.start_stacking = 0;
+                  g.paused = 0;
+                  display_all();
+                }
                 else
+                  // Initiating a new stack (or timelapse sequence of stacks)
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
@@ -691,23 +711,38 @@ void process_keypad()
           // Any key press in stacking mode interrupts stacking
           if (g.moving)
             change_speed(0.0, 0, 2);
-          if (g.stacker_mode == 2)
-            // In 2-point stacking we pause
+          // All situations when we pause: during 2-point stacking, while travelling to the starting point, and while waiting between stacks in timelaspe mode:
+          if (g.stacker_mode == 2 || g.stacker_mode == 1 || g.stacker_mode == 4)
           {
+            // Paused during 2-point stacking
+            if (g.stacker_mode == 2)
+            {
+              g.paused = 1;
+              if (g.t - g.t0_stacking > CONT_STACKING_DELAY)
+              {
+                // Switches the frame counter back to the last accomplished frame
+                g.frame_counter--;
+                // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
+                pos_target = frame_coordinate();
+                go_to(pos_target + 0.5, g.speed_limit);
+              }
+            }
+            // Paused while travelling to the starting point
+            else if (g.stacker_mode == 1)
+            {
+              g.paused = 2;
+            }
+            // Paused while waiting between stacks in timelaspe mode
+            else
+            {
+              g.paused = 3;
+            }
             display_comment_line("    Paused    ");
             letter_status("P");
-            g.paused = 1;
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
             g.state1_old = (KeyState)0;
-            if (g.t - g.t0_stacking > CONT_STACKING_DELAY)
-            {
-              // Switches the frame counter back to the last accomplished frame
-              g.frame_counter--;
-              // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-              pos_target = frame_coordinate();
-              go_to(pos_target + 0.5, g.speed_limit);
-            }
           }
+          //          else if (g.stacker_mode == 1)
           else
             // In 1-point stacking, we abort
           {
@@ -757,37 +792,6 @@ void process_keypad()
   } // End of two-key / one-key if
 
 
-  return;
-}
-
-
-
-void read_params(const int addr, byte n)
-{
-  EEPROM.get( addr, g.reg);
-  if (g.reg.straight != g.straight)
-    // If the rail needs a rail reverse, initiate it:
-  {
-    // Not updating point1,2:
-    rail_reverse(0);
-  }
-  from_reg();
-  put_reg();
-  g.msteps_per_frame = Msteps_per_frame();
-  g.Nframes = Nframes();
-  display_all();
-  display_comment_line("Read from Reg");
-  lcd.print(n);
-  return;
-}
-
-
-void save_params(const int addr, byte n)
-{
-  to_reg();
-  EEPROM.put( addr, g.reg);
-  display_comment_line("Saved to Reg");
-  lcd.print(n);
   return;
 }
 

@@ -118,8 +118,11 @@ void letter_status(char* l)
   lcd.setCursor(0, 5);
   if (g.paused)
     lcd.print("P");
+  else if (g.timelapse_mode)
+    lcd.print("T");
   else
     lcd.print(*l);
+
   lcd.print(" ");
 #endif
 #ifdef DEBUG
@@ -374,9 +377,9 @@ void display_one_point_params()
 
   if (dx < 100.0)
     ftoa(g.buf7, dx, 1);
-    else
+  else
     sprintf(g.buf7, "****");
-    
+
   sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.i_n_shots], g.buf7 , g.buf6);
 #ifdef LCD
   lcd.setCursor(0, 0);
@@ -492,35 +495,16 @@ void display_current_position()
   else
     g.rev_char = "R";
 
-  if (N_TIMELAPSE[g.i_n_timelapse] > 1 && g.stacker_mode > 0)
+  if (g.timelapse_mode)
     sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
   else
     sprintf(g.buf6, "   ");
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
-#ifdef MOTOR_DEBUG
-#ifdef PRECISE_STEPPING
-  short backlash1 = (short)(100.0 * (float)(dt_backlash) * SPEED_LIMIT);
-  //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), backlash1, skipped_total);
-  //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
-  //  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
-  //  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
-  //  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
   sprintf(g.buffer, "%6smm %s %3s", ftoa(g.buf7, p, 3), g.rev_char, g.buf6);
-#else
-  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
-#endif
-#else
-#ifdef CAMERA_DEBUG
-  sprintf(g.buffer, " %2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
-#else
-  //  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
-  sprintf(g.buffer, "%6smm %s %3s", ftoa(g.buf7, p, 3), g.rev_char, g.buf6);
-#endif
-#endif
 
 #ifdef BL_DEBUG
-  sprintf(g.buffer, "%2d.%03dmm %3d  ", (int)p, (int)(1000.0 * (p - (int)p)), roundMy(1000.0 * MM_PER_MICROSTEP * BACKLASH_2));
+  sprintf(g.buffer, "%6smm %3d  ",ftoa(g.buf7, p, 3) , roundMy(1000.0 * MM_PER_MICROSTEP * BACKLASH_2));
 #endif
 
 #ifdef LCD
