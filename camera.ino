@@ -109,7 +109,7 @@ void camera()
       display_frame_counter();
       g.frame_counter++;
       // Position at which to shoot the next shot:
-      g.pos_to_shoot = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+      g.pos_to_shoot = frame_coordinate();
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])
       {
         // End of one-point stacking
@@ -204,7 +204,7 @@ void camera()
     if (g.timelapse_counter < N_TIMELAPSE[g.i_n_timelapse] - 1)
     {
       g.t_mil = millis();
-      if (((float)(g.t_mil - g.t0_mil))/1000.0 > (float)DT_TIMELAPSE[g.i_dt_timelapse])
+      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > (float)DT_TIMELAPSE[g.i_dt_timelapse])
         // We are initiating the next stacking in the timelapse sequence
       {
         g.end_of_stacking = 0;
@@ -219,6 +219,7 @@ void camera()
       // End of timelapse, or when no timelapse (N_timelapse=1)
     {
       g.end_of_stacking = 0;
+      g.timelapse_mode = 0;
     }
   }
 

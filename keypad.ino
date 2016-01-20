@@ -4,7 +4,7 @@ void process_keypad()
  */
 {
   float speed;
-  short frame_counter0, pos_target, d_pos;
+  short frame_counter0, pos_target;
 
 
   // Ignore keypad during emergency breaking
@@ -69,29 +69,25 @@ void process_keypad()
         case '2': // #2: Save parameters to first memory bank
           if (g.paused)
             break;
-          save_params(ADDR_REG1);
-          display_comment_line("Saved to Reg1 ");
+          save_params(ADDR_REG1, 1);
           break;
 
         case '3': // #3: Read parameters from first memory bank
           if (g.paused)
             break;
-          read_params(ADDR_REG1);
-          display_comment_line("Read from Reg1");
+          read_params(ADDR_REG1, 1);
           break;
 
         case '5': // #5: Save parameters to second memory bank
           if (g.paused)
             break;
-          save_params(ADDR_REG2);
-          display_comment_line("Saved to Reg2 ");
+          save_params(ADDR_REG2, 2);
           break;
 
         case '6': // #6: Read parameters from second memory bank
           if (g.paused)
             break;
-          read_params(ADDR_REG2);
-          display_comment_line("Read from Reg2");
+          read_params(ADDR_REG2, 2);
           break;
 
         case '8': // #8: Cycle through the table for FIRST_DELAY parameter
@@ -150,7 +146,7 @@ void process_keypad()
           if (g.paused)
           {
             g.frame_counter--;
-            pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+            pos_target = frame_coordinate();
           }
           else
           {
@@ -177,7 +173,7 @@ void process_keypad()
           if (g.paused)
           {
             g.frame_counter++;
-            pos_target = (short)(g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame));
+            pos_target = frame_coordinate();
           }
           else
           {
@@ -217,6 +213,8 @@ void process_keypad()
             g.continuous_mode = 0;
             g.start_stacking = 0;
             g.timelapse_counter = 0;
+            if (N_TIMELAPSE[g.i_n_timelapse] > 1)
+              g.timelapse_mode = 1;
             display_comment_line("2-points stack");
           }
           else
@@ -243,50 +241,32 @@ void process_keypad()
         case '1': // *1: Rail reverse
           g.straight = 1 - g.straight;
           display_all();
-          // We need to do a full backlash compensation loop when reversing the rail operation:
-          g.BL_counter = BACKLASH;
-          // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
-          g.backlash_init = 2;
-          d_pos = g.limit1 + g.limit2 + BACKLASH - BACKLASH_2;
-          // Updating the current coordinate in the new (reversed) frame of reference:
-          g.pos = d_pos - g.pos;
-          g.pos0 = g.pos;
-          g.pos_old = g.pos;
-          g.pos_short_old = floorMy(g.pos);
-          // Updating the current two points positions:
-          pos_target = d_pos - g.point2;
-          g.point2 = d_pos - g.point1;
-          g.point1 = pos_target;
+          // Reversing the rail and updating the point1,2 parameters:
+          rail_reverse(1);
           break;
 
         case '2': // *2: Save parameters to third memory bank
-          save_params(ADDR_REG3);
-          display_comment_line("Saved to Reg3 ");
+          save_params(ADDR_REG3, 3);
           break;
 
         case '3': // *3: Read parameters from third memory bank
-          read_params(ADDR_REG3);
-          display_comment_line("Read from Reg3");
+          read_params(ADDR_REG3, 3);
           break;
 
         case '5': // *5: Save parameters to fourth memory bank
-          save_params(ADDR_REG4);
-          display_comment_line("Saved to Reg4 ");
+          save_params(ADDR_REG4, 4);
           break;
 
         case '6': // *6: Read parameters from fourth memory bank
-          read_params(ADDR_REG4);
-          display_comment_line("Read from Reg4");
+          read_params(ADDR_REG4, 4);
           break;
 
         case '8': // *8: Save parameters to fifth memory bank
-          save_params(ADDR_REG5);
-          display_comment_line("Saved to Reg5 ");
+          save_params(ADDR_REG5, 5);
           break;
 
         case '9': // *9: Read parameters from fifth memory bank
-          read_params(ADDR_REG5);
-          display_comment_line("Read from Reg5");
+          read_params(ADDR_REG5, 5);
           break;
 
         case 'A': // *A: Change accel_factor
@@ -406,7 +386,7 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
-                pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+                pos_target = frame_coordinate();
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -437,7 +417,7 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
-                pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+                pos_target = frame_coordinate();
                 if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
@@ -540,6 +520,8 @@ void process_keypad()
                   g.continuous_mode = 1;
                   g.start_stacking = 0;
                   g.timelapse_counter = 0;
+                  if (N_TIMELAPSE[g.i_n_timelapse] > 1)
+                    g.timelapse_mode = 1;
                   display_comment_line("2-points stack");
                 }
               }
@@ -710,7 +692,7 @@ void process_keypad()
           if (g.moving)
             change_speed(0.0, 0, 2);
           if (g.stacker_mode == 2)
-            // In 2-point stacking, we pause
+            // In 2-point stacking we pause
           {
             display_comment_line("    Paused    ");
             letter_status("P");
@@ -722,7 +704,7 @@ void process_keypad()
               // Switches the frame counter back to the last accomplished frame
               g.frame_counter--;
               // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-              pos_target = g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+              pos_target = frame_coordinate();
               go_to(pos_target + 0.5, g.speed_limit);
             }
           }
@@ -780,22 +762,32 @@ void process_keypad()
 
 
 
-void read_params(const int addr)
+void read_params(const int addr, byte n)
 {
   EEPROM.get( addr, g.reg);
+  if (g.reg.straight != g.straight)
+    // If the rail needs a rail reverse, initiate it:
+  {
+    // Not updating point1,2:
+    rail_reverse(0);
+  }
   from_reg();
   put_reg();
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
   display_all();
+  display_comment_line("Read from Reg");
+  lcd.print(n);
   return;
 }
 
 
-void save_params(const int addr)
+void save_params(const int addr, byte n)
 {
   to_reg();
   EEPROM.put( addr, g.reg);
+  display_comment_line("Saved to Reg");
+  lcd.print(n);
   return;
 }
 

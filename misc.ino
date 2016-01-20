@@ -22,6 +22,24 @@ short Nframes ()
 }
 
 
+char *ftoa(char *a, float f, int precision)
+// Converting float to string (up to 9 decimals)
+{
+  long p[] = {0, 10, 100, 1000};
+
+  char *ret = a;
+  long heiltal = (long)f;
+  itoa(heiltal, a, 10);
+  while (*a != '\0') a++;
+  *a++ = '.';
+  long desimal = abs((long)((f - heiltal) * p[precision]));
+  // Filling up with leading zeros if needed:
+  for (byte i = snprintf(0, 0, "%+d", desimal) - 1; i < precision; i++)
+    *a++ = '0';
+  itoa(desimal, a, 10);
+  return ret;
+}
+
 short nintMy(float x)
 /*
  My version of nint. Float -> short conversion. Valid for positive/negative/zero.
@@ -480,4 +498,39 @@ void get_reg()
   return;
 }
 
+
+void rail_reverse(byte fix_points)
+/* Reversing the rail operation - either manually (*1 function), or automatically, when loading one of the memory registers
+   If fix_points=1, update the current point1,2 accordingly.
+ */
+{
+  short d_pos, pos_target;
+
+  // We need to do a full backlash compensation loop when reversing the rail operation:
+  g.BL_counter = BACKLASH;
+  // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
+  g.backlash_init = 2;
+  d_pos = g.limit1 + g.limit2 + BACKLASH - BACKLASH_2;
+  // Updating the current coordinate in the new (reversed) frame of reference:
+  g.pos = d_pos - g.pos;
+  g.pos0 = g.pos;
+  g.pos_old = g.pos;
+  g.pos_short_old = floorMy(g.pos);
+  if (fix_points)
+  {
+    // Updating the current two points positions:
+    pos_target = d_pos - g.point2;
+    g.point2 = d_pos - g.point1;
+    g.point1 = pos_target;
+  }
+
+  return;
+}
+
+
+short frame_coordinate()
+// Coordinate (short type) of a frame given by g.frame_number, in 2-point stacking
+{
+  return g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+}
 

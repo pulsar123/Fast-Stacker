@@ -152,6 +152,7 @@ void initialize(byte factory_reset)
   g.paused = 0;
   g.starting_point = g.point1;
   g.timelapse_counter = 0;
+  g.timelapse_mode = 0;
 
   if (factory_reset)
   {

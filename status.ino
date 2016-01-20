@@ -307,7 +307,13 @@ void display_u_per_f()
 {
   if (g.error || g.alt_flag)
     return;
-  sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  //  sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  if (MM_PER_FRAME[g.i_mm_per_frame] >= 0.00995)
+    sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  else
+    // +0.05 is for proper round-off:
+    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, 1000.0 * MM_PER_FRAME[g.i_mm_per_frame] + 0.05, 1));
+
 #ifdef LCD
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
@@ -327,8 +333,12 @@ void display_fps()
 {
   if (g.error || g.alt_flag)
     return;
-  //  sprintf(g.buffer, "%5.3ffs", FPS[g.i_fps]);
-  sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
+  if (FPS[g.i_fps] >= 1.0)
+    sprintf(g.buffer, " %3sfps", ftoa(g.buf7, FPS[g.i_fps], 1));
+  else
+    sprintf(g.buffer, "%4sfps", ftoa(g.buf7, FPS[g.i_fps], 2));
+
+  //  sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
 #ifdef LCD
   lcd.setCursor(7, 2);
   lcd.print(g.buffer);
@@ -351,17 +361,23 @@ void display_one_point_params()
 {
   if (g.error || g.alt_flag)
     return;
-  float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame];
-  short dt = nintMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
+  // +0.05 for proper round off:
+  float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame] + 0.05;
+  short dt = roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
-  if (dt < 1000.0)
+  if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
-  else if (dt < 10000.0)
+  else if (dt < 10000.0 && dt >= 0.0)
     sprintf(g.buf6, "%4d", dt);
   else
     sprintf(g.buf6, "****");
 
-  sprintf(g.buffer, "%4d %2d.%01d %4s", N_SHOTS[g.i_n_shots], (int)dx, (int)((dx - (int)dx) * 10.0), g.buf6);
+  if (dx < 100.0)
+    ftoa(g.buf7, dx, 1);
+    else
+    sprintf(g.buf7, "****");
+    
+  sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.i_n_shots], g.buf7 , g.buf6);
 #ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
@@ -416,14 +432,14 @@ void display_two_points()
 #ifdef LCD
   float p = MM_PER_MICROSTEP * (float)g.point1;
   if (p >= 0.0)
-    sprintf(g.buffer, "F%d.%02d", (int)p, (int)(100.0 * (p - (int)p)));
+    sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "F*****");
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
   p = MM_PER_MICROSTEP * (float)g.point2;
   if (p >= 0.0)
-    sprintf(g.buffer, "B%d.%02d", (int)p, (int)(100.0 * (p - (int)p)));
+    sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "B*****");
   lcd.setCursor(8, 3);
@@ -489,7 +505,8 @@ void display_current_position()
   //  sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), n_fixed, n_failed);
   //  sprintf(g.buffer, "%5d %5d   ", g.pos_short_old, g.pos_to_shoot);
   //  sprintf(g.buffer, "%2d.%03d      ", (int)p, (int)(1000.0 * (p - (int)p)));
-  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
+  //  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
+  sprintf(g.buffer, "%6smm %s %3s", ftoa(g.buf7, p, 3), g.rev_char, g.buf6);
 #else
   sprintf(g.buffer, "%2d.%03d %3d %3d", (int)p, (int)(1000.0 * (p - (int)p)), skipped_current, skipped_total);
 #endif
@@ -497,7 +514,8 @@ void display_current_position()
 #ifdef CAMERA_DEBUG
   sprintf(g.buffer, " %2d.%02dmm  ", (int)p, (int)(100.0 * (p - (int)p)));
 #else
-  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
+  //  sprintf(g.buffer, "%2d.%03dmm %s %3s", (int)p, (int)(1000.0 * (p - (int)p)), g.rev_char, g.buf6);
+  sprintf(g.buffer, "%6smm %s %3s", ftoa(g.buf7, p, 3), g.rev_char, g.buf6);
 #endif
 #endif
 

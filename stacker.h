@@ -422,10 +422,12 @@ struct global
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying
+  char buf7[7];
   short timelapse_counter; // Counter for the time lapse feature
-  unsigned long t_mil; // millisecond accuracy timer; used to set up tiemlapse stacks
-  unsigned long t0_mil; // millisecond accuracy timer; used to set up tiemlapse stacks
-  byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
+  unsigned long t_mil; // millisecond accuracy timer; used to set up timelapse stacks
+  unsigned long t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
+  byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
+  byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
