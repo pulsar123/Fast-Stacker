@@ -24,17 +24,13 @@ Issues to address:
 
 
 //////// Debugging options ////////
-// For debugging with serial monitor:
-//#define DEBUG
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
-// and software debugging without the motor unit and when powered via USB)
+// and software debugging without the motor unit)
 #define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
-// If undefined, lcd will not be used
-#define LCD
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
@@ -144,7 +140,7 @@ const short N_MICROSTEPS = 8;
 const float MM_PER_ROTATION = 3.98;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
-// Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full BACKLASH amount,
+// Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full g.backlash amount,
 // and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
 // The algorithm guarantees that every time the rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
@@ -157,7 +153,7 @@ const float BACKLASH_MM = 0.2;
 // your rail backlash changes as a function of the rail angle, position on the rail, camera weight etc., BACKLASH_2 would have to change as well.
 // Because it is not practical, your value of BACKLASH_2 should be a compromise, giving reasonable results under normal usage scenario. In any case
 // rail reversal (*1) wasn't meant to be a perfectly accurate operation, whereas the standard backlash compensation is.
-const float BACKLASH_2_MM = 0.3;
+const float BACKLASH_2_MM = 0.259;
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
@@ -256,7 +252,7 @@ const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
 // Initial value for BACKLASH_2:
 short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
 // Step for changing BACKLASH_2, in microsteps:
-const short BL2_STEP = 4;
+const short BL2_STEP = 1;
 #else
 // Backlash correction for rail reversal (*1) in microsteps:
 const short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
@@ -287,12 +283,13 @@ struct regist
   byte i_second_delay;
   byte i_accel_factor;
   byte mirror_lock;
+  byte backlash_on;
   byte straight;
   short point1;
   short point2;
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
-short SIZE_REG = sizeof(regist);
+short SIZE_REG = sizeof(regist)+1;
 
 // EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -315,7 +312,8 @@ const int ADDR_REG5 = ADDR_REG4 + SIZE_REG;  // register5
 const int ADDR_I_FIRST_DELAY = ADDR_REG5 + SIZE_REG;  // for the FIRST_DELAY parameter
 const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
 const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.mirror_lock
-const int ADDR_I_ACCEL_FACTOR = ADDR_MIRROR_LOCK + 2; // for g.i_accel_factor
+const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.backlash_on
+const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.i_accel_factor
 const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
 const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
 
@@ -428,6 +426,8 @@ struct global
   unsigned long t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
+  short backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
+  byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
@@ -452,9 +452,5 @@ short n_fixed, n_failed, n1, n2, n3, n4, k1, k2, k3;
 unsigned long dt_backlash;
 #endif
 #endif
-#ifdef DEBUG
-short flag = 0;
-#endif
-
 #endif
 

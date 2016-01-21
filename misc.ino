@@ -151,12 +151,12 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
 
 void go_to(float pos1, float speed)
 /* Initiating a travel to pos1 at given target speed (positive number) and maximum acceleration.
-   With non-zero BACKLASH constant, all go_to moves result in fully backlash-compensated moves. The
+   With non-zero g.backlash constant, all go_to moves result in fully backlash-compensated moves. The
    backlash model used is the simplest possible: when starting from a good initial position
    (g.BL_counter=0), meaning the physical coordinate = program coordinate, and
-   moving in the bad (negative pos) direction, the rail will not start moving until BACKLASH
-   steps are done (and g.BL_counter gets the largest possible value, BACKLASH), and then it starts
-   moving instantly. If switching direction, again the rail doesn't move until BACKLASH steps
+   moving in the bad (negative pos) direction, the rail will not start moving until g.backlash
+   steps are done (and g.BL_counter gets the largest possible value, g.backlash), and then it starts
+   moving instantly. If switching direction, again the rail doesn't move until g.backlash steps
    are carried out, and g.BL_counter becomes 0 (smallest possible value), and then it starts moving
    instantly. The current physical coordinate of the rail is always connected to the program
    coordinate via equation:
@@ -204,8 +204,8 @@ void go_to(float pos1, float speed)
     else
       // Will be moving in the bad (negative) direction (have to overshoot, for backlash compensation):
     {
-      // Overshooting by BACKLASH microsteps (this will be compensated in backlash() function after we stop):
-      pos1 = pos1 - (float)BACKLASH;
+      // Overshooting by g.backlash microsteps (this will be compensated in backlash() function after we stop):
+      pos1 = pos1 - (float)g.backlash;
       speed1_loc = -speed;
     }
   }
@@ -232,18 +232,18 @@ void go_to(float pos1, float speed)
       // In all other cases speed sign will be constant:
       speed_changes = 0;
 
-    // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1-BACKLASH, then goto pos1
+    // Identifying all the cases when to achieve a full backlash compensation we need to use goto twice: first goto pos1-g.backlash, then goto pos1
     // (The second goto is initiated in backlash() )
     if (
       // Case 1: Moving towards the target, in the bad (negative) direction:
       g.speed <= 0.0 && !speed_changes ||
       // Case 2: Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
-      g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < BACKLASH ||
+      g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < g.backlash ||
       // Case 3: Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
       g.speed > 0.0 && speed_changes)
     {
       // Current target position (to be achieved in the current go_to call):
-      pos1 = pos1 - (float)BACKLASH;
+      pos1 = pos1 - (float)g.backlash;
       // In all of these cases, speed1<0.0 in the first go_to
       speed1_loc = -speed;
     }
@@ -443,7 +443,7 @@ void set_accel_v()
 void to_reg()
 // Parameters -> to reg structure
 {
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.straight, g.point1, g.point2};
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.backlash_on, g.straight, g.point1, g.point2};
   return;
 }
 
@@ -459,6 +459,8 @@ void from_reg()
   g.i_first_delay = g.reg.i_first_delay;
   g.i_second_delay = g.reg.i_second_delay;
   g.mirror_lock = g.reg.mirror_lock;
+  g.backlash_on = g.reg.backlash_on;
+  update_backlash();
   g.straight = g.reg.straight;
   g.i_accel_factor = g.reg.i_accel_factor;
   return;
@@ -475,6 +477,7 @@ void put_reg()
   EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
   EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
   EEPROM.put( ADDR_STRAIGHT, g.straight);
   EEPROM.put( ADDR_POINT1, g.point1);
   EEPROM.put( ADDR_POINT2, g.point2);
@@ -492,6 +495,8 @@ void get_reg()
   EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.get( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
   EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
+  EEPROM.get( ADDR_MIRROR_LOCK, g.backlash_on);
+  update_backlash();
   EEPROM.get( ADDR_STRAIGHT, g.straight);
   EEPROM.get( ADDR_POINT1, g.point1);
   EEPROM.get( ADDR_POINT2, g.point2);
@@ -507,10 +512,10 @@ void rail_reverse(byte fix_points)
   short d_pos, pos_target;
 
   // We need to do a full backlash compensation loop when reversing the rail operation:
-  g.BL_counter = BACKLASH;
+  g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
   g.backlash_init = 2;
-  d_pos = g.limit1 + g.limit2 + BACKLASH - BACKLASH_2;
+  d_pos = g.limit1 + g.limit2 + g.backlash - BACKLASH_2;
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.pos = d_pos - g.pos;
   g.pos0 = g.pos;
@@ -562,6 +567,17 @@ void save_params(const int addr, byte n)
   EEPROM.put( addr, g.reg);
   display_comment_line("Saved to Reg");
   lcd.print(n);
+  return;
+}
+
+
+void update_backlash()
+// Call this every time g.backlash_on changes
+{
+  if (g.backlash_on)
+    g.backlash = BACKLASH;
+  else
+    g.backlash = 0.0;
   return;
 }
 

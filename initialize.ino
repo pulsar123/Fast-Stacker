@@ -45,8 +45,7 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.comment_flag = 0;
-
-
+  g.backlash = BACKLASH;
 
   if (factory_reset)
   {
@@ -65,6 +64,8 @@ void initialize(byte factory_reset)
     g.i_second_delay = 3;
     g.i_accel_factor = 1;
     g.mirror_lock = 1;
+    g.backlash_on = 1;
+    update_backlash();
     g.straight = 1;
     g.point1 = 2000;
     g.point2 = 3000;
@@ -103,20 +104,8 @@ void initialize(byte factory_reset)
     EEPROM.get( ADDR_I_N_TIMELAPSE, g.i_n_timelapse );
     EEPROM.get( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse );
     get_reg();
-#ifdef DEBUG
-    Serial.println("EEPROM values:");
-    Serial.println(g.pos, 2);
-    Serial.println(g.calibrate);
-    Serial.println(g.limit1);
-    Serial.println(g.limit2);
-    Serial.println(g.i_n_shots);
-    Serial.println(g.i_mm_per_frame);
-    Serial.println(g.i_fps);
-    Serial.println(g.point1);
-    Serial.println(g.point2);
-#endif
   }
- 
+
   // Five possible floating point values for acceleration
   set_accel_v();
 
@@ -140,7 +129,7 @@ void initialize(byte factory_reset)
   g.t_shutter_off = g.t0;
   g.t_AF = g.t0;
   g.t_mil = millis();
-  
+
   g.N_repeats = 0;
   g.breaking = 0;
   g.backlashing = 0;
@@ -162,7 +151,7 @@ void initialize(byte factory_reset)
   else
   {
     // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
-    g.BL_counter = BACKLASH;
+    g.BL_counter = g.backlash;
     g.backlash_init = 1;
   }
   g.started_moving = 0;

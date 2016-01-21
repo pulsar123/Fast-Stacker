@@ -31,10 +31,6 @@ void limiters()
     if (g.calibrate_flag == 2)
       return;
 
-#ifdef DEBUG
-    Serial.print(" limiter=");
-    Serial.println(limit_on);
-#endif
     // Emergency breaking (cannot be interrupted):
     // The breaking flag should be read in change_speed
     change_speed(0.0, 0, 2);

@@ -11,32 +11,32 @@ void display_all()
   return;
 #endif
 
-#ifdef LCD
   lcd.clear();
   lcd.setCursor(0, 0);
-#endif
 
   if (g.alt_flag)
   {
-#ifdef LCD
     // Line 1:
     sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
     lcd.print(g.buffer);
     // Line 2:
-    sprintf(g.buffer, "N=%-3d    Mir=%1d", N_TIMELAPSE[g.i_n_timelapse], g.mirror_lock);
+    sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.i_n_timelapse], g.backlash_on);
     lcd.print(g.buffer);
     // Line 3:
     sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.i_dt_timelapse]);
-    lcd.print(g.buf6);   lcd.clearRestOfLine();
+    lcd.print(g.buf6);
+    sprintf(g.buffer, "Mir=%1d", g.mirror_lock);
+    lcd.setCursor(9, 2);
+    lcd.print(g.buffer);
     // Line 4:
     sprintf(g.buffer, "         Deb=%1d", g.disable_limiters);
     lcd.print(g.buffer);
     // Line 5:
-    lcd.print("              ");
+    //    lcd.print("              ");
+    lcd.setCursor(0, 5);
     // Line 6:
     sprintf(g.buffer, "         s%s", VERSION);
     lcd.print(g.buffer);
-#endif
   }
   else
   {
@@ -54,17 +54,12 @@ void display_all()
       }
       else
       {
-#ifdef DEBUG
-        Serial.println("Press any key to start calibration");
-#endif
-#ifdef LCD
         lcd.print("  Calibration ");
         lcd.print("  required!   ");
         lcd.print("              ");
         lcd.print("Press any key ");
         lcd.print("to start      ");
         lcd.print("calibration.  ");
-#endif
       }
     }
 
@@ -74,30 +69,21 @@ void display_all()
       switch (g.error)
       {
         case 1:
-#ifdef DEBUG
-          Serial.println("Cable disconnected or limiter is on!");
-          Serial.println("Connect the cable if it is disconnected.");
-          Serial.println("If cable is connected, rewind to safe area");
-#endif
-#ifdef LCD
           lcd.print("Cable discon- ");
           lcd.print("nected, or    ");
           lcd.print("limiter is on!");
           lcd.print("Only if cable ");
           lcd.print("is connected, ");
           lcd.print("rewind.       ");
-#endif
           break;
 
         case 2: // Critically low battery level; not used when debugging
-#ifdef LCD
           lcd.print("Critically low");
           lcd.print("battery level!");
           lcd.print("              ");
           lcd.print("Replace the   ");
           lcd.print("batteries.    ");
           lcd.print("              ");
-#endif
           break;
 
       } // case
@@ -114,7 +100,6 @@ void letter_status(char* l)
 {
   if (g.error || g.alt_flag)
     return;
-#ifdef LCD
   lcd.setCursor(0, 5);
   if (g.paused)
     lcd.print("P");
@@ -122,12 +107,6 @@ void letter_status(char* l)
     lcd.print("T");
   else
     lcd.print(*l);
-
-  lcd.print(" ");
-#endif
-#ifdef DEBUG
-  Serial.println(*l);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -139,7 +118,6 @@ void motion_status()
 {
   if (g.error || g.alt_flag)
     return;
-#ifdef LCD
   uint8_t i;
   lcd.setCursor(2, 5);
 
@@ -164,7 +142,6 @@ void motion_status()
         lcd.print(" > ");
     }
   }
-#endif
 
   return;
 }
@@ -173,8 +150,7 @@ void motion_status()
 
 void display_frame_counter()
 /*
- Printing the current stacking frame number in the status line. Allowing for negative (>-100) and
- positive <1000 numbers.
+ Printing the current stacking frame number in the status line.
   */
 {
   if (g.error || g.alt_flag)
@@ -184,13 +160,8 @@ void display_frame_counter()
     sprintf (g.buffer, "   0 ");
   else
     sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
-#ifdef LCD
   lcd.setCursor(5, 5);
-  lcd.print (g.buffer); // display line on buffer
-#endif
-#ifdef DEBUG
-  Serial.println(g.buffer);
-#endif
+  lcd.print (g.buffer);
 
   return;
 }
@@ -198,12 +169,11 @@ void display_frame_counter()
 
 
 void points_status()
-/* Displays F or B if tyhe current coordiante is exactly the foreground (g.point1) or background (g.point2) point.
+/* Displays F or B if the current coordinate is exactly the foreground (g.point1) or background (g.point2) point.
  */
 {
   if (g.error || g.alt_flag)
     return;
-#ifdef LCD
   lcd.setCursor(10, 5);
 
   if (g.pos_short_old == g.point1)
@@ -213,7 +183,6 @@ void points_status()
   else
     lcd.print("  ");
 
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -245,13 +214,6 @@ void battery_status()
   if (g.error)
     return;
 
-#ifdef DEBUG
-  Serial.print("Voltage=");
-  sprintf(g.buffer, "%5d.%03d V", (int)V, (int)(1000.0 * (V - (int)V)));
-  Serial.println(g.buffer);
-#endif
-
-#ifdef LCD
 #ifdef BATTERY_DEBUG
   // Printing actual voltage per AA battery (times 100)
   lcd.setCursor(11, 5);
@@ -271,14 +233,11 @@ void battery_status()
     lcd.data(battery_char[level][i]);
 
 #endif // BATTERY_DEBUG
-#endif  // LCD
 
   // Disabling the rail once V goes below the critical V_LOW voltage
-#ifndef DEBUG
 #ifndef MOTOR_DEBUG
   if (V < V_LOW)
     g.error = 2;
-#endif
 #endif
 
   return;
@@ -310,20 +269,15 @@ void display_u_per_f()
 {
   if (g.error || g.alt_flag)
     return;
-  //  sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+    
   if (MM_PER_FRAME[g.i_mm_per_frame] >= 0.00995)
     sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
   else
     // +0.05 is for proper round-off:
     sprintf(g.buffer, "%4suf ", ftoa(g.buf7, 1000.0 * MM_PER_FRAME[g.i_mm_per_frame] + 0.05, 1));
 
-#ifdef LCD
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-  Serial.print(g.buffer);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -341,14 +295,8 @@ void display_fps()
   else
     sprintf(g.buffer, "%4sfps", ftoa(g.buf7, FPS[g.i_fps], 2));
 
-  //  sprintf(g.buffer, "%1d.%03dfs", (int)FPS[g.i_fps], (int)(1000.0 * (FPS[g.i_fps] - (int)FPS[g.i_fps])));
-#ifdef LCD
   lcd.setCursor(7, 2);
   lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-  Serial.println(g.buffer);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -364,10 +312,10 @@ void display_one_point_params()
 {
   if (g.error || g.alt_flag)
     return;
+    
   // +0.05 for proper round off:
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame] + 0.05;
   short dt = roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
-  //  sprintf(g.buffer, "%3d %4du %3ds", N_SHOTS[g.i_n_shots], (int)dx, dt);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0 && dt >= 0.0)
@@ -381,13 +329,8 @@ void display_one_point_params()
     sprintf(g.buf7, "****");
 
   sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.i_n_shots], g.buf7 , g.buf6);
-#ifdef LCD
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-  Serial.println(g.buffer);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -403,7 +346,9 @@ void display_two_point_params()
 {
   if (g.error || g.alt_flag)
     return;
-  float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1);
+    
+  // +0.05 for proper round off:
+  float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1) + 0.05;
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   if (dt < 1000.0)
     sprintf(g.buf6, "%3ds", dt);
@@ -412,14 +357,12 @@ void display_two_point_params()
   else
     sprintf(g.buf6, "****");
 
-  sprintf(g.buffer, "%4d %2d.%01d %4s", g.Nframes, (int)dx, (int)((dx - (int)dx) * 10.0), g.buf6);
-#ifdef LCD
+  if (g.point2 >= g.point1)
+    sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
+  else
+    sprintf(g.buffer, "**** **** ****");
   lcd.setCursor(0, 1);
   lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-  Serial.println(g.buffer);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -432,7 +375,7 @@ void display_two_points()
 {
   if (g.error || g.alt_flag)
     return;
-#ifdef LCD
+    
   float p = MM_PER_MICROSTEP * (float)g.point1;
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
@@ -447,10 +390,6 @@ void display_two_points()
     sprintf(g.buffer, "B*****");
   lcd.setCursor(8, 3);
   lcd.print(g.buffer);
-#endif
-#ifdef DEBUG
-  Serial.println(g.buffer);
-#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -471,7 +410,6 @@ void display_current_position()
   short max1 = (short)(100.0 * (float)(g.dt_max) * SPEED_LIMIT);
   short min1 = (short)(100.0 * (float)(g.dt_min) * SPEED_LIMIT);
   sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
-#ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);
   // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
@@ -482,7 +420,6 @@ void display_current_position()
   sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
-#endif
 #endif
   return;
 #endif
@@ -496,21 +433,19 @@ void display_current_position()
     g.rev_char = "R";
 
   if (g.timelapse_mode)
-    sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
+    sprintf(g.buf6, "%4d", g.timelapse_counter + 1);
   else
-    sprintf(g.buf6, "   ");
+    sprintf(g.buf6, "    ");
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
-  sprintf(g.buffer, "%6smm %s %3s", ftoa(g.buf7, p, 3), g.rev_char, g.buf6);
+  sprintf(g.buffer, "%1s %6smm %4s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
 
 #ifdef BL_DEBUG
-  sprintf(g.buffer, "%6smm %3d  ",ftoa(g.buf7, p, 3) , roundMy(1000.0 * MM_PER_MICROSTEP * BACKLASH_2));
+  sprintf(g.buffer, "%1s %6smm %4d", ftoa(g.buf7, p, 3), roundMy(10000.0 * MM_PER_MICROSTEP * BACKLASH_2));
 #endif
 
-#ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);
-#endif
 
   return;
 }
@@ -530,13 +465,8 @@ void display_comment_line(char *l)
 #endif
   if (g.error)
     return;
-#ifdef LCD
   lcd.setCursor(0, 4);
   lcd.print(l);
-#endif
-#ifdef DEBUG
-  Serial.println(l);
-#endif
   g.t_comment = g.t;
   g.comment_flag = 1;
   return;
@@ -553,7 +483,7 @@ void delay_buffer()
   float delay1 = FIRST_DELAY[g.i_first_delay];
   float delay2 = SECOND_DELAY[g.i_second_delay];
   short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
-  sprintf(g.buffer, "%2d.%01d %2d.%01d %4d", (int)delay1, (int)(10.0 * (delay1 - (int)delay1)), (int)delay2, (int)(10.0 * (delay2 - (int)delay2)), dt);
+  sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), (int)delay2, ftoa(g.buf7, delay2, 1), dt);
 
   return;
 }

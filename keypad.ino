@@ -284,7 +284,14 @@ void process_keypad()
           set_accel_v();
           break;
 
-        case 'B': // *B: Mirror lock on/off
+        case 'B': // *B: Backlash compensation on / off
+          g.backlash_on = 1 - g.backlash_on;
+          update_backlash();
+          display_all();
+          EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
+          break;
+
+        case 'C': // *C: Mirror lock on/off
           g.mirror_lock = 1 - g.mirror_lock;
           display_all();
           EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);

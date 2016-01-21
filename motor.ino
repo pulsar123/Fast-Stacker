@@ -250,9 +250,9 @@ void motor_control()
     // Backlash cannot be negative:
     if (g.BL_counter < 0)
       g.BL_counter = 0;
-    // and cannot be larger than BACKLASH:
-    if (g.BL_counter > BACKLASH)
-      g.BL_counter = BACKLASH;
+    // and cannot be larger than g.backlash:
+    if (g.BL_counter > g.backlash)
+      g.BL_counter = g.backlash;
 
 #ifdef MOTOR_DEBUG
     istep++;

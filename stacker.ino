@@ -57,19 +57,12 @@ void setup() {
 
   pinMode(PIN_LCD_LED, OUTPUT);
 
-#ifdef DEBUG
-  Serial.begin(250000);
-  delay(250);
-#endif
-
-#ifdef LCD
 #ifndef SOFTWARE_SPI
   // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
   // Some LCD's don't work with this settings (empty screen) - try to change the constant to SPI_CLOCK_DIV16 if this is the case
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 #endif
   lcd.begin();  // Always call lcd.begin() first.
-#endif
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)

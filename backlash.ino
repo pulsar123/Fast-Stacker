@@ -6,7 +6,7 @@ void backlash()
     BL_counter > 0 (and only when the rail is at rest) it initiates a go_to travel to compensate for backlash.
 
     This routine should work in concert with go_to() function, where all moves ending in the bad (negative) direction
-    should always travel BACKLASH further back. The backlash() picks up where go_to() left, after the rail stops, and rewinds
+    should always travel g.backlash further back. The backlash() picks up where go_to() left, after the rail stops, and rewinds
     the rail back in the good direction, to completely compensate the backlash.
  */
 {
