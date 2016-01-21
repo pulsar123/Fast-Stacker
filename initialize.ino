@@ -45,7 +45,6 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.comment_flag = 0;
-  g.backlash = BACKLASH;
 
   if (factory_reset)
   {
@@ -63,6 +62,8 @@ void initialize(byte factory_reset)
     g.i_first_delay = 4;
     g.i_second_delay = 3;
     g.i_accel_factor = 1;
+    g.i_n_timelapse = 0;
+    g.i_dt_timelapse = 5;
     g.mirror_lock = 1;
     g.backlash_on = 1;
     update_backlash();
@@ -73,9 +74,7 @@ void initialize(byte factory_reset)
     g.limit1 = 0;
     g.limit2 = 32767;
     g.pos = (g.point1 + g.point2) / 2;
-    g.backlight = 2;
-    g.i_n_timelapse = 0;
-    g.i_dt_timelapse = 5;
+    g.backlight = 1;
     // Assigning values to the reg structure:
     to_reg();
     // Saving these values in EEPROM:
@@ -84,8 +83,6 @@ void initialize(byte factory_reset)
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse );
-    EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse );
     EEPROM.put( ADDR_REG1, g.reg);
     EEPROM.put( ADDR_REG2, g.reg);
     EEPROM.put( ADDR_REG3, g.reg);
@@ -101,8 +98,6 @@ void initialize(byte factory_reset)
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.get( ADDR_I_N_TIMELAPSE, g.i_n_timelapse );
-    EEPROM.get( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse );
     get_reg();
   }
 

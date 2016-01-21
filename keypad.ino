@@ -244,6 +244,7 @@ void process_keypad()
       {
         case '1': // *1: Rail reverse
           g.straight = 1 - g.straight;
+          EEPROM.put( ADDR_STRAIGHT, g.straight);
           display_all();
           // Reversing the rail and updating the point1,2 parameters:
           rail_reverse(1);
@@ -450,26 +451,26 @@ void process_keypad()
               if (g.paused || g.moving)
                 break;
               g.point1 = g.pos_short_old;
+              EEPROM.put( ADDR_POINT1, g.point1);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
               display_two_point_params();
               display_two_points();
               display_comment_line("  P1 was set  ");
-              EEPROM.put( ADDR_POINT1, g.point1);
               break;
 
             case 'B':  // B: Set background point
               if (g.paused || g.moving)
                 break;
               g.point2 = g.pos_short_old;
+              EEPROM.put( ADDR_POINT2, g.point2);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
               display_two_point_params();
               display_two_points();
               display_comment_line("  P2 was set  ");
-              EEPROM.put( ADDR_POINT2, g.point2);
               break;
 
             case '7':  // 7: Go to the foreground point
@@ -770,7 +771,7 @@ void process_keypad()
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED && g.paused == 0)
         {
 #ifdef EXTENDED_REWIND
-          if (g.key_old == '1' && g.speed < 0.0)
+          if (g.key_old == '1' && g.speed < 0.0 && g.backlash_on)
             // Moving in the bad (negative) direction
           {
             // Estimating how much rail would travel if the maximum breaking started now (that's how much

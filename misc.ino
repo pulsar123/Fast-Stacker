@@ -420,8 +420,9 @@ void coordinate_recalibration()
   EEPROM.put( ADDR_LIMIT2, g.limit2);
   // In new coordinates, g.limit1 is always zero:
   g.limit1 = g.limit1 + g.coords_change;
-
   EEPROM.put( ADDR_LIMIT1, g.limit1);
+  // Saving the current position to EEPROM:
+  EEPROM.put( ADDR_POS, g.pos );
   display_all();
 
   return;
@@ -443,7 +444,9 @@ void set_accel_v()
 void to_reg()
 // Parameters -> to reg structure
 {
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.mirror_lock, g.backlash_on, g.straight, g.point1, g.point2};
+  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.i_n_timelapse,
+           g.i_dt_timelapse, g.mirror_lock, g.backlash_on, g.straight, g.point1, g.point2
+          };
   return;
 }
 
@@ -454,15 +457,17 @@ void from_reg()
   g.i_n_shots = g.reg.i_n_shots;
   g.i_mm_per_frame = g.reg.i_mm_per_frame;
   g.i_fps = g.reg.i_fps;
-  g.point1 = g.reg.point1;
-  g.point2 = g.reg.point2;
   g.i_first_delay = g.reg.i_first_delay;
   g.i_second_delay = g.reg.i_second_delay;
+  g.i_accel_factor = g.reg.i_accel_factor;
+  g.i_n_timelapse = g.reg.i_n_timelapse;
+  g.i_dt_timelapse = g.reg.i_dt_timelapse;
   g.mirror_lock = g.reg.mirror_lock;
   g.backlash_on = g.reg.backlash_on;
   update_backlash();
   g.straight = g.reg.straight;
-  g.i_accel_factor = g.reg.i_accel_factor;
+  g.point1 = g.reg.point1;
+  g.point2 = g.reg.point2;
   return;
 }
 
@@ -476,6 +481,8 @@ void put_reg()
   EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
   EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+  EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
+  EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
   EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
   EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
   EEPROM.put( ADDR_STRAIGHT, g.straight);
@@ -494,8 +501,10 @@ void get_reg()
   EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
   EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
   EEPROM.get( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+  EEPROM.get( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
+  EEPROM.get( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
   EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
-  EEPROM.get( ADDR_MIRROR_LOCK, g.backlash_on);
+  EEPROM.get( ADDR_BACKLASH_ON, g.backlash_on);
   update_backlash();
   EEPROM.get( ADDR_STRAIGHT, g.straight);
   EEPROM.get( ADDR_POINT1, g.point1);
@@ -514,10 +523,19 @@ void rail_reverse(byte fix_points)
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
-  g.backlash_init = 2;
-  d_pos = g.limit1 + g.limit2 + g.backlash - BACKLASH_2;
+  d_pos = g.limit1 + g.limit2 + g.backlash;
+  if (g.backlash_on)
+  {
+    d_pos = d_pos - BACKLASH_2;
+    g.backlash_init = 2;
+  }
+  else
+  {
+    g.backlash_init = 1;
+  }
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.pos = d_pos - g.pos;
+  EEPROM.put( ADDR_POS, g.pos );
   g.pos0 = g.pos;
   g.pos_old = g.pos;
   g.pos_short_old = floorMy(g.pos);
@@ -527,6 +545,8 @@ void rail_reverse(byte fix_points)
     pos_target = d_pos - g.point2;
     g.point2 = d_pos - g.point1;
     g.point1 = pos_target;
+    EEPROM.put( ADDR_POINT1, g.point1);
+    EEPROM.put( ADDR_POINT2, g.point2);
   }
 
   return;
@@ -577,7 +597,7 @@ void update_backlash()
   if (g.backlash_on)
     g.backlash = BACKLASH;
   else
-    g.backlash = 0.0;
+    g.backlash = 1;
   return;
 }
 

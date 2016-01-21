@@ -28,7 +28,7 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -282,6 +282,8 @@ struct regist
   byte i_first_delay;
   byte i_second_delay;
   byte i_accel_factor;
+  byte i_n_timelapse;
+  byte i_dt_timelapse;
   byte mirror_lock;
   byte backlash_on;
   byte straight;
@@ -416,7 +418,7 @@ struct global
   byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   char* rev_char; // "R" if rail revered, " " otherwise
-  byte backlash_init; // 1: initializing a full backlash loop
+  byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying
