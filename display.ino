@@ -12,6 +12,7 @@ void display_stuff()
         display_all();
       else
         display_current_position();
+//        display_all();
   }
 
   // Refreshing whole display regularly (only when not moving, as it is slow):

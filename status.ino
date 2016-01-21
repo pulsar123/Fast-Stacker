@@ -156,7 +156,7 @@ void display_frame_counter()
   if (g.error || g.alt_flag)
     return;
   // Printing frame counter:
-  if (g.stacker_mode == 0 && g.paused == 0)
+  if (g.stacker_mode == 0 && g.paused == 0 || g.paused > 1)
     sprintf (g.buffer, "   0 ");
   else
     sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
@@ -269,7 +269,7 @@ void display_u_per_f()
 {
   if (g.error || g.alt_flag)
     return;
-    
+
   if (MM_PER_FRAME[g.i_mm_per_frame] >= 0.00995)
     sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
   else
@@ -312,7 +312,7 @@ void display_one_point_params()
 {
   if (g.error || g.alt_flag)
     return;
-    
+
   // +0.05 for proper round off:
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame] + 0.05;
   short dt = roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
@@ -346,13 +346,13 @@ void display_two_point_params()
 {
   if (g.error || g.alt_flag)
     return;
-    
+
   // +0.05 for proper round off:
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1) + 0.05;
   short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
-  if (dt < 1000.0)
+  if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
-  else if (dt < 10000.0)
+  else if (dt < 10000.0 && dt >= 0.0)
     sprintf(g.buf6, "%4d", dt);
   else
     sprintf(g.buf6, "****");
@@ -375,7 +375,7 @@ void display_two_points()
 {
   if (g.error || g.alt_flag)
     return;
-    
+
   float p = MM_PER_MICROSTEP * (float)g.point1;
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
@@ -417,9 +417,9 @@ void display_current_position()
   lcd.setCursor(0, 5);
   lcd.print(g.buffer);
 #ifdef MOTOR_DEBUG
-  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
-  lcd.setCursor(0, 3);
-  lcd.print(g.buffer);
+//  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
+//  lcd.setCursor(0, 3);
+//  lcd.print(g.buffer);
 #endif
   return;
 #endif
@@ -433,12 +433,12 @@ void display_current_position()
     g.rev_char = "R";
 
   if (g.timelapse_mode)
-    sprintf(g.buf6, "%4d", g.timelapse_counter + 1);
+    sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
   else
-    sprintf(g.buf6, "    ");
+    sprintf(g.buf6, "   ");
 
   float p = MM_PER_MICROSTEP * (float)g.pos;
-  sprintf(g.buffer, "%1s %6smm %4s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
+  sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
 
 #ifdef BL_DEBUG
   sprintf(g.buffer, "%1s %6smm %4d", ftoa(g.buf7, p, 3), roundMy(10000.0 * MM_PER_MICROSTEP * BACKLASH_2));
@@ -483,7 +483,7 @@ void delay_buffer()
   float delay1 = FIRST_DELAY[g.i_first_delay];
   float delay2 = SECOND_DELAY[g.i_second_delay];
   short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
-  sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), (int)delay2, ftoa(g.buf7, delay2, 1), dt);
+  sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);
 
   return;
 }
