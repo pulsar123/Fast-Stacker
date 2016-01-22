@@ -4,14 +4,7 @@ void initialize(byte factory_reset)
 {
   g.error = 0;
   g.calibrate_warning = 0;
-
-  // Writing initial values to the motor pins:
-#ifdef SAVE_ENERGY
-  digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
-#else
-  digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
-#endif
-
+  
   digitalWrite(PIN_SHUTTER, LOW);
   digitalWrite(PIN_AF, LOW);
 
@@ -68,13 +61,15 @@ void initialize(byte factory_reset)
     g.backlash_on = 1;
     update_backlash();
     g.straight = 1;
+    g.save_energy = 1;
+    update_save_energy();
     g.point1 = 2000;
     g.point2 = 3000;
 
     g.limit1 = 0;
     g.limit2 = 32767;
     g.pos = (g.point1 + g.point2) / 2;
-    g.backlight = 1;
+    g.backlight = 0;
     // Assigning values to the reg structure:
     to_reg();
     // Saving these values in EEPROM:

@@ -1,4 +1,5 @@
-/*
+/* Sergey Mashchenko 2015, 2016
+ 
    Automated macro rail for focus stacking
 
    Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino

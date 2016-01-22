@@ -136,10 +136,11 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
     // Starting moving
     g.started_moving = 1;
     motion_status();
-#ifdef SAVE_ENERGY
-    digitalWrite(PIN_ENABLE, LOW);
-    delay(ENABLE_DELAY_MS);
-#endif
+    if (g.save_energy)
+    {
+      digitalWrite(PIN_ENABLE, LOW);
+      delay(ENABLE_DELAY_MS);
+    }
   }
 
   // Updating the target speed:
@@ -301,10 +302,11 @@ void stop_now()
       g.error = 0;
   }
 
-#ifdef SAVE_ENERGY
-  digitalWrite(PIN_ENABLE, HIGH);
-  delay(ENABLE_DELAY_MS);
-#endif
+  if (g.save_energy)
+  {
+    digitalWrite(PIN_ENABLE, HIGH);
+    delay(ENABLE_DELAY_MS);
+  }
 
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.pos );
@@ -445,7 +447,7 @@ void to_reg()
 // Parameters -> to reg structure
 {
   g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.i_n_timelapse,
-           g.i_dt_timelapse, g.mirror_lock, g.backlash_on, g.straight, g.point1, g.point2
+           g.i_dt_timelapse, g.mirror_lock, g.backlash_on, g.straight, g.save_energy, g.point1, g.point2
           };
   return;
 }
@@ -466,6 +468,8 @@ void from_reg()
   g.backlash_on = g.reg.backlash_on;
   update_backlash();
   g.straight = g.reg.straight;
+  g.save_energy = g.reg.save_energy;
+  update_save_energy();
   g.point1 = g.reg.point1;
   g.point2 = g.reg.point2;
   return;
@@ -486,6 +490,7 @@ void put_reg()
   EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
   EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
   EEPROM.put( ADDR_STRAIGHT, g.straight);
+  EEPROM.put( ADDR_SAVE_ENERGY, g.save_energy);
   EEPROM.put( ADDR_POINT1, g.point1);
   EEPROM.put( ADDR_POINT2, g.point2);
   return;
@@ -507,6 +512,8 @@ void get_reg()
   EEPROM.get( ADDR_BACKLASH_ON, g.backlash_on);
   update_backlash();
   EEPROM.get( ADDR_STRAIGHT, g.straight);
+  EEPROM.get( ADDR_SAVE_ENERGY, g.save_energy);
+  update_save_energy();
   EEPROM.get( ADDR_POINT1, g.point1);
   EEPROM.get( ADDR_POINT2, g.point2);
   return;
@@ -563,13 +570,8 @@ short frame_coordinate()
 
 void read_params(const int addr, byte n)
 {
+  byte straight_old = g.straight;
   EEPROM.get( addr, g.reg);
-  if (g.reg.straight != g.straight)
-    // If the rail needs a rail reverse, initiate it:
-  {
-    // Not updating point1,2:
-    rail_reverse(0);
-  }
   from_reg();
   put_reg();
   g.msteps_per_frame = Msteps_per_frame();
@@ -577,6 +579,13 @@ void read_params(const int addr, byte n)
   display_all();
   display_comment_line("Read from Reg");
   lcd.print(n);
+  lcd.clearRestOfLine();
+  if (g.straight != straight_old)
+    // If the rail needs a rail reverse, initiate it:
+  {
+    // Not updating point1,2:
+    rail_reverse(0);
+  }
   return;
 }
 
@@ -587,6 +596,7 @@ void save_params(const int addr, byte n)
   EEPROM.put( addr, g.reg);
   display_comment_line("Saved to Reg");
   lcd.print(n);
+  lcd.clearRestOfLine();
   return;
 }
 
@@ -598,6 +608,17 @@ void update_backlash()
     g.backlash = BACKLASH;
   else
     g.backlash = 1;
+  return;
+}
+
+
+void update_save_energy()
+// Call it every time g.save_energy is changed
+{
+  if (g.save_energy)
+    digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
+  else
+    digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
   return;
 }
 

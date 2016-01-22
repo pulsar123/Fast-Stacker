@@ -20,7 +20,7 @@ Issues to address:
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.01"
+#define VERSION "1.10"
 
 
 //////// Debugging options ////////
@@ -116,22 +116,7 @@ byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the ke
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 
-//////// LCD stuff: ////////
-// Create a pcd8544 object.
-// The LCD has 6 lines (rows) and 14 columns
-// Pin 10 has to be unused (will be used internally)
-#ifdef SOFTWARE_SPI
-// Software SPI emulation:
-pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
-#else
-// Hardware SPI
-pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
-#endif
-
-
 //////// Parameters related to the motor and the rail: ////////
-// If defined, motor will be parked when not moving (probably will affect the accuracy of positioning)
-#define SAVE_ENERGY
 // Number of full steps per rotation for the stepper motor:
 const short MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
@@ -227,6 +212,18 @@ const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
 
+//////// LCD stuff: ////////
+// Create a pcd8544 object.
+// The LCD has 6 lines (rows) and 14 columns
+// Pin 10 has to be unused (will be used internally)
+#ifdef SOFTWARE_SPI
+// Software SPI emulation:
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE, PIN_LCD_DN_, PIN_LCD_SCL);
+#else
+// Hardware SPI
+pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
+#endif
+
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
@@ -287,11 +284,12 @@ struct regist
   byte mirror_lock;
   byte backlash_on;
   byte straight;
+  byte save_energy;
   short point1;
   short point2;
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
-short SIZE_REG = sizeof(regist)+1;
+short SIZE_REG = sizeof(regist);
 
 // EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -305,7 +303,8 @@ const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
 const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
 const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
 const int ADDR_STRAIGHT = ADDR_POINT2 + 2; // g.straight value
-const int ADDR_BACKLIGHT = ADDR_STRAIGHT + 2;  // backlight level
+const int ADDR_SAVE_ENERGY = ADDR_STRAIGHT + 2; // g.save_energy value
+const int ADDR_BACKLIGHT = ADDR_SAVE_ENERGY + 2;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
 const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
 const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
@@ -430,6 +429,7 @@ struct global
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   short backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
+  byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif

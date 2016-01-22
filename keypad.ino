@@ -321,6 +321,13 @@ void process_keypad()
           display_all();
           break;
 
+        case '0': // *0: Save energy on / off
+          g.save_energy = 1 - g.save_energy;
+          update_save_energy();
+          display_all();
+          EEPROM.put( ADDR_SAVE_ENERGY, g.save_energy);
+          break;
+
       } // switch
     }
     g.state1_old = state1;
