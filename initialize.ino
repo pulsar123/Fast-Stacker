@@ -68,7 +68,7 @@ void initialize(byte factory_reset)
 
     g.limit1 = 0;
     g.limit2 = 32767;
-    g.pos = (g.point1 + g.point2) / 2;
+    g.pos = (g.point1 + g.point2) / 2.0;
     g.backlight = 0;
     // Assigning values to the reg structure:
     to_reg();

@@ -13,7 +13,7 @@ void backlash()
 
   // Should not be moving or breaking, and should need >0 backlash compensation:
   // Don't do anything while calibrating.
-  if (g.calibrate || g.breaking || g.moving || g.backlashing || g.BL_counter == 0)
+  if (g.calibrate || g.breaking || g.moving || g.backlashing || g.BL_counter == (COORD_TYPE)0)
     return;
 
   if (g.backlash_init == 0)

@@ -20,7 +20,7 @@ Issues to address:
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.10"
+#define VERSION "1.11"
 
 
 //////// Debugging options ////////
@@ -38,6 +38,8 @@ Issues to address:
 // Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
 // When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
 //#define BL_DEBUG
+// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384, and use "long" for larger numbers (will consume more memory)
+#define COORD_TYPE long
 
 
 //////// Camera related parameters: ////////
@@ -118,9 +120,9 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 //////// Parameters related to the motor and the rail: ////////
 // Number of full steps per rotation for the stepper motor:
-const short MOTOR_STEPS = 200;
+const COORD_TYPE MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
-const short N_MICROSTEPS = 8;
+const COORD_TYPE N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
@@ -160,10 +162,10 @@ const float BREAKING_DISTANCE_MM = 2.0;
 // Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
 //const float ACCEL_FACTOR = 3.0;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
-const short LIMITER_PAD = 400;
+const COORD_TYPE LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
-const short LIMITER_PAD2 = 100;
-const short DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
+const COORD_TYPE LIMITER_PAD2 = 100;
+const COORD_TYPE DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
 // travel this many microsteps after the limiter goes off again, before starting checking the limiter again
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP (should be >=1 for Easydriver; but arduino only guarantees delay accuracy for >=3)
 const short STEP_LOW_DT = 3;
@@ -179,7 +181,7 @@ const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for r
 
 
 //////// INPUT PARAMETERS: ////////
-// If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded of to the nearest whole number of microsteps.
+// If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
 #define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
@@ -227,7 +229,7 @@ pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
-const short MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
+const COORD_TYPE MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
 const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
 const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
@@ -244,15 +246,15 @@ const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
 // Backlash in microsteps (+0.5 for proper round-off):
-const short BACKLASH = (short)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
 #ifdef BL_DEBUG
 // Initial value for BACKLASH_2:
-short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
+COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
 // Step for changing BACKLASH_2, in microsteps:
-const short BL2_STEP = 1;
+const COORD_TYPE BL2_STEP = 1;
 #else
 // Backlash correction for rail reversal (*1) in microsteps:
-const short BACKLASH_2 = (short)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
 #endif
 // Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
@@ -285,24 +287,26 @@ struct regist
   byte backlash_on;
   byte straight;
   byte save_energy;
-  short point1;
-  short point2;
+  COORD_TYPE point1;
+  COORD_TYPE point2;
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
+
+const short dA = sizeof(COORD_TYPE);
 
 // EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
 const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will be done at the beginning (1 byte)
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
 const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter (2 bytes)
-const int ADDR_LIMIT2 = ADDR_LIMIT1 + 2; // pos_short for the background limiter (2 bytes)
-const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + 2;  // for the i_n_shots parameter
+const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limiter (2 bytes)
+const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + dA;  // for the i_n_shots parameter
 const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
 const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
 const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
-const int ADDR_POINT2 = ADDR_POINT1 + 2; // Point 2 for 2-points stacking
-const int ADDR_STRAIGHT = ADDR_POINT2 + 2; // g.straight value
+const int ADDR_POINT2 = ADDR_POINT1 + dA; // Point 2 for 2-points stacking
+const int ADDR_STRAIGHT = ADDR_POINT2 + dA; // g.straight value
 const int ADDR_SAVE_ENERGY = ADDR_STRAIGHT + 2; // g.save_energy value
 const int ADDR_BACKLIGHT = ADDR_SAVE_ENERGY + 2;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
@@ -343,14 +347,14 @@ struct global
   float accel_v[5]; // Five possible floating point values for acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
   float pos_old; // Last position, in the previous arduino loop
-  short pos_short_old;  // Previously computed position
+  COORD_TYPE pos_short_old;  // Previously computed position
   float pos0;  // Last position when accel changed
   unsigned long t0; // Last time when accel changed
   float speed0; // Last speed when accel changed
   float speed_old; // speed at the previous step
   float pos_stop; // Current stop position if breaked
   float pos_stop_old; // Previously computed stop position if breaked
-  short pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
+  COORD_TYPE pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
   unsigned long t_key_pressed; // Last time when a key was pressed
   unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   short N_repeats; // Counter of key repeats
@@ -360,24 +364,24 @@ struct global
   unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
   // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
   unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
-  short limit1; // pos_short for the foreground limiter
-  short limit2; // pos_short for the background limiter
-  short limit_tmp; // temporary value of a new limit when rail hits a limiter
+  COORD_TYPE limit1; // pos_short for the foreground limiter
+  COORD_TYPE limit2; // pos_short for the background limiter
+  COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter
   unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
   byte moving_mode; // =0 when using speed_change, =1 when using go_to
   byte pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
-  short point1;  // foreground point for 2-point focus stacking
-  short point2;  // background point for 2-point focus stacking
-  short starting_point; // The starting point in the focus stacking with two points
-  short destination_point; // The destination point in the focus stacking with two points
+  COORD_TYPE point1;  // foreground point for 2-point focus stacking
+  COORD_TYPE point2;  // background point for 2-point focus stacking
+  COORD_TYPE starting_point; // The starting point in the focus stacking with two points
+  COORD_TYPE destination_point; // The destination point in the focus stacking with two points
   byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
   float msteps_per_frame; // Microsteps per frame for focus stacking
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
-  short pos_to_shoot; // Position to shoot the next shot during focus stacking
+  COORD_TYPE pos_to_shoot; // Position to shoot the next shot during focus stacking
   byte shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
   byte AF_on; // flag for camera AF state: 0/1 corresponds to off/on
   byte single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
@@ -400,13 +404,13 @@ struct global
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level; 0,1 for now
   struct regist reg; // Custom parameters register
-  short coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
+  COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
   unsigned long t_shot; // the time shot was initiated
   unsigned long int t0_stacking; // time when stacking was initiated;
   byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
-  short BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
+  COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   byte started_moving; // =1 when we just started moving (the first loop), 0 otherwise
   byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
@@ -427,7 +431,7 @@ struct global
   unsigned long t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
-  short backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
+  COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
 #ifdef PRECISE_STEPPING

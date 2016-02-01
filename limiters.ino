@@ -3,7 +3,7 @@ void limiters()
 
  */
 {
-  short dx, dx_break;
+  COORD_TYPE dx, dx_break;
 
   if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1)
     return;

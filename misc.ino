@@ -40,13 +40,13 @@ char *ftoa(char *a, float f, int precision)
   return ret;
 }
 
-short nintMy(float x)
+COORD_TYPE nintMy(float x)
 /*
- My version of nint. Float -> short conversion. Valid for positive/negative/zero.
+ My version of nint. Float -> COORD_TYPE conversion. Valid for positive/negative/zero.
  */
 {
   // Rounding x towards 0:
-  short x_short = (short)x;
+  COORD_TYPE x_short = (COORD_TYPE)x;
   float frac;
 
   if (x >= 0.0)
@@ -71,12 +71,12 @@ short nintMy(float x)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-short floorMy(float x)
-/* A limited implementation of C function floor - only to convert from float to short.
+COORD_TYPE floorMy(float x)
+/* A limited implementation of C function floor - only to convert from float to COORD_TYPE.
    Works with positive, negative numbers and 0.
  */
 {
-  short m = x;
+  COORD_TYPE m = x;
   if (x >= 0.0)
     return m;
   else
@@ -86,15 +86,15 @@ short floorMy(float x)
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-short roundMy(float x)
-/* Rounding of float numbers, output - short.
+COORD_TYPE roundMy(float x)
+/* Rounding of float numbers, output - COORD_TYPE.
    Works with positive, negative numbers and 0.
  */
 {
   if (x >= 0.0)
-    return (short)(x + 0.5);
+    return (COORD_TYPE)(x + 0.5);
   else
-    return (short)(x - 0.5);
+    return (COORD_TYPE)(x - 0.5);
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -173,14 +173,14 @@ void go_to(float pos1, float speed)
     return;
 
   // Ultimate physical coordinate to achieve:
-  short pos1_short = floorMy(pos1);
+  COORD_TYPE pos1_short = floorMy(pos1);
 
   // Current physical coordinate:
-  short pos_short_phys = g.pos_short_old + g.BL_counter;
+  COORD_TYPE pos_short_phys = g.pos_short_old + g.BL_counter;
   float pos_phys = g.pos + (float)g.BL_counter;
 
   // We are already there, and no need for backlash compensation, so just returning:
-  if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == 0)
+  if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == (COORD_TYPE)0)
     return;
 
   // The "shortcut" direction - if there was no acceleration limit and no need for backlash compensation:
@@ -221,7 +221,7 @@ void go_to(float pos1, float speed)
     float dx_vec = pos1 - g.pos;
     float dx = fabs(dx_vec);
     // Number of whole steps to take if going straight to the target:
-    short dx_steps = pos1_short - g.pos_short_old;
+    COORD_TYPE dx_steps = pos1_short - g.pos_short_old;
 
     // All the cases when speed sign will change while traveling to the target:
     // When we move in the correct direction, but cannot stop in time because of the acceleration limit
@@ -525,7 +525,7 @@ void rail_reverse(byte fix_points)
    If fix_points=1, update the current point1,2 accordingly.
  */
 {
-  short d_pos, pos_target;
+  COORD_TYPE d_pos, pos_target;
 
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
@@ -560,8 +560,8 @@ void rail_reverse(byte fix_points)
 }
 
 
-short frame_coordinate()
-// Coordinate (short type) of a frame given by g.frame_number, in 2-point stacking
+COORD_TYPE frame_coordinate()
+// Coordinate (COORD_TYPE type) of a frame given by g.frame_number, in 2-point stacking
 {
   return g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
 }
@@ -607,7 +607,7 @@ void update_backlash()
   if (g.backlash_on)
     g.backlash = BACKLASH;
   else
-    g.backlash = 1;
+    g.backlash = (COORD_TYPE)1;
   return;
 }
 

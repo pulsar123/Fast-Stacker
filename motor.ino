@@ -92,7 +92,7 @@ void motor_control()
 
 
   // Integer position (in microsteps):
-  short pos_short = floorMy(g.pos);
+  COORD_TYPE pos_short = floorMy(g.pos);
 
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
@@ -118,7 +118,7 @@ void motor_control()
 
     // How many steps we'd need to take at this call:
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
-    short d = abs(pos_short - g.pos_short_old);
+    COORD_TYPE d = abs(pos_short - g.pos_short_old);
 
 #ifdef PRECISE_STEPPING               //  Precise stepping module
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -145,7 +145,7 @@ void motor_control()
       // Time correction depends on the travel history between t_old and now
       short dt1_backlash = 0;
       float pos_a;
-      short pos_short_new = g.pos_short_old + d_sign;
+      COORD_TYPE pos_short_new = g.pos_short_old + d_sign;
       float pos_new = (float)pos_short_new;
       byte solve_square_equation = 0;
       switch (i_case)
@@ -248,7 +248,7 @@ void motor_control()
     // and gets smaller as we move in the good - positive - direction):
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     // Backlash cannot be negative:
-    if (g.BL_counter < 0)
+    if (g.BL_counter < (COORD_TYPE)0)
       g.BL_counter = 0;
     // and cannot be larger than g.backlash:
     if (g.BL_counter > g.backlash)

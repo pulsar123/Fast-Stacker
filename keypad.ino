@@ -4,7 +4,8 @@ void process_keypad()
  */
 {
   float speed;
-  short frame_counter0, pos_target;
+  short frame_counter0;
+  COORD_TYPE pos_target;
 
 
   // Ignore keypad during emergency breaking
@@ -155,11 +156,11 @@ void process_keypad()
           else
           {
             g.frame_counter--;
-            pos_target = (short)(g.pos - g.msteps_per_frame);
+            pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
           }
           // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
           // move the rail beyond g.limit1
-          if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+          if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
           {
             // Recovering the original frame counter if aborting:
             g.frame_counter = frame_counter0;
@@ -182,9 +183,9 @@ void process_keypad()
           else
           {
             g.frame_counter++;
-            pos_target = (short)(g.pos + g.msteps_per_frame);
+            pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
           }
-          if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+          if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
           {
             g.frame_counter = frame_counter0;
             break;
@@ -406,7 +407,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
                 pos_target = frame_coordinate();
-                if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+                if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;
@@ -437,7 +438,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
                 pos_target = frame_coordinate();
-                if (pos_target < g.limit1 + 100 || pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+                if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
                 {
                   g.frame_counter = frame_counter0;
                   break;

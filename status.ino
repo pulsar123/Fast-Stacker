@@ -315,7 +315,7 @@ void display_one_point_params()
 
   // +0.05 for proper round off:
   float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame] + 0.05;
-  short dt = roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
+  short dt = (short)roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0 && dt >= 0.0)
@@ -349,7 +349,7 @@ void display_two_point_params()
 
   // +0.05 for proper round off:
   float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1) + 0.05;
-  short dt = nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
+  short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0 && dt >= 0.0)
@@ -424,7 +424,7 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
+  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > (COORD_TYPE)0 || g.alt_flag)
     return;
 
   if (g.straight)
@@ -482,7 +482,7 @@ void delay_buffer()
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.i_first_delay];
   float delay2 = SECOND_DELAY[g.i_second_delay];
-  short dt = nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
+  short dt = (short)nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
   sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);
 
   return;
