@@ -138,7 +138,9 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
     motion_status();
     if (g.save_energy)
     {
+#ifndef DISABLE_MOTOR  
       digitalWrite(PIN_ENABLE, LOW);
+#endif      
       delay(ENABLE_DELAY_MS);
     }
   }
@@ -304,7 +306,9 @@ void stop_now()
 
   if (g.save_energy)
   {
+#ifndef DISABLE_MOTOR  
     digitalWrite(PIN_ENABLE, HIGH);
+#endif    
     delay(ENABLE_DELAY_MS);
   }
 
@@ -615,10 +619,14 @@ void update_backlash()
 void update_save_energy()
 // Call it every time g.save_energy is changed
 {
+#ifdef DISABLE_MOTOR
+  return;
+#else  
   if (g.save_energy)
     digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
   else
     digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
   return;
+#endif  
 }
 

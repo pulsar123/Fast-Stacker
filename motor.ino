@@ -97,12 +97,16 @@ void motor_control()
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
+#ifndef DISABLE_MOTOR  
     digitalWrite(PIN_DIR, g.straight);
+#endif    
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
+#ifndef DISABLE_MOTOR  
     digitalWrite(PIN_DIR, 1-g.straight);
+#endif    
     delayMicroseconds(STEP_LOW_DT);
   }
 
@@ -111,10 +115,14 @@ void motor_control()
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):
+#ifndef DISABLE_MOTOR  
     digitalWrite(PIN_STEP, LOW);
+#endif    
     // For Easydriver, the delay should be at least 1.0 us:
     delayMicroseconds(STEP_LOW_DT);
+#ifndef DISABLE_MOTOR  
     digitalWrite(PIN_STEP, HIGH);
+#endif    
 
     // How many steps we'd need to take at this call:
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module

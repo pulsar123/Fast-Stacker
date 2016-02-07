@@ -30,7 +30,7 @@
 
    h1.1 [s0.10,s0.12,s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
-   h1.2 [s1.00]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
+   h1.2 [s1.00, s1.10]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
 */
 #include <EEPROM.h>
@@ -48,9 +48,11 @@ void setup() {
   g.setup_flag = 1;
 
   // Setting pins for EasyDriver to OUTPUT:
+#ifndef DISABLE_MOTOR  
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
   pinMode(PIN_ENABLE, OUTPUT);
+#endif
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   pinMode(PIN_SHUTTER, OUTPUT);

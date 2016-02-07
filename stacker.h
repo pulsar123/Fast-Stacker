@@ -29,6 +29,8 @@ Issues to address:
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
 //#define MOTOR_DEBUG
+// Uncomment this line when debugging the control unit without the motor unit:
+#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -38,7 +40,8 @@ Issues to address:
 // Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
 // When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
 //#define BL_DEBUG
-// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384, and use "long" for larger numbers (will consume more memory)
+// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
+// 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE long
 
 
