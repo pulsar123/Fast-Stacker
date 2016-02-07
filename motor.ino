@@ -167,10 +167,6 @@ void motor_control()
           {
             if (g.speed1 != 0.0)
               dt1_backlash = dt - dt_a - (pos_new - pos_a) / g.speed1;
-#ifdef MOTOR_DEBUG
-            else
-              n1++;
-#endif
           }
           else if ((pos_new >= g.pos_old && pos_new < pos_a) || (pos_new <= g.pos_old && pos_new > pos_a))
             // Second subcase: the step should have happened in the first (accel!=0) part of the time interval since t_old
@@ -186,10 +182,6 @@ void motor_control()
         case 3: // The simplest case when we had zero acceleration since t0
           if (g.speed0 != 0.0)
             dt1_backlash = dt - (pos_new - g.pos0) / g.speed0;
-#ifdef MOTOR_DEBUG
-          else
-            n2++;
-#endif
           break;
       }
 
@@ -210,20 +202,7 @@ void motor_control()
             dt1_backlash = dt - dt1;
           else if (dt - dt2 > 0 && dt - dt2 < g.t - g.t_old)
             dt1_backlash = dt - dt2;
-#ifdef MOTOR_DEBUG
-          else
-          {
-            n3++;
-            k1 = dt - dt1;
-            k2 = g.t - g.t_old;
-            k3 = dt - dt2;
-          }
-#endif
         }
-#ifdef MOTOR_DEBUG
-        else
-          n4++;
-#endif
       }
 
       // Sanity checks:
@@ -239,14 +218,7 @@ void motor_control()
         pos_short = pos_short_new;
         g.pos = pos_new;
         d = 1;
-#ifdef MOTOR_DEBUG
-        n_fixed++;
-#endif
       }
-#ifdef MOTOR_DEBUG
-      else
-        n_failed++;
-#endif
 
     }  // if (d > 1)
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -261,25 +233,6 @@ void motor_control()
     // and cannot be larger than g.backlash:
     if (g.BL_counter > g.backlash)
       g.BL_counter = g.backlash;
-
-#ifdef MOTOR_DEBUG
-    istep++;
-    if (d > cmax)
-    {
-      imax = istep;
-      cmax = d;
-    }
-    if (pos_short > g.pos_short_old)
-    {
-      skipped_current = skipped_current + (d - 1);
-      skipped_total = skipped_total + (d - 1);
-    }
-    else
-    {
-      skipped_current = skipped_current - (d - 1);
-      skipped_total = skipped_total - (d - 1);
-    }
-#endif
 
     // Saving the current position as old:
     g.pos_short_old = pos_short;

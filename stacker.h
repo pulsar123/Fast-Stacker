@@ -30,7 +30,7 @@ Issues to address:
 // and software debugging without the motor unit)
 //#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-#define DISABLE_MOTOR
+//#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -42,7 +42,7 @@ Issues to address:
 //#define BL_DEBUG
 // Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE long
+#define COORD_TYPE short
 
 
 //////// Camera related parameters: ////////
@@ -454,12 +454,5 @@ struct global
 
 struct global g;
 
-#ifdef MOTOR_DEBUG
-short cplus1, cminus1, cplus2, cminus2, cmax, imax, istep, skipped_current, skipped_total;
-short n_fixed, n_failed, n1, n2, n3, n4, k1, k2, k3;
-#ifdef PRECISE_STEPPING
-unsigned long dt_backlash;
-#endif
-#endif
 #endif
 

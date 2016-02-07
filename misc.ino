@@ -367,10 +367,6 @@ void stop_now()
   if (g.noncont_flag == 4)
     g.noncont_flag = 1;
 
-#ifdef MOTOR_DEBUG
-  if (g.dt_backlash > dt_backlash)
-    dt_backlash = g.dt_backlash;
-#endif
 #ifdef PRECISE_STEPPING
   g.dt_backlash = 0;
 #endif
