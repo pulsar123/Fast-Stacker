@@ -20,7 +20,7 @@ Issues to address:
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.11"
+#define VERSION "1.12"
 
 
 //////// Debugging options ////////
