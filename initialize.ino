@@ -5,7 +5,9 @@ void initialize(byte factory_reset)
   g.error = 0;
   g.calibrate_warning = 0;
   
+#ifndef DISABLE_SHUTTER    
   digitalWrite(PIN_SHUTTER, LOW);
+#endif  
   digitalWrite(PIN_AF, LOW);
 
 

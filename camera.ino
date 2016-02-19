@@ -99,7 +99,7 @@ void camera()
       // Setting the shutter on:
       // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
       // If it is defined, it will also happen in non-continuous mode, where it will be used to lock the mirror
-      if (g.continuous_mode || g.mirror_lock)
+      if (g.continuous_mode || g.mirror_lock == 1)
       {
         g.make_shot = 1;
         g.t_shot = g.t;
@@ -162,9 +162,11 @@ void camera()
   }
 
   // Triggering camera's shutter:
-  if (g.make_shot == 1 && g.AF_on == 1 && g.t - g.t_AF >= SHUTTER_ON_DELAY)
+  if (g.make_shot == 1 && g.AF_on == 1 && (g.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY || g.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2))
   {
+#ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, HIGH);
+#endif
 #ifdef CAMERA_DEBUG
     shutter_status(1);
 #endif
@@ -177,7 +179,9 @@ void camera()
   if (g.shutter_on == 1 && g.t - g.t_shutter >= SHUTTER_TIME_US)
   {
     // Releasing the shutter:
+#ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, LOW);
+#endif
 #ifdef CAMERA_DEBUG
     shutter_status(0);
 #endif
@@ -187,7 +191,8 @@ void camera()
 
   // Depress the camera's AF when it's no longer needed
   // and only if the shutter has been off for at least SHUTTER_OFF_DELAY microseconds:
-  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY && (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
+  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && (g.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY || g.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2) &&
+      (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
     digitalWrite(PIN_AF, LOW);
 #ifdef CAMERA_DEBUG

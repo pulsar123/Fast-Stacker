@@ -293,8 +293,11 @@ void process_keypad()
           EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
           break;
 
-        case 'C': // *C: Mirror lock on/off
-          g.mirror_lock = 1 - g.mirror_lock;
+        case 'C': // *C: Mirror lock: 0, 1, 2
+          if (g.mirror_lock < 2)
+            g.mirror_lock++;
+          else
+            g.mirror_lock = 0;
           display_all();
           EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
           break;

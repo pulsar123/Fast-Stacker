@@ -20,7 +20,7 @@ Issues to address:
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.12"
+#define VERSION "1.13"
 
 
 //////// Debugging options ////////
@@ -30,7 +30,7 @@ Issues to address:
 // and software debugging without the motor unit)
 //#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-//#define DISABLE_MOTOR
+#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -43,6 +43,8 @@ Issues to address:
 // Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE short
+// Uncomment to disable shutter triggering:
+#define DISABLE_SHUTTER
 
 
 //////// Camera related parameters: ////////
@@ -57,7 +59,11 @@ const unsigned long SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between s
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
 const short AF_SYNC = 0;
-
+// The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture for Canon with Magic Lantern firmware)
+// SHUTTER_ON_DELAY2+SHUTTER_OFF_DELAY2+SHUTTER_TIME_US is the time the AF relay will be pressed on - this should be long enough for
+// a silent picture to be taken
+const unsigned long SHUTTER_ON_DELAY2 = 500000;
+const unsigned long SHUTTER_OFF_DELAY2 = 400000;
 
 //////// Pin assignment ////////
 // Pin 10 is left unused because it is used internally by hardware SPI.
@@ -425,7 +431,7 @@ struct global
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   char* rev_char; // "R" if rail revered, " " otherwise
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
-  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used
+  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
