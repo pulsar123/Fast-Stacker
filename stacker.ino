@@ -1,5 +1,5 @@
 /* Sergey Mashchenko 2015, 2016
- 
+
    Automated macro rail for focus stacking
 
    Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
@@ -48,11 +48,12 @@ void setup() {
   g.setup_flag = 1;
 
   // Setting pins for EasyDriver to OUTPUT:
-#ifndef DISABLE_MOTOR  
+#ifndef DISABLE_MOTOR
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
-  pinMode(PIN_ENABLE, OUTPUT);
 #endif
+  pinMode(PIN_ENABLE, OUTPUT);
+  digitalWrite(PIN_ENABLE, HIGH);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   pinMode(PIN_SHUTTER, OUTPUT);
@@ -79,7 +80,7 @@ void setup() {
     initialize(0);
   }
 
-// This should not be in initialize():
+  // This should not be in initialize():
   g.state_old = (KeyState)0;
   g.state1_old = (KeyState)0;
 

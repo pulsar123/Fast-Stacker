@@ -30,7 +30,7 @@ Issues to address:
 // and software debugging without the motor unit)
 //#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-#define DISABLE_MOTOR
+//#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -44,7 +44,7 @@ Issues to address:
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE short
 // Uncomment to disable shutter triggering:
-#define DISABLE_SHUTTER
+//#define DISABLE_SHUTTER
 
 
 //////// Camera related parameters: ////////
@@ -62,8 +62,8 @@ const short AF_SYNC = 0;
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture for Canon with Magic Lantern firmware)
 // SHUTTER_ON_DELAY2+SHUTTER_OFF_DELAY2+SHUTTER_TIME_US is the time the AF relay will be pressed on - this should be long enough for
 // a silent picture to be taken
-const unsigned long SHUTTER_ON_DELAY2 = 500000;
-const unsigned long SHUTTER_OFF_DELAY2 = 400000;
+const unsigned long SHUTTER_ON_DELAY2 = 400000;
+const unsigned long SHUTTER_OFF_DELAY2 = 300000;
 
 //////// Pin assignment ////////
 // Pin 10 is left unused because it is used internally by hardware SPI.
