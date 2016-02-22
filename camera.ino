@@ -102,7 +102,7 @@ void camera()
       if (g.continuous_mode || g.mirror_lock == 1)
       {
         g.make_shot = 1;
-        g.t_shot = g.t;
+//        g.t_shot = g.t;
       }
       // Even if the shutter is not triggered above, we need to record the current time, to set up the second delay (non-continuous mode):
       g.t_shot = g.t; //???
@@ -162,7 +162,7 @@ void camera()
   }
 
   // Triggering camera's shutter:
-  if (g.make_shot == 1 && g.AF_on == 1 && (g.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY || g.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2))
+  if (g.make_shot == 1 && g.AF_on == 1 && ((g.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
   {
 #ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, HIGH);
@@ -191,7 +191,7 @@ void camera()
 
   // Depress the camera's AF when it's no longer needed
   // and only if the shutter has been off for at least SHUTTER_OFF_DELAY microseconds:
-  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && (g.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY || g.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2) &&
+  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
       (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
     digitalWrite(PIN_AF, LOW);

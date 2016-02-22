@@ -28,9 +28,9 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-//#define DISABLE_MOTOR
+#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -40,6 +40,12 @@ Issues to address:
 // Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
 // When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
 //#define BL_DEBUG
+// Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
+// When DELAY_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
+// Cannot be used at the same time as BL_DEBUG
+#define DELAY_DEBUG
+// Step used durinmg DELAY_DEBUG (in us)
+const long DELAY_STEP = 50000;
 // Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE short
@@ -58,12 +64,18 @@ const unsigned long SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between s
 //  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
-const short AF_SYNC = 0;
+const short AF_SYNC = 1; //!!!!
+#ifdef DELAY_DEBUG
+// Initial values for the two electronic shutter delays during delay debugging:
+long SHUTTER_ON_DELAY2 = 900000;
+long SHUTTER_OFF_DELAY2 = 900000;
+#else
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture for Canon with Magic Lantern firmware)
 // SHUTTER_ON_DELAY2+SHUTTER_OFF_DELAY2+SHUTTER_TIME_US is the time the AF relay will be pressed on - this should be long enough for
 // a silent picture to be taken
-const unsigned long SHUTTER_ON_DELAY2 = 400000;
-const unsigned long SHUTTER_OFF_DELAY2 = 300000;
+const unsigned long SHUTTER_ON_DELAY2 = 900000;
+const unsigned long SHUTTER_OFF_DELAY2 = 100000;
+#endif
 
 //////// Pin assignment ////////
 // Pin 10 is left unused because it is used internally by hardware SPI.
@@ -452,9 +464,6 @@ struct global
   short dt_max;
   short dt_min;
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
-#endif
-#ifdef BL_DEBUG
-
 #endif
 };
 

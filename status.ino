@@ -437,12 +437,16 @@ void display_current_position()
   else
     sprintf(g.buf6, "   ");
 
+#ifdef BL_DEBUG
+  sprintf(g.buf6, "%3d", roundMy(10000.0 * MM_PER_MICROSTEP * BACKLASH_2));
+#endif
+#ifdef DELAY_DEBUG
+// Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
+  sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2/10000);
+#endif
+
   float p = MM_PER_MICROSTEP * (float)g.pos;
   sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
-
-#ifdef BL_DEBUG
-  sprintf(g.buffer, "%1s %6smm %4d", ftoa(g.buf7, p, 3), roundMy(10000.0 * MM_PER_MICROSTEP * BACKLASH_2));
-#endif
 
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);

@@ -588,17 +588,24 @@ void process_keypad()
               if (g.paused)
                 break;
 #ifndef BL_DEBUG
+#ifndef DELAY_DEBUG
               if (g.i_n_shots > 0)
                 g.i_n_shots--;
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
 #else
+              // The meaning of "2" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
+              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
+              if (SHUTTER_ON_DELAY2 < 0)
+                SHUTTER_ON_DELAY2 = 0;
+#endif // DELAY_DEBUG              
+#else
               // The meaning of "2" changes when BL_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
               BACKLASH_2 = BACKLASH_2 - BL2_STEP;
               if (BACKLASH_2 < 0)
                 BACKLASH_2 = 0;
-#endif
+#endif //BL_DEBUG
               display_all();
               break;
 
@@ -606,17 +613,24 @@ void process_keypad()
               if (g.paused)
                 break;
 #ifndef BL_DEBUG
+#ifndef DELAY_DEBUG
               if (g.i_n_shots < N_PARAMS - 1)
                 g.i_n_shots++;
               else
                 break;
               EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
 #else
+              // The meaning of "3" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
+              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
+              if (SHUTTER_ON_DELAY2 > 10000000)
+                SHUTTER_ON_DELAY2 = 10000000;
+#endif // DELAY_DEBUG              
+#else
               // The meaning of "3" changes when BL_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
               BACKLASH_2 = BACKLASH_2 + BL2_STEP;
               if (BACKLASH_2 > 2 * BACKLASH)
                 BACKLASH_2 = 2 * BACKLASH;
-#endif
+#endif // BL_DEBUG
               display_all();
               break;
 
