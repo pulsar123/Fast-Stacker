@@ -24,6 +24,9 @@ Issues to address:
 
 
 //////// Debugging options ////////
+// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
+// 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
+#define COORD_TYPE short
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
@@ -37,18 +40,22 @@ Issues to address:
 //#define CAMERA_DEBUG
 // If defined, software SPI emulation instead of the default harware SPI. Try this if your LCD doesn't work after upgrading to h1.1 or newer and s0.10 or newer
 //#define SOFTWARE_SPI
-// Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
-// When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
+// Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
+// When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH" and "increase BACKLASH" functions
+// Don't use BL_DEBUG together with either BL2_DEBUG or DELAY_DEBUG!
 //#define BL_DEBUG
+// Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
+// When BL2_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
+// Don't use BL2_DEBUG together with either BL_DEBUG or DELAY_DEBUG!
+//#define BL2_DEBUG
+// Step for changing both BACKLASH and BACKLASH_2, in microsteps:
+const COORD_TYPE BL_STEP = 1;
 // Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
 // When DELAY_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
-// Cannot be used at the same time as BL_DEBUG
+// Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
 #define DELAY_DEBUG
 // Step used durinmg DELAY_DEBUG (in us)
 const long DELAY_STEP = 50000;
-// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
-// 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE short
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
 
@@ -268,11 +275,9 @@ const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
-#ifdef BL_DEBUG
+#ifdef BL2_DEBUG
 // Initial value for BACKLASH_2:
 COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
-// Step for changing BACKLASH_2, in microsteps:
-const COORD_TYPE BL2_STEP = 1;
 #else
 // Backlash correction for rail reversal (*1) in microsteps:
 const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);

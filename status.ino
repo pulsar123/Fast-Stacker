@@ -438,7 +438,12 @@ void display_current_position()
     sprintf(g.buf6, "   ");
 
 #ifdef BL_DEBUG
-  sprintf(g.buf6, "%3d", roundMy(10000.0 * MM_PER_MICROSTEP * BACKLASH_2));
+// When debugging backlash, displays the current backlash value in microsteps
+  sprintf(g.buf6, "%3d", g.backlash);
+#endif
+#ifdef BL2_DEBUG
+// When debugging BACKLASH_2, displays the current BACKLAS_2 value in microsteps
+  sprintf(g.buf6, "%3d", BACKLASH_2);
 #endif
 #ifdef DELAY_DEBUG
 // Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
