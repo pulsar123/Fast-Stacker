@@ -213,12 +213,12 @@ const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 1
 // The length of the first delay table:
 const short N_FIRST_DELAY = 7;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
+const float FIRST_DELAY[N_FIRST_DELAY] = {0.01, 1, 1.5, 2, 3, 4, 8};
 // The length of the first delay table:
 const short N_SECOND_DELAY = 7;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
-const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
+const float SECOND_DELAY[N_SECOND_DELAY] = {0.01, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 3;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};

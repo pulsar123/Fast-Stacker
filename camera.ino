@@ -131,7 +131,7 @@ void camera()
   }
 
 
-  if (g.paused && g.noncont_flag == 2)
+  if (g.paused && g.noncont_flag == 2 && g.mirror_lock == 1)
     // We paused when the mirror is locked; release the lock right away
   {
     g.make_shot = 1;
