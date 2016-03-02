@@ -3,17 +3,6 @@
    User header file. Contains user adjustable parameters (constants), and other stuff.
 
    To be used with automated macro rail for focus stacking
-
-Issues to address:
- - Position accuracy after turning off/on again: the motor will likely move to the
- nearest (or in a certain direction?) full stop, creating an error of that size.
- I probably should only use full stop positions when stopped (how to figure out
- which ones are full stop?)
- - Similar issue when using SAVE_ENERGY: I should use full stops, or the error will
- accumulate every time I stop.
- - Apparently stepper motors can't change direction at atarbitrary microsteps, perhaps not
- even at all full steps - needs to be figured out and implemented.
-
 */
 
 #ifndef STACKER_H
@@ -31,9 +20,9 @@ Issues to address:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-#define DISABLE_MOTOR
+//#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -53,7 +42,7 @@ const COORD_TYPE BL_STEP = 1;
 // Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
 // When DELAY_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
 // Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
-#define DELAY_DEBUG
+//#define DELAY_DEBUG
 // Step used durinmg DELAY_DEBUG (in us)
 const long DELAY_STEP = 50000;
 // Uncomment to disable shutter triggering:
@@ -71,16 +60,17 @@ const unsigned long SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between s
 //  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
-const short AF_SYNC = 1; //!!!!
+const short AF_SYNC = 0;
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
-long SHUTTER_ON_DELAY2 = 900000;
-long SHUTTER_OFF_DELAY2 = 900000;
+// The SHUTTER_ON_DELAY2 value can be modified during debugging (keys 2/3); the SHUTTER_OFF_DELAY2 value is fixed
+long SHUTTER_ON_DELAY2 = 1000000; // 1000000
+long SHUTTER_OFF_DELAY2 = 100000; // 100000
 #else
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture for Canon with Magic Lantern firmware)
 // SHUTTER_ON_DELAY2+SHUTTER_OFF_DELAY2+SHUTTER_TIME_US is the time the AF relay will be pressed on - this should be long enough for
 // a silent picture to be taken
-const unsigned long SHUTTER_ON_DELAY2 = 900000;
+const unsigned long SHUTTER_ON_DELAY2 = 1000000;
 const unsigned long SHUTTER_OFF_DELAY2 = 100000;
 #endif
 
@@ -221,14 +211,14 @@ const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 // Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
 // The length of the first delay table:
-const short N_FIRST_DELAY = 6;
+const short N_FIRST_DELAY = 7;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-const float FIRST_DELAY[N_FIRST_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
+const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // The length of the first delay table:
-const short N_SECOND_DELAY = 6;
+const short N_SECOND_DELAY = 7;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
-const float SECOND_DELAY[N_SECOND_DELAY] = {0.2, 0.5, 1, 2, 4, 8};
+const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 3;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};

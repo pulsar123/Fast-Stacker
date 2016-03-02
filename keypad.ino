@@ -13,233 +13,275 @@ void process_keypad()
   if (g.breaking == 1 || g.error > 1)
     return;
 
-
-  // Reading a keypad key if any:
-  char key = keypad.getKey();
-  KeyState state = keypad.getState();
-  KeyState state1 = keypad.key[1].kstate;
-
   // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
   if (g.comment_flag == 1 && keypad.key[0].kchar == '#')
     // -COMMENT_LINE+10000 is a hack, to reduce to almost zero the time the parameters are displayed:
     // (So basically the parameters are only displayed as long as the "#" key is pressed)
     g.t_comment = g.t - COMMENT_DELAY + 10000;
 
-  if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
+  // The previous value of the key 0:
+  g.key_old = keypad.key[0].kchar;
+
+  char fake_key = 0;
+  if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
+       || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
+    // We are here when a change parameter key was pressed longer than T_KEY_LAG
+  {
+    if (g.N_repeats == 0)
+      // Will be used for keys with repetition (parameter change keys):
+    {
+      g.t_last_repeat = g.t;
+      g.N_repeats = 1;
+      // Generating the first fake key event:
+      fake_key = 1;
+    }
+    // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
+    if (g.t - g.t_last_repeat > T_KEY_REPEAT)
+    {
+      g.N_repeats++;
+      g.t_last_repeat = g.t;
+      // Generating the subsequent fake key events:
+      fake_key = 1;
+    }
+  }
+
+
+  // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
+  if (!keypad.getKeys() && !fake_key)
+    return;
+
+  KeyState state0, state1;
+  char key0;
+  bool state0_changed;
+  if (fake_key)
+    // Simulating a fake key (for repetitive key actions when certain keys are pressed long enough):
+  {
+    state0 = PRESSED;
+    key0 = g.key_old;
+    state0_changed = 1;
+  }
+  else
+  {
+    state0 = keypad.key[0].kstate;
+    state1 = keypad.key[1].kstate;
+    key0 = keypad.key[0].kchar;
+    state0_changed = keypad.key[0].stateChanged;
+  }
+
+  //if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
+  if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED)
     // Two-key #X commands
   {
-    if (state1 == PRESSED)
+    switch (keypad.key[1].kchar)
     {
-      switch (keypad.key[1].kchar)
-      {
-        case 'C': // #C: Initiate a full calibration
-          // Ignore if moving:
-          if (g.moving == 1 || g.paused)
-            break;
-          g.calibrate = 3;
-          g.calibrate_flag = 0;
-          g.calibrate_warning = 1;
-          g.calibrate_init = g.calibrate;
-          // Displaying the calibrate warning:
-          display_all();
+      case 'C': // #C: Initiate a full calibration
+        // Ignore if moving:
+        if (g.moving == 1 || g.paused)
           break;
+        g.calibrate = 3;
+        g.calibrate_flag = 0;
+        g.calibrate_warning = 1;
+        g.calibrate_init = g.calibrate;
+        // Displaying the calibrate warning:
+        display_all();
+        break;
 
-        case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
-          if (g.paused && g.moving == 0)
-            // Aborting stacking:
-          {
-            g.paused = 0;
-            g.frame_counter = 0;
-            display_frame_counter();
-            g.noncont_flag = 0;
-            g.stacker_mode = 0;
-            g.timelapse_mode = 0;
-            g.end_of_stacking = 0;
-            display_all();
-          }
-          else
-            // Emergency breaking:
-          {
-            change_speed(0.0, 0, 2);
-            // This should be done after change_speed(0.0):
-            g.breaking = 1;
-            letter_status("B");
-            g.calibrate = 0;
-            g.calibrate_flag = 0;
-            g.calibrate_warning = 0;
-            g.calibrate_init = g.calibrate;
-          }
-          break;
-
-        case '2': // #2: Save parameters to first memory bank
-          if (g.paused)
-            break;
-          save_params(ADDR_REG1, 1);
-          break;
-
-        case '3': // #3: Read parameters from first memory bank
-          if (g.paused)
-            break;
-          read_params(ADDR_REG1, 1);
-          break;
-
-        case '5': // #5: Save parameters to second memory bank
-          if (g.paused)
-            break;
-          save_params(ADDR_REG2, 2);
-          break;
-
-        case '6': // #6: Read parameters from second memory bank
-          if (g.paused)
-            break;
-          read_params(ADDR_REG2, 2);
-          break;
-
-        case '8': // #8: Cycle through the table for FIRST_DELAY parameter
-          if (g.paused)
-            break;
-          if (g.i_first_delay < N_FIRST_DELAY - 1)
-            g.i_first_delay++;
-          else
-            g.i_first_delay = 0;
-          EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-          delay_buffer();
-          display_comment_line(g.buffer);
-          break;
-
-        case '9': // #9: Cycle through the table for SECOND_DELAY parameter
-          if (g.paused)
-            break;
-          if (g.i_second_delay < N_SECOND_DELAY - 1)
-            g.i_second_delay++;
-          else
-            g.i_second_delay = 0;
-          EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-          delay_buffer();
-          display_comment_line(g.buffer);
-          break;
-
-        case '4': // #4: Backlighting control
-          g.backlight++;
-          // LCD unstable for medium backlight; using only two levels:
-          if (g.backlight > 1)
-            g.backlight = 0;
-          set_backlight();
-          break;
-
-        case '*': // #*: Factory reset
-          if (g.paused)
-            break;
-          initialize(1);
-          break;
-
-        case '7': // #7: Manual camera shutter triggering
-          if (g.moving)
-            break;
-          g.make_shot = 1;
-          g.single_shot = 1;
-          g.start_stacking = 0;
+      case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
+        if (g.paused && g.moving == 0)
+          // Aborting stacking:
+        {
+          g.paused = 0;
+          g.frame_counter = 0;
+          display_frame_counter();
+          g.noncont_flag = 0;
           g.stacker_mode = 0;
-          break;
+          g.timelapse_mode = 0;
+          g.end_of_stacking = 0;
+          display_all();
+        }
+        else
+          // Emergency breaking:
+        {
+          change_speed(0.0, 0, 2);
+          // This should be done after change_speed(0.0):
+          g.breaking = 1;
+          letter_status("B");
+          g.calibrate = 0;
+          g.calibrate_flag = 0;
+          g.calibrate_warning = 0;
+          g.calibrate_init = g.calibrate;
+        }
+        break;
 
-        case '1': // #1: Rewind a single frame step (no shooting)
-          if (g.moving || g.paused > 1)
-            break;
-          frame_counter0 = g.frame_counter;
-          if (g.paused)
-          {
-            g.frame_counter--;
-            pos_target = frame_coordinate();
-          }
-          else
-          {
-            g.frame_counter--;
-            pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
-          }
-          // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
-          // move the rail beyond g.limit1
-          if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-          {
-            // Recovering the original frame counter if aborting:
-            g.frame_counter = frame_counter0;
-            break;
-          }
-          go_to(pos_target + 0.5, g.speed_limit);
-          display_frame_counter();
+      case '2': // #2: Save parameters to first memory bank
+        if (g.paused)
           break;
+        save_params(ADDR_REG1, 1);
+        break;
 
-        case 'A': // #A: Fast-forward a single frame step (no shooting)
-          if (g.moving || g.paused > 1)
-            break;
-          // Required microsteps per frame:
-          frame_counter0 = g.frame_counter;
-          if (g.paused)
-          {
-            g.frame_counter++;
-            pos_target = frame_coordinate();
-          }
-          else
-          {
-            g.frame_counter++;
-            pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
-          }
-          if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-          {
-            g.frame_counter = frame_counter0;
-            break;
-          }
-          go_to(pos_target + 0.5, g.speed_limit);
-          display_frame_counter();
+      case '3': // #3: Read parameters from first memory bank
+        if (g.paused)
           break;
+        read_params(ADDR_REG1, 1);
+        break;
 
-        case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
-          if (g.paused)
-            break;
-          go_to((float)g.starting_point + 0.5, g.speed_limit);
-          display_comment_line(" Going to P0  ");
+      case '5': // #5: Save parameters to second memory bank
+        if (g.paused)
           break;
+        save_params(ADDR_REG2, 2);
+        break;
 
-        case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
-          if (g.paused)
-            break;
-          // Checking the correctness of point1/2
-          if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
-          {
-            // Using the simplest approach which will result the last shot to always slightly undershoot
-            g.Nframes = Nframes();
-            // Always starting from the foreground point, for full backlash compensation:
-            go_to((float)g.point1 + 0.5, g.speed_limit);
-            g.starting_point = g.point1;
-            g.destination_point = g.point2;
-            g.stacker_mode = 1;
-            // This is a non-continuous mode:
-            g.continuous_mode = 0;
-            g.start_stacking = 0;
-            g.timelapse_counter = 0;
-            if (N_TIMELAPSE[g.i_n_timelapse] > 1)
-              g.timelapse_mode = 1;
-            display_comment_line("2-points stack");
-          }
-          else
-          {
-            // Should print error message
-            display_comment_line("Bad 2 points! ");
-          }
+      case '6': // #6: Read parameters from second memory bank
+        if (g.paused)
           break;
+        read_params(ADDR_REG2, 2);
+        break;
 
-      } // switch
-    }
-    g.state1_old = state1;
+      case '8': // #8: Cycle through the table for FIRST_DELAY parameter
+        if (g.paused)
+          break;
+        if (g.i_first_delay < N_FIRST_DELAY - 1)
+          g.i_first_delay++;
+        else
+          g.i_first_delay = 0;
+        EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+        delay_buffer();
+        display_comment_line(g.buffer);
+        break;
+
+      case '9': // #9: Cycle through the table for SECOND_DELAY parameter
+        if (g.paused)
+          break;
+        if (g.i_second_delay < N_SECOND_DELAY - 1)
+          g.i_second_delay++;
+        else
+          g.i_second_delay = 0;
+        EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+        delay_buffer();
+        display_comment_line(g.buffer);
+        break;
+
+      case '4': // #4: Backlighting control
+        g.backlight++;
+        // LCD unstable for medium backlight; using only two levels:
+        if (g.backlight > 1)
+          g.backlight = 0;
+        set_backlight();
+        break;
+
+      case '*': // #*: Factory reset
+        if (g.paused)
+          break;
+        initialize(1);
+        break;
+
+      case '7': // #7: Manual camera shutter triggering
+        if (g.moving)
+          break;
+        g.make_shot = 1;
+        g.single_shot = 1;
+        g.start_stacking = 0;
+        g.stacker_mode = 0;
+        break;
+
+      case '1': // #1: Rewind a single frame step (no shooting)
+        if (g.moving || g.paused > 1)
+          break;
+        frame_counter0 = g.frame_counter;
+        if (g.paused)
+        {
+          g.frame_counter--;
+          pos_target = frame_coordinate();
+        }
+        else
+        {
+          g.frame_counter--;
+          pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
+        }
+        // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
+        // move the rail beyond g.limit1
+        if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+        {
+          // Recovering the original frame counter if aborting:
+          g.frame_counter = frame_counter0;
+          break;
+        }
+        go_to(pos_target + 0.5, g.speed_limit);
+        display_frame_counter();
+        break;
+
+      case 'A': // #A: Fast-forward a single frame step (no shooting)
+        if (g.moving || g.paused > 1)
+          break;
+        // Required microsteps per frame:
+        frame_counter0 = g.frame_counter;
+        if (g.paused)
+        {
+          g.frame_counter++;
+          pos_target = frame_coordinate();
+        }
+        else
+        {
+          g.frame_counter++;
+          pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
+        }
+        if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+        {
+          g.frame_counter = frame_counter0;
+          break;
+        }
+        go_to(pos_target + 0.5, g.speed_limit);
+        display_frame_counter();
+        break;
+
+      case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
+        if (g.paused)
+          break;
+        go_to((float)g.starting_point + 0.5, g.speed_limit);
+        display_comment_line(" Going to P0  ");
+        break;
+
+      case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
+        if (g.paused)
+          break;
+        // Checking the correctness of point1/2
+        if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
+        {
+          // Using the simplest approach which will result the last shot to always slightly undershoot
+          g.Nframes = Nframes();
+          // Always starting from the foreground point, for full backlash compensation:
+          go_to((float)g.point1 + 0.5, g.speed_limit);
+          g.starting_point = g.point1;
+          g.destination_point = g.point2;
+          g.stacker_mode = 1;
+          // This is a non-continuous mode:
+          g.continuous_mode = 0;
+          g.start_stacking = 0;
+          g.timelapse_counter = 0;
+          if (N_TIMELAPSE[g.i_n_timelapse] > 1)
+            g.timelapse_mode = 1;
+          display_comment_line("2-points stack");
+        }
+        else
+        {
+          // Should print error message
+          display_comment_line("Bad 2 points! ");
+        }
+        break;
+
+    } // switch
   }
 
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  else if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '*') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
+  //  else if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '*') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
+  else if (state0 == PRESSED && keypad.key[0].kchar == '*' && keypad.key[1].stateChanged && state1 == PRESSED)
+
     // Two-key *X commands (don't work for paused and moving states)
   {
-    if (state1 == PRESSED && g.moving == 0 && g.paused == 0)
+    if (g.moving == 0 && g.paused == 0)
     {
       switch (keypad.key[1].kchar)
       {
@@ -334,7 +376,6 @@ void process_keypad()
 
       } // switch
     }
-    g.state1_old = state1;
   }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -343,17 +384,18 @@ void process_keypad()
   {
     // Action is only needed if the kepad state changed since the last time,
     // or if one of the parameter change keys was pressed longer than T_KEY_LAG microseconds:
-    if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
-        state == PRESSED && g.state_old == PRESSED && (g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
-            || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
+    //    if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
+    //        state == PRESSED && g.state_old == PRESSED && (g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
+    //            || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
+    if (state0_changed && (state0 == PRESSED || state0 == RELEASED))
     {
 
-      if (state == PRESSED)
+      if (state0 == PRESSED)
       {
-        if (g.state_old != PRESSED)
+        if (state0_changed && !fake_key)
         {
-          g.key_old = key;
           // Memorizing the time when a key was pressed:
+          // (Only when it is a true state change, not a fake key)
           g.t_key_pressed = g.t;
           if (g.calibrate_warning == 1)
             // Any key pressed when calibrate_warning=1 will initiate calibration:
@@ -364,37 +406,15 @@ void process_keypad()
           }
         }
 
-        else
-          // We are here when a change parameter key was pressed longer than T_KEY_LAG
-        {
-          if (g.N_repeats == 0)
-            // Will be used for keys with repetition (parameter change keys):
-          {
-            g.t_last_repeat = g.t;
-            g.N_repeats = 1;
-          }
-          // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
-          if (g.t - g.t_last_repeat > T_KEY_REPEAT)
-          {
-            g.N_repeats++;
-            g.t_last_repeat = g.t;
-            // A trick, as "key" has only proper value when just pressed
-            key = g.key_old;
-          }
-          else
-            // Too early for a repeated key, so returning now:
-            return;
-        }
-
         // Keys interpretation depends on the stacker_mode:
         if (g.stacker_mode == 0)
           // Mode 0: default; rewinding etc.
         {
           // When error 1 (limiter on initially), the only commands accepted are rewind and fast forward:
-          if (g.error == 1 && key != '1' && key != 'A')
+          if (g.error == 1 && key0 != '1' && key0 != 'A')
             return;
 
-          switch (key)
+          switch (key0)
           {
             case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
               if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0 || g.paused > 1)
@@ -771,7 +791,7 @@ void process_keypad()
             display_comment_line("    Paused    ");
             letter_status("P");
             // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
-            g.state1_old = (KeyState)0;
+            //            g.state1_old = (KeyState)0;
           }
           //          else if (g.stacker_mode == 1)
           else
@@ -791,7 +811,7 @@ void process_keypad()
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
         // Breaking / stopping if no keys pressed (only after rewind/fastforward)
-        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state == RELEASED && g.paused == 0)
+        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
         {
 #ifdef EXTENDED_REWIND
           if (g.key_old == '1' && g.speed < 0.0 && g.backlash_on)
@@ -818,9 +838,11 @@ void process_keypad()
         }
       }
 
-      g.state_old = state;
+      //      g.state_old = state;
     }  // End of if(keyStateChanged)
   } // End of two-key / one-key if
+
+  //  g.state1_old = state1;
 
 
   return;
