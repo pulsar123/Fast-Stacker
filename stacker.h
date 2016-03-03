@@ -9,11 +9,11 @@
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.13"
+#define VERSION "1.14"
 
 
 //////// Debugging options ////////
-// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <16,384 (this is the case with my hardware - Velbon Super Mag Slider,
+// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000 (this is the case with my hardware - Velbon Super Mag Slider,
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE short
 // For timing the main loop:
@@ -64,13 +64,20 @@ const short AF_SYNC = 0;
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
 // The SHUTTER_ON_DELAY2 value can be modified during debugging (keys 2/3); the SHUTTER_OFF_DELAY2 value is fixed
-long SHUTTER_ON_DELAY2 = 1000000; // 1000000
-long SHUTTER_OFF_DELAY2 = 100000; // 100000
+long SHUTTER_ON_DELAY2 = 1100000;
+long SHUTTER_OFF_DELAY2 = 100000;
 #else
-// The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture for Canon with Magic Lantern firmware)
+// The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture - FRSP - for Canon with Magic Lantern firmware).
+// For FRSP to work, the AF relay should be connected as usual (to the AF camera circuit), but the shutter relay should operate the external flash
+// (and should be dosconnected from the camera's shutter).
 // SHUTTER_ON_DELAY2+SHUTTER_OFF_DELAY2+SHUTTER_TIME_US is the time the AF relay will be pressed on - this should be long enough for
-// a silent picture to be taken
-const unsigned long SHUTTER_ON_DELAY2 = 1000000;
+// a silent picture to be taken (at least 0.8s for Canon 50D).
+// SHUTTER_ON_DELAY2 is the delay between initiating a silent picture (by pressing AF) and the external flash actuation. It should be just
+// right (not too short, not too long; 1.1s works for Canon 50D) for the flash being triggered during the electronic shutter exposure.
+// The camera exposure also should be long enough (at least 0.25s for Canon 50D) to capture the flash.
+// FRSP should only be used with non-continuous stacking, with DELAY1+DELAY2 long enough for multiple silent pictures to be taken successfully.
+// (For Canon 50D at least 5.5s: DELAY1=4s, DELAY2=1.5s)
+const unsigned long SHUTTER_ON_DELAY2 = 1100000;
 const unsigned long SHUTTER_OFF_DELAY2 = 100000;
 #endif
 
@@ -151,14 +158,17 @@ const float MM_PER_ROTATION = 3.98;
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
-const float BACKLASH_MM = 0.2;
+const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
 // This is the second backlash related parameter you need to measure for you rail (or just use the value provided if your rail is Velbon Super Mag Slider)
 // This parameter is only relevant for one operation - rail reversal (*1 function). Unlike the above parameter (BACKLASH_MM) which can be equal to or
 // larger than the actual backlash value for the rail movements to be perfectly accurate, the BACKLASH_2 parameter has to have a specific value (not larger, no smaller); if
 // your rail backlash changes as a function of the rail angle, position on the rail, camera weight etc., BACKLASH_2 would have to change as well.
 // Because it is not practical, your value of BACKLASH_2 should be a compromise, giving reasonable results under normal usage scenario. In any case
 // rail reversal (*1) wasn't meant to be a perfectly accurate operation, whereas the standard backlash compensation is.
-const float BACKLASH_2_MM = 0.259;
+// Use the BL2_DEBUG mode to find the good value of this parameter. You should convert the displayed value of BL2_DEBUG from microsteps
+// to mm, by multiplying by MM_PER_ROTATION/(MOTOR_STEPS*N_MICROSTEPS).
+// Adjust this parameter only after you found a good value for BACKLASH_MM parameter.
+const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
@@ -213,12 +223,12 @@ const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 1
 // The length of the first delay table:
 const short N_FIRST_DELAY = 7;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-const float FIRST_DELAY[N_FIRST_DELAY] = {0.01, 1, 1.5, 2, 3, 4, 8};
+const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // The length of the first delay table:
 const short N_SECOND_DELAY = 7;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
-const float SECOND_DELAY[N_SECOND_DELAY] = {0.01, 1, 1.5, 2, 3, 4, 8};
+const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 3;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};
@@ -415,8 +425,6 @@ struct global
   char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
-  KeyState state_old;  // keeping old key[0] state
-  KeyState state1_old;  // keeping old key[1] state
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level; 0,1 for now
   struct regist reg; // Custom parameters register

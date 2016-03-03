@@ -22,25 +22,28 @@ void process_keypad()
   // The previous value of the key 0:
   g.key_old = keypad.key[0].kchar;
 
+  // This is a trick to generate multiple actions when you press certain keys (like "2") long enough
+  // (longer than T_KEY_LAG). The multiple actions are separated by delays T_KEY_REPEAT.
+  // The trick is to generate fake key press events for the currently pressed key. Flag fake_key
+  // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
-  if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
-       || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
+  // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
+  if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5' || g.key_old == '6' || g.key_old == '8' || g.key_old == '9')
+      && g.t - g.t_key_pressed > T_KEY_LAG)
     // We are here when a change parameter key was pressed longer than T_KEY_LAG
   {
     if (g.N_repeats == 0)
-      // Will be used for keys with repetition (parameter change keys):
+      // Generating the first fake key event:
     {
       g.t_last_repeat = g.t;
       g.N_repeats = 1;
-      // Generating the first fake key event:
       fake_key = 1;
     }
-    // We repeat a paramet change key once the time since the last repeat is larger than T_KEY_REPEat:
     if (g.t - g.t_last_repeat > T_KEY_REPEAT)
+      // Generating subsequent fake key events:
     {
       g.N_repeats++;
       g.t_last_repeat = g.t;
-      // Generating the subsequent fake key events:
       fake_key = 1;
     }
   }
@@ -54,13 +57,14 @@ void process_keypad()
   char key0;
   bool state0_changed;
   if (fake_key)
-    // Simulating a fake key (for repetitive key actions when certain keys are pressed long enough):
+    // Simulating a fake key (for repetitive key actions when certain keys are pressed long enough)
   {
     state0 = PRESSED;
     key0 = g.key_old;
     state0_changed = 1;
   }
   else
+    // Processing real (not fake) key press
   {
     state0 = keypad.key[0].kstate;
     state1 = keypad.key[1].kstate;
@@ -68,9 +72,10 @@ void process_keypad()
     state0_changed = keypad.key[0].stateChanged;
   }
 
-  //if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '#') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
-  if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED)
-    // Two-key #X commands
+
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Two-key #X commands (no fake key events allowed)
+  if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key)
   {
     switch (keypad.key[1].kchar)
     {
@@ -276,10 +281,9 @@ void process_keypad()
 
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //  else if ((keypad.key[0].kstate == PRESSED) && (keypad.key[0].kchar == '*') && (state1 != g.state1_old) && (state1 == PRESSED || state1 == RELEASED))
-  else if (state0 == PRESSED && keypad.key[0].kchar == '*' && keypad.key[1].stateChanged && state1 == PRESSED)
+  // Two-key *X commands (don't work for paused and moving states; no fake key events allowed)
+  else if (state0 == PRESSED && keypad.key[0].kchar == '*' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key)
 
-    // Two-key *X commands (don't work for paused and moving states)
   {
     if (g.moving == 0 && g.paused == 0)
     {
@@ -379,14 +383,9 @@ void process_keypad()
   }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Single-key commands (fake key events are allowed)
   else
-    // Single-key commands
   {
-    // Action is only needed if the kepad state changed since the last time,
-    // or if one of the parameter change keys was pressed longer than T_KEY_LAG microseconds:
-    //    if (state != g.state_old && (state == PRESSED || state == RELEASED) ||
-    //        state == PRESSED && g.state_old == PRESSED && (g.key_old == '2' || g.key_old == '3' || g.key_old == '5'
-    //            || g.key_old == '6' || g.key_old == '8' || g.key_old == '9') && g.t - g.t_key_pressed > T_KEY_LAG)
     if (state0_changed && (state0 == PRESSED || state0 == RELEASED))
     {
 
@@ -605,6 +604,7 @@ void process_keypad()
               break;
 
             case '2':  // 2: Decrease parameter n_shots (for 1-point sstacking)
+              // Also used for different debugging modes, to decrease debugged parameters
               if (g.paused)
                 break;
 #ifndef BL_DEBUG
@@ -637,6 +637,7 @@ void process_keypad()
               break;
 
             case '3':  // 3: Increase parameter n_shots (for 1-point sstacking)
+              // Also used for different debugging modes, to increase debugged parameters
               if (g.paused)
                 break;
 #ifndef BL_DEBUG
@@ -755,6 +756,8 @@ void process_keypad()
 
           } // End of case
         }  // if (g.stacker_mode == 0)
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // End of processing specific key presses
 
         else if (g.stacker_mode > 0)
           // Mode 1/2: focus stacking
@@ -790,10 +793,7 @@ void process_keypad()
             }
             display_comment_line("    Paused    ");
             letter_status("P");
-            // This seems to have fixed the bug with the need to double click keys in non-continuous paused mode:
-            //            g.state1_old = (KeyState)0;
           }
-          //          else if (g.stacker_mode == 1)
           else
             // In 1-point stacking, we abort
           {
@@ -805,6 +805,7 @@ void process_keypad()
 
       }  // if (PRESSED)
 
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       else
         // if a key was just released
       {
@@ -832,17 +833,15 @@ void process_keypad()
             change_speed(0.0, 0, 2);
         }
         if (g.key_old == '*')
+        // The '*' key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;
           display_all();
         }
       }
 
-      //      g.state_old = state;
     }  // End of if(keyStateChanged)
   } // End of two-key / one-key if
-
-  //  g.state1_old = state1;
 
 
   return;

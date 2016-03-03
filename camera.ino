@@ -102,10 +102,9 @@ void camera()
       if (g.continuous_mode || g.mirror_lock == 1)
       {
         g.make_shot = 1;
-//        g.t_shot = g.t;
       }
       // Even if the shutter is not triggered above, we need to record the current time, to set up the second delay (non-continuous mode):
-      g.t_shot = g.t; //???
+      g.t_shot = g.t; 
       display_frame_counter();
       g.frame_counter++;
       // Position at which to shoot the next shot:
