@@ -370,6 +370,9 @@ void stop_now()
 #ifdef PRECISE_STEPPING
   g.dt_backlash = 0;
 #endif
+#ifdef EXTENDED_REWIND
+  g.no_extended_rewind = 0;
+#endif
 
 
   return;

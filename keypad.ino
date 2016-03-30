@@ -435,6 +435,11 @@ void process_keypad()
               }
               else
               {
+#ifdef EXTENDED_REWIND
+                // Fixing a bug in extended rewind: disabling this feature if "1" was pressed when rail was moving
+                if (g.moving || g.started_moving)
+                  g.no_extended_rewind = 1;
+#endif
                 g.direction = -1;
                 motion_status();
                 // Rewinding is done with small acceleration:
@@ -756,8 +761,8 @@ void process_keypad()
 
           } // End of case
         }  // if (g.stacker_mode == 0)
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  // End of processing specific key presses
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // End of processing specific key presses
 
         else if (g.stacker_mode > 0)
           // Mode 1/2: focus stacking
@@ -805,7 +810,7 @@ void process_keypad()
 
       }  // if (PRESSED)
 
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       else
         // if a key was just released
       {
@@ -815,7 +820,7 @@ void process_keypad()
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
         {
 #ifdef EXTENDED_REWIND
-          if (g.key_old == '1' && g.speed < 0.0 && g.backlash_on)
+          if (g.key_old == '1' && g.speed < 0.0 && g.backlash_on && !g.no_extended_rewind)
             // Moving in the bad (negative) direction
           {
             // Estimating how much rail would travel if the maximum breaking started now (that's how much
@@ -833,7 +838,7 @@ void process_keypad()
             change_speed(0.0, 0, 2);
         }
         if (g.key_old == '*')
-        // The '*' key was just released: switch to default screen from the alternative one
+          // The '*' key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;
           display_all();

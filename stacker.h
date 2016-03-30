@@ -9,7 +9,7 @@
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.14"
+#define VERSION "1.15"
 
 
 //////// Debugging options ////////
@@ -460,6 +460,9 @@ struct global
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
+#endif
+#ifdef EXTENDED_REWIND
+  byte no_extended_rewind;
 #endif
 #ifdef TIMING
   unsigned long i_timing;
