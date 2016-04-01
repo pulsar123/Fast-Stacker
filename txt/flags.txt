@@ -1,1 +1,0 @@
-breaking: emergency breaking; from trigger (in limiters, either hitting switch or soft limit), till full stop clearing (in motor_control)

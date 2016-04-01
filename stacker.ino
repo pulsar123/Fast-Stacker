@@ -1,8 +1,8 @@
 /* Sergey Mashchenko 2015, 2016
 
-   Automated macro rail for focus stacking
+   Fast Stacker: an automated macro rail for focus stacking
 
-   Online tutorial: http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
+   Online tutorial: http://pulsar124.wikia.com/wiki/Fast_Stacker
 
    The hardware used:
    Original (h1.0):
@@ -28,7 +28,7 @@
 
    h1.0 [s0.08]: Original public release design.
 
-   h1.1 [s0.10,s0.12,s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
+   h1.1 [s0.10, s0.12, s0.14, s0.08a]: Second row keypad pin moved from 10 to 7. Pin 10 left free (for hardware SPI). Display's pin SCE (CE / chip select) disconnected from pin 7.
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
    h1.2 [s1.00 and newer]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
@@ -81,7 +81,6 @@ void setup() {
   }
 
   // This should not be done in initialize():
-  // Not sure if this is needed???
   keypad.key[0].kstate = (KeyState)0;
   keypad.key[1].kstate = (KeyState)0;
 
@@ -119,7 +118,7 @@ void loop()
   // Perform calibration of the limiters if requested (only when the rail is at rest):
   calibration();
 
-  // Camera shutter control:
+  // Camera control:
   camera();
 
   // Issuing write to stepper motor driver pins if/when needed:

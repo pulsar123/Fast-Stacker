@@ -1,6 +1,6 @@
 void camera()
 /*
- Everything related to camera shutter triggering
+ Everything related to camera shutter and AF triggering
  */
 {
   float speed;
