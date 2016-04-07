@@ -9,7 +9,7 @@
 #define STACKER_H
 
 // Requires hardware version h1.2
-#define VERSION "1.16"
+#define VERSION "1.17"
 
 
 //////// Debugging options ////////

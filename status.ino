@@ -93,7 +93,7 @@ void display_all()
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-void letter_status(char* l)
+void letter_status(char const * l)
 /*
  Display a letter code "l" at the beginning of the status line
  */
@@ -461,7 +461,7 @@ void display_current_position()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void display_comment_line(char *l)
+void display_comment_line(char const *l)
 /*
  Display a comment line briefly (then it should be replaced with display_current_positio() output)
  */

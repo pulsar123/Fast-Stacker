@@ -13,7 +13,7 @@ void initialize(byte factory_reset)
 
   // Keypad stuff:
   // No locking for keys:
-  keypad.setHoldTime(1000000);
+  keypad.setHoldTime(65000);
   keypad.setDebounceTime(50);
   g.key_old = '=';
 

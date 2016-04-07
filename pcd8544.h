@@ -15,14 +15,6 @@
 #endif
 
 
-#ifndef __AVR-GCC__
-#define MAPLE 1
-
-#ifndef SPI_NUM
-#define SPI_NUM 1
-#endif
-#endif
-
 class pcd8544 : public Print {
 public:
 	// Constructor for harware SPI
