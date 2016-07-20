@@ -11,11 +11,20 @@
 // Requires hardware version h1.2
 #define VERSION "1.17"
 
+// New mode, telescope, to use the controller to drive another stepper motor (e.g., for telescope focuser). Only the motor part is used in this mode, camera shutter and AF and microswitches are not used.
+// (Though microswitches can be used, if you find a way to attach them to your telescope or whatever other device you are controlling.)
+// If you comment out this line, no telescope mode will be available. If you uncomment this line, then during initialization Arduino will read the state of PIN_SHUTTER (by putting it briefly
+// into INPUT_PULLUP mode). If the state is LOW (that would happen if the controller is connected to the macro rail, as the pin will be grounded via 500 Ohm relay), the controller
+// assumes that we are driving the macro rail; if the state is HIGH (when no relay is grounding the pin), the controller assumes that we are driving the alternatiev device (e.g. telescope), and
+// will modify its behaviour accordingly.
+// When in telescope mode, current position is stored in a different EEPROM register, so the current position is independently rememberd for the two devices.
+// In telescope mode: no calibration, no limiters, no camera AF and shutter.
+#define TELESCOPE
 
 //////// Debugging options ////////
 // Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000 (this is the case with my hardware - Velbon Super Mag Slider,
 // 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE short
+#define COORD_TYPE long
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
@@ -347,6 +356,7 @@ const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.backlash_on
 const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.i_accel_factor
 const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
 const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
+const int ADDR_POS2 = ADDR_I_DT_TIMELAPSE + 2; // Position for alternative device (telescope); 4 bytes
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -471,6 +481,7 @@ struct global
   short dt_min;
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
+  short unsigned telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
 };
 
 struct global g;

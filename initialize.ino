@@ -2,13 +2,17 @@ void initialize(byte factory_reset)
 /* Initializing all the variables, with the optional factory reset (resetting all the EEPROM data).
 */
 {
+  unsigned char limit_on;
   g.error = 0;
   g.calibrate_warning = 0;
   
+  if (!g.telescope)
+  {
 #ifndef DISABLE_SHUTTER    
-  digitalWrite(PIN_SHUTTER, LOW);
+    digitalWrite(PIN_SHUTTER, LOW);
 #endif  
-  digitalWrite(PIN_AF, LOW);
+    digitalWrite(PIN_AF, LOW);
+  }
 
 
   // Keypad stuff:
@@ -19,11 +23,14 @@ void initialize(byte factory_reset)
 
 
 #ifndef MOTOR_DEBUG
-  // Limiting switches should not be on when powering up:
-  unsigned char limit_on = digitalRead(PIN_LIMITERS);
-  if (limit_on == HIGH)
+  if (!g.telescope)
   {
-    g.error = 1;
+    // Limiting switches should not be on when powering up:
+    limit_on = digitalRead(PIN_LIMITERS);
+    if (limit_on == HIGH)
+    {
+      g.error = 1;
+    }
   }
 #endif
 
@@ -49,6 +56,13 @@ void initialize(byte factory_reset)
     g.calibrate_init = g.calibrate;
 #else
     g.calibrate = 3;
+    if (g.telescope)
+    // Disabling calibration when operating telescope
+    {
+      g.calibrate = 0;
+      g.calibrate_warning = 0;
+      g.calibrate_init = g.calibrate;      
+    }
 #endif
     // Parameters for the reg structure:
     g.i_n_shots = 9;
@@ -75,7 +89,10 @@ void initialize(byte factory_reset)
     // Assigning values to the reg structure:
     to_reg();
     // Saving these values in EEPROM:
-    EEPROM.put( ADDR_POS, g.pos );
+    if (g.telescope)
+      EEPROM.put( ADDR_POS2, g.pos );
+      else
+      EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     EEPROM.put( ADDR_LIMIT2, g.limit2);
@@ -90,7 +107,10 @@ void initialize(byte factory_reset)
   else
   {
     // Reading the values from EEPROM:
-    EEPROM.get( ADDR_POS, g.pos );
+    if (g.telescope)
+      EEPROM.get( ADDR_POS2, g.pos );
+      else
+      EEPROM.get( ADDR_POS, g.pos );
     EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);

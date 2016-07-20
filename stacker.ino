@@ -56,6 +56,16 @@ void setup() {
   digitalWrite(PIN_ENABLE, HIGH);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
+#ifdef TELESCOPE
+  pinMode(PIN_SHUTTER, INPUT_PULLUP);
+  // Not sure if needed:
+  delay(1);
+  // Dynamically detecting whether we are connected to the macro rail (will return LOW) or telescope (returns HIGH, as there is no relay
+  // grounding the pin):
+  g.telescope = digitalRead(PIN_SHUTTER);
+#else
+  g.telescope = 0;
+#endif
   pinMode(PIN_SHUTTER, OUTPUT);
   pinMode(PIN_AF, OUTPUT);
 

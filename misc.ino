@@ -296,7 +296,7 @@ void stop_now()
   g.bad_timing_counter = (short)0;
 #endif
 
-  if (g.error == 1)
+  if (g.error == 1 && g.telescope == 0)
   {
     unsigned char limit_on = digitalRead(PIN_LIMITERS);
     // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
@@ -313,7 +313,10 @@ void stop_now()
   }
 
   // Saving the current position to EEPROM:
-  EEPROM.put( ADDR_POS, g.pos );
+  if (g.telescope)
+    EEPROM.put( ADDR_POS2, g.pos );
+    else
+    EEPROM.put( ADDR_POS, g.pos );
 
   if (g.calibrate_flag == 5)
     // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
@@ -427,7 +430,10 @@ void coordinate_recalibration()
   g.limit1 = g.limit1 + g.coords_change;
   EEPROM.put( ADDR_LIMIT1, g.limit1);
   // Saving the current position to EEPROM:
-  EEPROM.put( ADDR_POS, g.pos );
+  if (g.telescope)
+    EEPROM.put( ADDR_POS2, g.pos );
+    else
+    EEPROM.put( ADDR_POS, g.pos );
   display_all();
 
   return;
@@ -545,7 +551,10 @@ void rail_reverse(byte fix_points)
   }
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.pos = d_pos - g.pos;
-  EEPROM.put( ADDR_POS, g.pos );
+  if (g.telescope)
+    EEPROM.put( ADDR_POS2, g.pos );
+    else
+    EEPROM.put( ADDR_POS, g.pos );
   g.pos0 = g.pos;
   g.pos_old = g.pos;
   g.pos_short_old = floorMy(g.pos);
