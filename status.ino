@@ -1,11 +1,11 @@
 /*
- All LCD related functions
+  All LCD related functions
 */
 
 void display_all()
 /*
- Refreshing the whole screen
- */
+  Refreshing the whole screen
+*/
 {
 #ifdef TIMING
   return;
@@ -95,8 +95,8 @@ void display_all()
 
 void letter_status(char const * l)
 /*
- Display a letter code "l" at the beginning of the status line
- */
+  Display a letter code "l" at the beginning of the status line
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -113,8 +113,8 @@ void letter_status(char const * l)
 
 void motion_status()
 /*
- Motion status: 2-char status showing the direction and speed (rewind vs. focus stacking)
- */
+  Motion status: 2-char status showing the direction and speed (rewind vs. focus stacking)
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -150,8 +150,8 @@ void motion_status()
 
 void display_frame_counter()
 /*
- Printing the current stacking frame number in the status line.
-  */
+  Printing the current stacking frame number in the status line.
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -170,7 +170,7 @@ void display_frame_counter()
 
 void points_status()
 /* Displays F or B if the current coordinate is exactly the foreground (g.point1) or background (g.point2) point.
- */
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -190,8 +190,8 @@ void points_status()
 
 void battery_status()
 /*
- Measuring the battery voltage and displaying it.
- */
+  Measuring the battery voltage and displaying it.
+*/
 {
   if (g.moving == 1 || g.alt_flag)
     return;
@@ -205,10 +205,15 @@ void battery_status()
   if (g.setup_flag == 1)
   {
     // Deciding which seep limit to use: using the larger value if powered from AC, smaller value if powered from batteries:
-    if (V > SPEED_VOLTAGE)
-      g.speed_limit = SPEED_LIMIT;
+#ifdef TELESCOPE
+    if (g.telescope)
+      g.speed_limit = SPEED_LIMIT_TEL;
     else
-      g.speed_limit = SPEED_LIMIT2;
+#endif
+      if (V > SPEED_VOLTAGE)
+        g.speed_limit = SPEED_LIMIT;
+      else
+        g.speed_limit = SPEED_LIMIT2;
   }
 
   if (g.error)
@@ -247,8 +252,8 @@ void battery_status()
 
 void display_status_line()
 /*
- Display the whole status line
- */
+  Display the whole status line
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -264,8 +269,8 @@ void display_status_line()
 
 void display_u_per_f()
 /*
- Display the input parameter u per frame (1000*MM_PER_FRAME)
- */
+  Display the input parameter u per frame (1000*MM_PER_FRAME)
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -285,8 +290,8 @@ void display_u_per_f()
 
 void display_fps()
 /*
- Display the input parameter fps (frames per second)
- */
+  Display the input parameter fps (frames per second)
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -304,11 +309,11 @@ void display_fps()
 
 void display_one_point_params()
 /*
- Display the three parameters for one-point shooting:
+  Display the three parameters for one-point shooting:
   - input parameter N_SHOTS,
   - travel distance, mm,
   - travel time, s.
- */
+*/
 {
   if (g.error || g.alt_flag)
     return;
@@ -338,17 +343,18 @@ void display_one_point_params()
 
 void display_two_point_params()
 /*
- Display the three parameters for two-point shooting:
+  Display the three parameters for two-point shooting:
   - number of shots,
   - travel distance, mm,
   - travel time, s.
- */
+*/
 {
+  float dx;
   if (g.error || g.alt_flag)
     return;
 
   // +0.05 for proper round off:
-  float dx = MM_PER_MICROSTEP * (float)(g.point2 - g.point1) + 0.05;
+  dx = g.mm_per_microstep * (float)(g.point2 - g.point1) + 0.05;
   short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
@@ -370,20 +376,21 @@ void display_two_point_params()
 
 void display_two_points()
 /*
- Display the positions (in mm) of two points: foreground, F, and background, B.
- */
+  Display the positions (in mm) of two points: foreground, F, and background, B.
+*/
 {
+  float p;
   if (g.error || g.alt_flag)
     return;
 
-  float p = MM_PER_MICROSTEP * (float)g.point1;
+  p = g.mm_per_microstep * (float)g.point1;
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "F*****");
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
-  p = MM_PER_MICROSTEP * (float)g.point2;
+  p = g.mm_per_microstep * (float)g.point2;
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -397,9 +404,10 @@ void display_two_points()
 
 void display_current_position()
 /*
- Display the current position on the transient line
- */
+  Display the current position on the transient line
+*/
 {
+  float p;
 #ifdef CAMERA_DEBUG
   //  return;
 #endif
@@ -417,9 +425,9 @@ void display_current_position()
   lcd.setCursor(0, 5);
   lcd.print(g.buffer);
 #ifdef MOTOR_DEBUG
-//  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
-//  lcd.setCursor(0, 3);
-//  lcd.print(g.buffer);
+  //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
+  //  lcd.setCursor(0, 3);
+  //  lcd.print(g.buffer);
 #endif
   return;
 #endif
@@ -438,19 +446,19 @@ void display_current_position()
     sprintf(g.buf6, "   ");
 
 #ifdef BL_DEBUG
-// When debugging backlash, displays the current backlash value in microsteps
+  // When debugging backlash, displays the current backlash value in microsteps
   sprintf(g.buf6, "%3d", g.backlash);
 #endif
 #ifdef BL2_DEBUG
-// When debugging BACKLASH_2, displays the current BACKLAS_2 value in microsteps
+  // When debugging BACKLASH_2, displays the current BACKLAS_2 value in microsteps
   sprintf(g.buf6, "%3d", BACKLASH_2);
 #endif
 #ifdef DELAY_DEBUG
-// Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
-  sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2/10000);
+  // Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
+  sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2 / 10000);
 #endif
 
-  float p = MM_PER_MICROSTEP * (float)g.pos;
+  p = g.mm_per_microstep * (float)g.pos;
   sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
 
   lcd.setCursor(0, 4);
@@ -463,8 +471,8 @@ void display_current_position()
 
 void display_comment_line(char const *l)
 /*
- Display a comment line briefly (then it should be replaced with display_current_positio() output)
- */
+  Display a comment line briefly (then it should be replaced with display_current_positio() output)
+*/
 {
 #ifdef TIMING
   return;
@@ -486,7 +494,8 @@ void display_comment_line(char const *l)
 void delay_buffer()
 // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
 {
-  float y = MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_MICROSTEP / ACCEL_LIMIT;
+  float y;
+  y = MM_PER_FRAME[g.i_mm_per_frame] / g.mm_per_microstep / g.accel_limit;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.i_first_delay];

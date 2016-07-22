@@ -3,7 +3,7 @@ void motor_control()
    values at the last accel change (t0, pos0, speed0), and old integer position pos_old_short.
 
    Important: g.moving can be set to zero only here (by calling stop_now())! Also, it should be set to 1 only outside of this function.
- */
+*/
 {
   unsigned long dt, dt_a;
   float dV;
@@ -97,16 +97,16 @@ void motor_control()
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
-#ifndef DISABLE_MOTOR  
+#ifndef DISABLE_MOTOR
     digitalWrite(PIN_DIR, g.straight);
-#endif    
+#endif
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
-#ifndef DISABLE_MOTOR  
-    digitalWrite(PIN_DIR, 1-g.straight);
-#endif    
+#ifndef DISABLE_MOTOR
+    digitalWrite(PIN_DIR, 1 - g.straight);
+#endif
     delayMicroseconds(STEP_LOW_DT);
   }
 
@@ -115,14 +115,14 @@ void motor_control()
   if (pos_short != g.pos_short_old)
   {
     // One microstep (driver direction pin should have been written to elsewhere):
-#ifndef DISABLE_MOTOR  
+#ifndef DISABLE_MOTOR
     digitalWrite(PIN_STEP, LOW);
-#endif    
+#endif
     // For Easydriver, the delay should be at least 1.0 us:
     delayMicroseconds(STEP_LOW_DT);
-#ifndef DISABLE_MOTOR  
+#ifndef DISABLE_MOTOR
     digitalWrite(PIN_STEP, HIGH);
-#endif    
+#endif
 
     // How many steps we'd need to take at this call:
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
@@ -258,11 +258,13 @@ void motor_control()
     {
       // Final position  if a full break were enabled now:
       // Breaking is always done at maximum deceleration
+      float del_pos;
+      del_pos = 1.0 - 0.5 * (g.speed * g.speed) / g.accel_limit;
       if (g.speed >= 0.0)
         //The additional -/+1.0 factor is to make the rail stop 1 step later on average, to deal with round-off errors
-        g.pos_stop = g.pos - 1.0 + 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
+        g.pos_stop = g.pos - del_pos;
       else
-        g.pos_stop = g.pos + 1.0 - 0.5 * (g.speed * g.speed) / ACCEL_LIMIT;
+        g.pos_stop = g.pos + del_pos;
 
       // Checking if pos_goto is bracketed between pos_stop_old and pos_stop (not checked first time):
       if (g.pos_stop_flag == 1 && ((g.pos_goto > g.pos_stop && g.pos_goto < g.pos_stop_old) || (g.pos_goto < g.pos_stop && g.pos_goto > g.pos_stop_old)))

@@ -5,12 +5,14 @@ void initialize(byte factory_reset)
   unsigned char limit_on;
   g.error = 0;
   g.calibrate_warning = 0;
-  
+
+#ifdef TELESCOPE
   if (!g.telescope)
+#endif
   {
-#ifndef DISABLE_SHUTTER    
+#ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, LOW);
-#endif  
+#endif
     digitalWrite(PIN_AF, LOW);
   }
 
@@ -23,16 +25,30 @@ void initialize(byte factory_reset)
 
 
 #ifndef MOTOR_DEBUG
-  if (!g.telescope)
+  // Limiting switches should not be on when powering up:
+  limit_on = digitalRead(PIN_LIMITERS);
+  if (limit_on == HIGH)
   {
-    // Limiting switches should not be on when powering up:
-    limit_on = digitalRead(PIN_LIMITERS);
-    if (limit_on == HIGH)
-    {
-      g.error = 1;
-    }
+    g.error = 1;
+    // If cable is disconnected, by default using macro rail mode:
+#ifdef TELESCOPE
+    g.telescope = 0;
+#endif
   }
 #endif
+
+#ifdef TELESCOPE
+  if (g.telescope)
+  {
+    g.accel_limit = ACCEL_LIMIT_TEL;
+    g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
+  }
+  else
+#endif
+  {
+    g.accel_limit = ACCEL_LIMIT;
+    g.mm_per_microstep = MM_PER_MICROSTEP;
+  }
 
   // Initializing program parameters:
   g.moving = 0;
@@ -56,12 +72,14 @@ void initialize(byte factory_reset)
     g.calibrate_init = g.calibrate;
 #else
     g.calibrate = 3;
+#endif
+#ifdef TELESCOPE
     if (g.telescope)
-    // Disabling calibration when operating telescope
+      // Disabling calibration when operating telescope
     {
       g.calibrate = 0;
       g.calibrate_warning = 0;
-      g.calibrate_init = g.calibrate;      
+      g.calibrate_init = g.calibrate;
     }
 #endif
     // Parameters for the reg structure:
@@ -89,9 +107,11 @@ void initialize(byte factory_reset)
     // Assigning values to the reg structure:
     to_reg();
     // Saving these values in EEPROM:
+#ifdef TELESCOPE
     if (g.telescope)
-      EEPROM.put( ADDR_POS2, g.pos );
-      else
+      EEPROM.put( ADDR_POS_TEL, g.pos );
+    else
+#endif
       EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
     EEPROM.put( ADDR_LIMIT1, g.limit1);
@@ -107,9 +127,11 @@ void initialize(byte factory_reset)
   else
   {
     // Reading the values from EEPROM:
+#ifdef TELESCOPE
     if (g.telescope)
-      EEPROM.get( ADDR_POS2, g.pos );
-      else
+      EEPROM.get( ADDR_POS_TEL, g.pos );
+    else
+#endif
       EEPROM.get( ADDR_POS, g.pos );
     EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);

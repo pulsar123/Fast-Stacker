@@ -1,9 +1,9 @@
 void process_keypad()
 /*
- All the keypad runtime stuff goes here
- */
+  All the keypad runtime stuff goes here
+*/
 {
-  float speed;
+  float speed, dx_stop;
   short frame_counter0;
   COORD_TYPE pos_target;
 
@@ -826,7 +826,7 @@ void process_keypad()
             // Estimating how much rail would travel if the maximum breaking started now (that's how much
             // rail would actually travel if moving in the good direction, or if backlash was zero):
             // Stopping distance in the current direction:
-            float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
+            dx_stop = g.speed * g.speed / (2.0 * g.accel_limit);
             // The physical coordinate where we have to stop:
             float pos1 = g.pos - dx_stop;
             // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:

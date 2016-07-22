@@ -1,22 +1,32 @@
 float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
-  return SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+#ifdef TELESCOPE
+  if (g.telescope)
+    return SPEED_SCALE_TEL * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+  else
+#endif
+    return SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
 }
 
 
 float Msteps_per_frame ()
 /* Computing the "microsteps per frame" parameter - redo this every time g.i_mm_per_frame changes.
- */
+*/
 {
-  return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+#ifdef TELESCOPE
+  if (g.telescope)
+    return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
+  else
+#endif
+    return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
 }
 
 
 short Nframes ()
 /* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
    g.msteps_per_frame, g.point1, or g.point2 changes.
- */
+*/
 {
   return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
 }
@@ -42,8 +52,8 @@ char *ftoa(char *a, float f, int precision)
 
 COORD_TYPE nintMy(float x)
 /*
- My version of nint. Float -> COORD_TYPE conversion. Valid for positive/negative/zero.
- */
+  My version of nint. Float -> COORD_TYPE conversion. Valid for positive/negative/zero.
+*/
 {
   // Rounding x towards 0:
   COORD_TYPE x_short = (COORD_TYPE)x;
@@ -74,7 +84,7 @@ COORD_TYPE nintMy(float x)
 COORD_TYPE floorMy(float x)
 /* A limited implementation of C function floor - only to convert from float to COORD_TYPE.
    Works with positive, negative numbers and 0.
- */
+*/
 {
   COORD_TYPE m = x;
   if (x >= 0.0)
@@ -89,7 +99,7 @@ COORD_TYPE floorMy(float x)
 COORD_TYPE roundMy(float x)
 /* Rounding of float numbers, output - COORD_TYPE.
    Works with positive, negative numbers and 0.
- */
+*/
 {
   if (x >= 0.0)
     return (COORD_TYPE)(x + 0.5);
@@ -104,7 +114,7 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
    Inputs:
     - speed1_loc: new target speed.
     When moving_mode1=1, global moving_mode=1 is  enabled (to be used in go_to).
- */
+*/
 {
   char new_accel;
 
@@ -166,9 +176,9 @@ void go_to(float pos1, float speed)
 
    pos_phys = pos_prog + g.BL_counter
 
- */
+*/
 {
-  float speed1_loc;
+  float speed1_loc, dx_stop;
   byte speed_changes;
 
   if (g.breaking || g.backlashing)
@@ -218,7 +228,7 @@ void go_to(float pos1, float speed)
   {
     // Stopping distance in the current direction:
     // Breaking is always done with the maximum deceleration:
-    float dx_stop = g.speed * g.speed / (2.0 * ACCEL_LIMIT);
+    dx_stop = g.speed * g.speed / (2.0 * g.accel_limit);
     // Travel vector:
     float dx_vec = pos1 - g.pos;
     float dx = fabs(dx_vec);
@@ -273,8 +283,8 @@ void go_to(float pos1, float speed)
 
 void stop_now()
 /*
- Things to do when we decide to stop inside motor_control().
- */
+  Things to do when we decide to stop inside motor_control().
+*/
 {
 #ifdef TIMING
   // Update timing stats for the very last loop in motion (before setting g.moving=0):
@@ -296,13 +306,16 @@ void stop_now()
   g.bad_timing_counter = (short)0;
 #endif
 
-  if (g.error == 1 && g.telescope == 0)
-  {
-    unsigned char limit_on = digitalRead(PIN_LIMITERS);
-    // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
-    if (limit_on == LOW)
-      g.error = 0;
-  }
+#ifdef TELESCOPE
+  if (g.telescope == 0)
+#endif
+    if (g.error == 1)
+    {
+      unsigned char limit_on = digitalRead(PIN_LIMITERS);
+      // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
+      if (limit_on == LOW)
+        g.error = 0;
+    }
 
   if (g.save_energy)
   {
@@ -313,9 +326,11 @@ void stop_now()
   }
 
   // Saving the current position to EEPROM:
+#ifdef TELESCOPE
   if (g.telescope)
-    EEPROM.put( ADDR_POS2, g.pos );
-    else
+    EEPROM.put( ADDR_POS_TEL, g.pos );
+  else
+#endif
     EEPROM.put( ADDR_POS, g.pos );
 
   if (g.calibrate_flag == 5)
@@ -414,7 +429,7 @@ void coordinate_recalibration()
 /*
   Run this every time g.limit1 changes, to recalibrate all the coordinates, with g.limit1 set to zero.
   Should only be run when g.moving=0, after a calibration is done.
- */
+*/
 {
   if (g.moving)
     return;
@@ -430,9 +445,11 @@ void coordinate_recalibration()
   g.limit1 = g.limit1 + g.coords_change;
   EEPROM.put( ADDR_LIMIT1, g.limit1);
   // Saving the current position to EEPROM:
+#ifdef TELESCOPE
   if (g.telescope)
-    EEPROM.put( ADDR_POS2, g.pos );
-    else
+    EEPROM.put( ADDR_POS_TEL, g.pos );
+  else
+#endif
     EEPROM.put( ADDR_POS, g.pos );
   display_all();
 
@@ -443,11 +460,11 @@ void coordinate_recalibration()
 void set_accel_v()
 {
   // Five possible floating point values for acceleration
-  g.accel_v[0] = -ACCEL_LIMIT;
-  g.accel_v[1] = -ACCEL_LIMIT / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[0] = -g.accel_limit;
+  g.accel_v[1] = -g.accel_limit / (float)ACCEL_FACTOR[g.i_accel_factor];
   g.accel_v[2] = 0.0;
-  g.accel_v[3] =  ACCEL_LIMIT / (float)ACCEL_FACTOR[g.i_accel_factor];
-  g.accel_v[4] =  ACCEL_LIMIT;
+  g.accel_v[3] =  g.accel_limit / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[4] =  g.accel_limit;
   return;
 }
 
@@ -532,7 +549,7 @@ void get_reg()
 void rail_reverse(byte fix_points)
 /* Reversing the rail operation - either manually (*1 function), or automatically, when loading one of the memory registers
    If fix_points=1, update the current point1,2 accordingly.
- */
+*/
 {
   COORD_TYPE d_pos, pos_target;
 
@@ -551,9 +568,11 @@ void rail_reverse(byte fix_points)
   }
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.pos = d_pos - g.pos;
+#ifdef TELESCOPE
   if (g.telescope)
-    EEPROM.put( ADDR_POS2, g.pos );
-    else
+    EEPROM.put( ADDR_POS_TEL, g.pos );
+  else
+#endif
     EEPROM.put( ADDR_POS, g.pos );
   g.pos0 = g.pos;
   g.pos_old = g.pos;

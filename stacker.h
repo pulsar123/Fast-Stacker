@@ -159,6 +159,8 @@ const COORD_TYPE MOTOR_STEPS = 200;
 const COORD_TYPE N_MICROSTEPS = 8;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
+// The value for alternative device (TELESCOPE mode):
+const float MM_PER_ROTATION_TEL = 24;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
 // Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full g.backlash amount,
@@ -184,15 +186,19 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
-// This speed limits is normally used only with AC power (which provides mor torque).
+// This speed limits is normally used only with AC power (which provides more torque).
 const float SPEED_LIMIT_MM_S = 5;
 // The second (smaller) speed limit (used only with a battery power, which provides less torque):
 const float SPEED_LIMIT2_MM_S = 2.5;
+// The limit for TELESCOPE mode:
+const float SPEED_LIMIT_TEL_MM_S = 2.5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 2.0;
+// The value for TELESCOPE mode:
+const float BREAKING_DISTANCE_TEL_MM = 2.0;
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
@@ -265,17 +271,27 @@ pcd8544 lcd(PIN_LCD_DC, PIN_LCD_RST, PIN_LCD_SCE);
 
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
+// TELESCOPE value:
+const float MM_PER_MICROSTEP_TEL = MM_PER_ROTATION_TEL / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
 const COORD_TYPE MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
 const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
+// TELESCOPE value:
+const float BREAKING_DISTANCE_TEL = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_TEL_MM / (1.0 * MM_PER_ROTATION_TEL);
 const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
+// TELESCOPE value:
+const float SPEED_SCALE_TEL = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION_TEL); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
 const float SPEED_LIMIT2 = SPEED_SCALE * SPEED_LIMIT2_MM_S;
+// TELESCOPE value:
+const float SPEED_LIMIT_TEL = SPEED_SCALE_TEL * SPEED_LIMIT_TEL_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
+// TELESCOPE value:
+const float ACCEL_LIMIT_TEL = SPEED_LIMIT_TEL * SPEED_LIMIT_TEL / (2.0 * BREAKING_DISTANCE_TEL);
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
 // 2* - to make goto accurate, but with higher decelerations at the end
 // Currently not used
@@ -356,7 +372,7 @@ const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.backlash_on
 const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.i_accel_factor
 const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
 const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
-const int ADDR_POS2 = ADDR_I_DT_TIMELAPSE + 2; // Position for alternative device (telescope); 4 bytes
+const int ADDR_POS_TEL = ADDR_I_DT_TIMELAPSE + 2; // Position for alternative device (telescope), used only if TELESCOPE is defined; 4 bytes
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -377,10 +393,10 @@ struct global
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
-  char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL
-  
+  char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
   byte i_accel_factor; // Index for accel_factor  
   float accel_v[5]; // Five possible floating point values for acceleration
+  float accel_limit; // Maximum allowed acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
   float pos_old; // Last position, in the previous arduino loop
   COORD_TYPE pos_short_old;  // Previously computed position
@@ -468,6 +484,7 @@ struct global
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
+  float mm_per_microstep; // Rail specific setting
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
 #endif
@@ -481,7 +498,9 @@ struct global
   short dt_min;
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
+#ifdef TELESCOPE
   short unsigned telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
+#endif  
 };
 
 struct global g;

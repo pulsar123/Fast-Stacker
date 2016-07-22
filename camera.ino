@@ -148,7 +148,9 @@ void camera()
     if (g.continuous_mode == 1 && g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1 || AF_SYNC))
     {
       // Initiating AF now:
+#ifdef TELESCOPE
       if (!g.telescope)
+#endif      
         digitalWrite(PIN_AF, HIGH);
       g.t_AF = g.t;
       g.AF_on = 1;
@@ -165,7 +167,9 @@ void camera()
   if (g.make_shot == 1 && g.AF_on == 1 && ((g.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
   {
 #ifndef DISABLE_SHUTTER
+#ifdef TELESCOPE
     if (!g.telescope)
+#endif    
       digitalWrite(PIN_SHUTTER, HIGH);
 #endif
 #ifdef CAMERA_DEBUG
@@ -181,7 +185,9 @@ void camera()
   {
     // Releasing the shutter:
 #ifndef DISABLE_SHUTTER
+#ifdef TELESCOPE
     if (!g.telescope)
+#endif    
       digitalWrite(PIN_SHUTTER, LOW);
 #endif
 #ifdef CAMERA_DEBUG
@@ -196,7 +202,9 @@ void camera()
   if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
       (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
+#ifdef TELESCOPE    
     if (!g.telescope)
+#endif    
       digitalWrite(PIN_AF, LOW);
 #ifdef CAMERA_DEBUG
     AF_status(0);

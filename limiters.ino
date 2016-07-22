@@ -1,13 +1,17 @@
 void limiters()
 /* Processing inputs from the two limiting switches, plus all the relevant calculations.
 
- */
+*/
 {
   COORD_TYPE dx, dx_break;
   unsigned char limit_on;
 
-  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1 || g.telescope)
+  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1)
     return;
+#ifdef TELESCOPE
+  if (g.telescope)
+    return;
+#endif
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
@@ -18,10 +22,7 @@ void limiters()
 #ifdef MOTOR_DEBUG
   limit_on = 0;
 #else
-  if (g.telescope)
-    limit_on = 0;
-  else
-    limit_on = digitalRead(PIN_LIMITERS);
+  limit_on = digitalRead(PIN_LIMITERS);
 #endif
 
   //////// Hard limits //////
@@ -115,7 +116,7 @@ void limiters()
       if (dx <= roundMy(BREAKING_DISTANCE))
       {
         // Breaking distance at the current speed:
-        dx_break = roundMy(0.5 * g.speed * g.speed / ACCEL_LIMIT);
+        dx_break = roundMy(0.5 * g.speed * g.speed / g.accel_limit);
         // Accurate test (for the current speed):
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch

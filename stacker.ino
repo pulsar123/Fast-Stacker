@@ -64,7 +64,7 @@ void setup() {
   // grounding the pin):
   g.telescope = digitalRead(PIN_SHUTTER);
 #else
-  g.telescope = 0;
+  //  g.telescope = 0;
 #endif
   pinMode(PIN_SHUTTER, OUTPUT);
   pinMode(PIN_AF, OUTPUT);
@@ -95,13 +95,14 @@ void setup() {
   keypad.key[1].kstate = (KeyState)0;
 
 #ifdef ROUND_OFF
+  float fsteps;
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
   for (int i = 0; i < N_PARAMS; i++)
   {
-    float fsteps = MM_PER_FRAME[i] / MM_PER_MICROSTEP;
+    fsteps = MM_PER_FRAME[i] / g.mm_per_microstep;
     short steps = (short)nintMy(fsteps);
     if (steps < 20)
-      MM_PER_FRAME[i] = ((float)steps) * MM_PER_MICROSTEP;
+      MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
   }
 #endif
 
