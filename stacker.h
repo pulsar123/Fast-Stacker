@@ -191,14 +191,14 @@ const float SPEED_LIMIT_MM_S = 5;
 // The second (smaller) speed limit (used only with a battery power, which provides less torque):
 const float SPEED_LIMIT2_MM_S = 2.5;
 // The limit for TELESCOPE mode:
-const float SPEED_LIMIT_TEL_MM_S = 2.5;
+const float SPEED_LIMIT_TEL_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 2.0;
 // The value for TELESCOPE mode:
-const float BREAKING_DISTANCE_TEL_MM = 2.0;
+const float BREAKING_DISTANCE_TEL_MM = 0.5;
 // Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
 // Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
 // This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
@@ -499,7 +499,7 @@ struct global
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
 #ifdef TELESCOPE
-  short unsigned telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
+  unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
 #endif  
 };
 

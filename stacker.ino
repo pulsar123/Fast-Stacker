@@ -59,10 +59,11 @@ void setup() {
 #ifdef TELESCOPE
   pinMode(PIN_SHUTTER, INPUT_PULLUP);
   // Not sure if needed:
-  delay(1);
+//  delay(10);
   // Dynamically detecting whether we are connected to the macro rail (will return LOW) or telescope (returns HIGH, as there is no relay
   // grounding the pin):
   g.telescope = digitalRead(PIN_SHUTTER);
+//  delay(10);
 #else
   //  g.telescope = 0;
 #endif
@@ -97,11 +98,23 @@ void setup() {
 #ifdef ROUND_OFF
   float fsteps;
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
+#ifdef TELESCOPE
+  float scale = MM_PER_FRAME[0] / g.mm_per_microstep;
+#endif
   for (int i = 0; i < N_PARAMS; i++)
   {
     fsteps = MM_PER_FRAME[i] / g.mm_per_microstep;
+#ifdef TELESCOPE
+    if (g.telescope)
+// Rescaling the MM_PER_FRAME table in telescope mode so the smallest value = one microstep:
+      fsteps = fsteps / scale;
+#endif
     short steps = (short)nintMy(fsteps);
+#ifdef TELESCOPE
+    if (g.telescope || steps < 20)
+#else    
     if (steps < 20)
+#endif    
       MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
   }
 #endif

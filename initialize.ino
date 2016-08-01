@@ -42,6 +42,10 @@ void initialize(byte factory_reset)
   {
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("TELESCOPE");
+    delay(500);
   }
   else
 #endif
@@ -72,15 +76,6 @@ void initialize(byte factory_reset)
     g.calibrate_init = g.calibrate;
 #else
     g.calibrate = 3;
-#endif
-#ifdef TELESCOPE
-    if (g.telescope)
-      // Disabling calibration when operating telescope
-    {
-      g.calibrate = 0;
-      g.calibrate_warning = 0;
-      g.calibrate_init = g.calibrate;
-    }
 #endif
     // Parameters for the reg structure:
     g.i_n_shots = 9;
@@ -138,7 +133,14 @@ void initialize(byte factory_reset)
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     get_reg();
-  }
+  }  // if factory_reset
+
+#ifdef TELESCOPE
+  if (g.telescope)
+    // For now, initial position in telescope mode is fixed (because telescope focus is often changed manually, which breaks calibration):
+    g.pos = (COORD_TYPE)6667;
+#endif
+
 
   // Five possible floating point values for acceleration
   set_accel_v();
@@ -215,6 +217,15 @@ void initialize(byte factory_reset)
   g.calibrate = 0;
   g.calibrate_warning = 0;
   g.calibrate_init = g.calibrate;
+#endif
+#ifdef TELESCOPE
+  if (g.telescope)
+    // Disabling calibration when operating telescope
+  {
+    g.calibrate = 0;
+    g.calibrate_warning = 0;
+    g.calibrate_init = g.calibrate;
+  }
 #endif
 
   // Default lcd layout:
