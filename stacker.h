@@ -93,9 +93,10 @@ const unsigned long SHUTTER_OFF_DELAY2 = 100000;
 //////// Pin assignment ////////
 // Pin 10 is left unused because it is used internally by hardware SPI.
 // We are using the bare minimum of arduino pins for stepper driver:
-const short PIN_STEP = 0;
-const short PIN_DIR = 1;
-const short PIN_ENABLE = 2;  // LOW: enable motor; HIGH: disable motor (to save energy)
+#define PIN_STEP A5
+#define PIN_DIR A4
+// LOW: enable motor; HIGH: disable motor (to save energy):
+#define PIN_ENABLE A3
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
 const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
 const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
@@ -148,7 +149,7 @@ char keys[rows][cols] = {
 };
 // Hardware v1.1: 4, 7, 12, A1 (was 4, 10, 12, A1; pin 10 was freed to be able to use hardware SPI for LCD)
 byte rowPins[rows] = {4, 7, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
-byte colPins[cols] = {A2, A3, A4, A5}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
+byte colPins[cols] = {A2, 2, 1, 0}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 
@@ -156,7 +157,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 // Number of full steps per rotation for the stepper motor:
 const COORD_TYPE MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for EasyDriver is 8):
-const COORD_TYPE N_MICROSTEPS = 8;
+const COORD_TYPE N_MICROSTEPS = 16;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
 // The value for alternative device (TELESCOPE mode):
