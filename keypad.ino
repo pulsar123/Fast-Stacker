@@ -171,7 +171,7 @@ void process_keypad()
       case '4': // #4: Backlighting control
         g.backlight++;
         // LCD unstable for medium backlight; using only two levels:
-        if (g.backlight > 1)
+        if (g.backlight >= N_BACKLIGHT)
           g.backlight = 0;
         set_backlight();
         break;
@@ -290,6 +290,11 @@ void process_keypad()
       switch (keypad.key[1].kchar)
       {
         case '1': // *1: Rail reverse
+#ifdef TELESCOPE
+          if (g.telescope)
+// Rail reverse is disabled in telescope mode as its unsafe and is not needed:
+            break;
+#endif
           g.straight = 1 - g.straight;
           EEPROM.put( ADDR_STRAIGHT, g.straight);
           display_all();

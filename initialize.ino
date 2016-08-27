@@ -179,7 +179,12 @@ void initialize(byte factory_reset)
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
-  if (factory_reset)
+  if (factory_reset
+#ifdef TELESCOPE
+      || g.telescope == 1
+      // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position)
+#endif
+     )
   {
     g.BL_counter = 0;
     g.backlash_init = 0;
@@ -203,6 +208,10 @@ void initialize(byte factory_reset)
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
 
+  // Default lcd layout:
+  // This sets g.speed_limit, among other things:
+  display_all();
+
 #ifdef TIMING
   if (g.moving == 0)
   {
@@ -225,12 +234,18 @@ void initialize(byte factory_reset)
     g.calibrate = 0;
     g.calibrate_warning = 0;
     g.calibrate_init = g.calibrate;
+// No rail reverse in telescope mode:
+    g.straight = 1;
+    g.pos = 0.0;
+    g.pos_short_old = (COORD_TYPE) 0;
+    g.pos0 = 0.0;
+    // Setting two soft limits assuming that initilly the focuser is at its closest position;
+    g.limit1 = (COORD_TYPE)TEL_INIT - BACKLASH_TEL;
+    // the second limit is equal to the TEL_LENGTH parameter:
+    g.limit2 = TEL_LENGTH;
+    go_to(TEL_INIT, g.speed_limit);
   }
 #endif
-
-  // Default lcd layout:
-  // This sets g.speed_limit, among other things:
-  display_all();
 
 #ifdef CAMERA_DEBUG
   shutter_status(0);

@@ -32,6 +32,7 @@
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
    h1.2 [s1.00 and newer]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
+   h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2. Increased N_MICROSTEPS to 16.
 */
 #include <EEPROM.h>
 #include <math.h>

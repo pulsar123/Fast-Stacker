@@ -8,7 +8,7 @@
 #ifndef STACKER_H
 #define STACKER_H
 
-// Requires hardware version h1.2
+// Requires hardware version h1.3
 #define VERSION "1.17"
 
 // New mode, telescope, to use the controller to drive another stepper motor (e.g., for telescope focuser). Only the motor part is used in this mode, camera shutter and AF and microswitches are not used.
@@ -126,7 +126,7 @@ const short PIN_LCD_RST = 100;
 const float VOLTAGE_SCALER = 2.7273 * 5.0 / 1024.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = 1.125;
+const float V_LOW = 1.125;  // 1.125V
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
 // The speed related critical voltage value; if the power voltage is above this value, we assume that we are
@@ -156,7 +156,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 //////// Parameters related to the motor and the rail: ////////
 // Number of full steps per rotation for the stepper motor:
 const COORD_TYPE MOTOR_STEPS = 200;
-// Number of microsteps in a step (default for EasyDriver is 8):
+// Number of microsteps in a step (default for BigEasyDriver is 16):
 const COORD_TYPE N_MICROSTEPS = 16;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
@@ -171,6 +171,8 @@ const float MM_PER_ROTATION_TEL = 24;
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
+// The backlash value for the second device:
+const float BACKLASH_TEL_MM = 0.2; // 0.2mm for Celestron telescope focuser
 // This is the second backlash related parameter you need to measure for you rail (or just use the value provided if your rail is Velbon Super Mag Slider)
 // This parameter is only relevant for one operation - rail reversal (*1 function). Unlike the above parameter (BACKLASH_MM) which can be equal to or
 // larger than the actual backlash value for the rail movements to be perfectly accurate, the BACKLASH_2 parameter has to have a specific value (not larger, no smaller); if
@@ -180,6 +182,7 @@ const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
 // Use the BL2_DEBUG mode to find the good value of this parameter. You should convert the displayed value of BL2_DEBUG from microsteps
 // to mm, by multiplying by MM_PER_ROTATION/(MOTOR_STEPS*N_MICROSTEPS).
 // Adjust this parameter only after you found a good value for BACKLASH_MM parameter.
+// No equivalent parameter for the TELESCOPE mode as one doesn't need to reverse the directional keys meaning with a telescope focuser.
 const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
@@ -188,7 +191,7 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 // This speed limits is normally used only with AC power (which provides more torque).
-const float SPEED_LIMIT_MM_S = 5;
+const float SPEED_LIMIT_MM_S = 2.5;
 // The second (smaller) speed limit (used only with a battery power, which provides less torque):
 const float SPEED_LIMIT2_MM_S = 2.5;
 // The limit for TELESCOPE mode:
@@ -199,12 +202,7 @@ const float SPEED_LIMIT_TEL_MM_S = 5;
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 2.0;
 // The value for TELESCOPE mode:
-const float BREAKING_DISTANCE_TEL_MM = 0.5;
-// Rewind/fast-forward acceleration factor: the acceleration when pressing "1" or "A" keys (rewind / fast forward) will be slower than the ACCEL_LIMIT (see below) by this factor
-// Should be 1 or larger. If 1, we have the old behaviour - acceleration and deceleration are always the same, ACCEL_LIMIT
-// This feature is to allow for more precise positioning of the rail, to find good fore/background points, but keep all other rail movements as fast as possible
-// Set it to a larger value if you typically deal with high magnifications, and a lower value if you do low magnifications.
-//const float ACCEL_FACTOR = 3.0;
+const float BREAKING_DISTANCE_TEL_MM = 1;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const COORD_TYPE LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
@@ -215,6 +213,10 @@ const COORD_TYPE DELTA_LIMITER = 1000; // In calibration, after hitting the firs
 const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
+// Initial coordinate (mm) for telescope:
+const float TEL_INIT_MM = 5;
+// The maximum travel distance in telescope mode, starting from the closest position:
+const float TEL_LENGTH_MM = 45;
 
 
 //////// User interface parameters: ////////
@@ -225,12 +227,14 @@ const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for r
 
 
 //////// INPUT PARAMETERS: ////////
+// Number of backlight levels:
+#define N_BACKLIGHT 3
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
 #define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
 //  Mm per frame parameter (determined by DoF of the lens)
-float MM_PER_FRAME[] = {0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2, 2.5};
+float MM_PER_FRAME[] = {0.00125, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
@@ -246,8 +250,8 @@ const short N_SECOND_DELAY = 7;
 // (This should be always longer than the camera exposure time)
 const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
-const byte N_ACCEL_FACTOR = 3;
-const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6};
+const byte N_ACCEL_FACTOR = 4;
+const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6, 9};
 // Table for N_timelapse parameter (number of stacking sequences in the timelapse mode); 1 means no timelapse (just one stack):
 const byte N_N_TIMELAPSE = 7;
 const short N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
@@ -301,6 +305,7 @@ const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 const float SPEED_TINY = 1e-4 * SPEED_LIMIT;
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE BACKLASH_TEL = (COORD_TYPE)(BACKLASH_TEL_MM / MM_PER_MICROSTEP_TEL + 0.5);
 #ifdef BL2_DEBUG
 // Initial value for BACKLASH_2:
 COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
@@ -322,6 +327,8 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 // If undefined, to rewind by the same amount,
 // one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation.
 #define EXTENDED_REWIND
+const float TEL_INIT = TEL_INIT_MM / MM_PER_MICROSTEP_TEL;
+const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
 
 
 // Structure to have custom parameters saved to EEPROM
@@ -453,7 +460,7 @@ struct global
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
-  byte backlight; // backlight level; 0,1 for now
+  byte backlight; // backlight level;
   struct regist reg; // Custom parameters register
   COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking

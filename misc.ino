@@ -393,30 +393,28 @@ void stop_now()
 #endif
 
 
-  return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 void set_backlight()
-// Setting the LCD backlight. 2 levels for now.
+// Setting the LCD backlight. Up to 32 levels.
 {
+  unsigned char level;
+  //  level = g.backlight * (255 / (N_BACKLIGHT - 1));
   switch (g.backlight)
   {
     case 0:
-      analogWrite(PIN_LCD_LED, 0);
+      level = 0;
       break;
-
     case 1:
-      // For some reason intermediate backlight (127) started crashing the LCD (since I borrowed some pins)
-      // Switching to two level for now
-      analogWrite(PIN_LCD_LED, 255);
+    // Very low value for complete darkness:
+      level = 10;
       break;
-
-      //    case 2:
-      //      analogWrite(PIN_LCD_LED, 255);
-      //      break;
+    case 2:
+      level = 255;
   }
+  analogWrite(PIN_LCD_LED, level);
 
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
@@ -637,7 +635,12 @@ void update_backlash()
 {
   if (g.backlash_on)
   {
-    g.backlash = BACKLASH;
+#ifdef TELESCOPE
+    if (g.telescope)
+      g.backlash = BACKLASH_TEL;
+    else
+#endif
+      g.backlash = BACKLASH;
     g.BL_counter = g.backlash;
     g.backlash_init = 1;
   }
