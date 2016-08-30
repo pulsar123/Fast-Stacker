@@ -3,32 +3,32 @@ float target_speed ()
 {
 #ifdef TELESCOPE
   if (g.telescope)
-    return SPEED_SCALE_TEL * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+    return SPEED_SCALE_TEL * FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
   else
 #endif
-    return SPEED_SCALE * FPS[g.i_fps] * MM_PER_FRAME[g.i_mm_per_frame];
+    return SPEED_SCALE * FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
 }
 
 
 float Msteps_per_frame ()
-/* Computing the "microsteps per frame" parameter - redo this every time g.i_mm_per_frame changes.
+/* Computing the "microsteps per frame" parameter - redo this every time g.reg.i_mm_per_frame changes.
 */
 {
 #ifdef TELESCOPE
   if (g.telescope)
-    return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
+    return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
   else
 #endif
-    return (MM_PER_FRAME[g.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
+    return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
 }
 
 
 short Nframes ()
 /* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
-   g.msteps_per_frame, g.point1, or g.point2 changes.
+   g.msteps_per_frame, g.reg.point1, or g.reg.point2 changes.
 */
 {
-  return short(((float)(g.point2 - g.point1)) / g.msteps_per_frame) + 1;
+  return short(((float)(g.reg.point2 - g.reg.point1)) / g.msteps_per_frame) + 1;
 }
 
 
@@ -146,7 +146,7 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
     // Starting moving
     g.started_moving = 1;
     motion_status();
-    if (g.save_energy)
+    if (g.reg.save_energy)
     {
 #ifndef DISABLE_MOTOR
       digitalWrite(PIN_ENABLE, LOW);
@@ -317,7 +317,7 @@ void stop_now()
         g.error = 0;
     }
 
-  if (g.save_energy)
+  if (g.reg.save_energy)
   {
 #ifndef DISABLE_MOTOR
     digitalWrite(PIN_ENABLE, HIGH);
@@ -327,9 +327,7 @@ void stop_now()
 
   // Saving the current position to EEPROM:
 #ifdef TELESCOPE
-  if (g.telescope)
-    EEPROM.put( ADDR_POS_TEL, g.pos );
-  else
+  if (!g.telescope)
 #endif
     EEPROM.put( ADDR_POS, g.pos );
 
@@ -408,7 +406,7 @@ void set_backlight()
       level = 0;
       break;
     case 1:
-    // Very low value for complete darkness:
+      // Very low value for complete darkness:
       level = 10;
       break;
     case 2:
@@ -444,9 +442,7 @@ void coordinate_recalibration()
   EEPROM.put( ADDR_LIMIT1, g.limit1);
   // Saving the current position to EEPROM:
 #ifdef TELESCOPE
-  if (g.telescope)
-    EEPROM.put( ADDR_POS_TEL, g.pos );
-  else
+  if (!g.telescope)
 #endif
     EEPROM.put( ADDR_POS, g.pos );
   display_all();
@@ -459,89 +455,99 @@ void set_accel_v()
 {
   // Five possible floating point values for acceleration
   g.accel_v[0] = -g.accel_limit;
-  g.accel_v[1] = -g.accel_limit / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[1] = -g.accel_limit / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[2] = 0.0;
-  g.accel_v[3] =  g.accel_limit / (float)ACCEL_FACTOR[g.i_accel_factor];
+  g.accel_v[3] =  g.accel_limit / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[4] =  g.accel_limit;
   return;
 }
 
 
+
+/*
 void to_reg()
 // Parameters -> to reg structure
 {
-  g.reg = {g.i_n_shots, g.i_mm_per_frame, g.i_fps, g.i_first_delay, g.i_second_delay, g.i_accel_factor, g.i_n_timelapse,
-           g.i_dt_timelapse, g.mirror_lock, g.backlash_on, g.straight, g.save_energy, g.point1, g.point2
+  g.reg = {g.reg.i_n_shots, g.reg.i_mm_per_frame, g.reg.i_fps, g.reg.i_first_delay, g.reg.i_second_delay, g.reg.i_accel_factor, g.reg.i_n_timelapse,
+           g.reg.i_dt_timelapse, g.reg.mirror_lock, g.reg.backlash_on, g.reg.straight, g.reg.save_energy, g.reg.point1, g.reg.point2
           };
   return;
 }
+*/
 
 
+/*
 void from_reg()
 // reg structure -> parameters
 {
-  g.i_n_shots = g.reg.i_n_shots;
-  g.i_mm_per_frame = g.reg.i_mm_per_frame;
-  g.i_fps = g.reg.i_fps;
-  g.i_first_delay = g.reg.i_first_delay;
-  g.i_second_delay = g.reg.i_second_delay;
-  g.i_accel_factor = g.reg.i_accel_factor;
-  g.i_n_timelapse = g.reg.i_n_timelapse;
-  g.i_dt_timelapse = g.reg.i_dt_timelapse;
-  g.mirror_lock = g.reg.mirror_lock;
-  g.backlash_on = g.reg.backlash_on;
-  update_backlash();
-  g.straight = g.reg.straight;
-  g.save_energy = g.reg.save_energy;
-  update_save_energy();
-  g.point1 = g.reg.point1;
-  g.point2 = g.reg.point2;
-  return;
+g.reg.i_n_shots = g.reg.i_n_shots;
+g.reg.i_mm_per_frame = g.reg.i_mm_per_frame;
+g.reg.i_fps = g.reg.i_fps;
+g.reg.i_first_delay = g.reg.i_first_delay;
+g.reg.i_second_delay = g.reg.i_second_delay;
+g.reg.i_accel_factor = g.reg.i_accel_factor;
+g.reg.i_n_timelapse = g.reg.i_n_timelapse;
+g.reg.i_dt_timelapse = g.reg.i_dt_timelapse;
+g.reg.mirror_lock = g.reg.mirror_lock;
+g.reg.backlash_on = g.reg.backlash_on;
+g.reg.straight = g.reg.straight;
+g.reg.save_energy = g.reg.save_energy;
+g.reg.point1 = g.reg.point1;
+g.reg.point2 = g.reg.point2;
+update_backlash();
+update_save_energy();
+return;
 }
+*/
 
+/*
 
 void put_reg()
 // Putting all parameters which are part of reg structure to EEPROM
 {
-  EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
-  EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-  EEPROM.put( ADDR_I_FPS, g.i_fps);
-  EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
-  EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
-  EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
-  EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
-  EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
-  EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
-  EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
-  EEPROM.put( ADDR_STRAIGHT, g.straight);
-  EEPROM.put( ADDR_SAVE_ENERGY, g.save_energy);
-  EEPROM.put( ADDR_POINT1, g.point1);
-  EEPROM.put( ADDR_POINT2, g.point2);
-  return;
+EEPROM.put( g.addr_reg[0], g.reg);
+EEPROM.put( ADDR_I_N_SHOTS, g.reg.i_n_shots);
+EEPROM.put( ADDR_I_MM_PER_FRAME, g.reg.i_mm_per_frame);
+EEPROM.put( ADDR_I_FPS, g.reg.i_fps);
+EEPROM.put( ADDR_I_FIRST_DELAY, g.reg.i_first_delay);
+EEPROM.put( ADDR_I_SECOND_DELAY, g.reg.i_second_delay);
+EEPROM.put( ADDR_I_ACCEL_FACTOR, g.reg.i_accel_factor);
+EEPROM.put( ADDR_I_N_TIMELAPSE, g.reg.i_n_timelapse);
+EEPROM.put( ADDR_I_DT_TIMELAPSE, g.reg.i_dt_timelapse);
+EEPROM.put( ADDR_MIRROR_LOCK, g.reg.mirror_lock);
+EEPROM.put( ADDR_BACKLASH_ON, g.reg.backlash_on);
+EEPROM.put( ADDR_STRAIGHT, g.reg.straight);
+EEPROM.put( ADDR_SAVE_ENERGY, g.reg.save_energy);
+EEPROM.put( ADDR_POINT1, g.reg.point1);
+EEPROM.put( ADDR_POINT2, g.reg.point2);
+return;
 }
+*/
 
-
+/*
 void get_reg()
 // Getting all parameters which are part of reg structure from EEPROM
 {
-  EEPROM.get( ADDR_I_N_SHOTS, g.i_n_shots);
-  EEPROM.get( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
-  EEPROM.get( ADDR_I_FPS, g.i_fps);
-  EEPROM.get( ADDR_I_FIRST_DELAY, g.i_first_delay);
-  EEPROM.get( ADDR_I_SECOND_DELAY, g.i_second_delay);
-  EEPROM.get( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
-  EEPROM.get( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
-  EEPROM.get( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
-  EEPROM.get( ADDR_MIRROR_LOCK, g.mirror_lock);
-  EEPROM.get( ADDR_BACKLASH_ON, g.backlash_on);
-  update_backlash();
-  EEPROM.get( ADDR_STRAIGHT, g.straight);
-  EEPROM.get( ADDR_SAVE_ENERGY, g.save_energy);
-  update_save_energy();
-  EEPROM.get( ADDR_POINT1, g.point1);
-  EEPROM.get( ADDR_POINT2, g.point2);
-  return;
+EEPROM.get( g.addr_reg[0], g.reg);
+EEPROM.get( ADDR_I_N_SHOTS, g.reg.i_n_shots);
+EEPROM.get( ADDR_I_MM_PER_FRAME, g.reg.i_mm_per_frame);
+EEPROM.get( ADDR_I_FPS, g.reg.i_fps);
+EEPROM.get( ADDR_I_FIRST_DELAY, g.reg.i_first_delay);
+EEPROM.get( ADDR_I_SECOND_DELAY, g.reg.i_second_delay);
+EEPROM.get( ADDR_I_ACCEL_FACTOR, g.reg.i_accel_factor);
+EEPROM.get( ADDR_I_N_TIMELAPSE, g.reg.i_n_timelapse);
+EEPROM.get( ADDR_I_DT_TIMELAPSE, g.reg.i_dt_timelapse);
+EEPROM.get( ADDR_MIRROR_LOCK, g.reg.mirror_lock);
+EEPROM.get( ADDR_BACKLASH_ON, g.reg.backlash_on);
+EEPROM.get( ADDR_STRAIGHT, g.reg.straight);
+EEPROM.get( ADDR_SAVE_ENERGY, g.reg.save_energy);
+EEPROM.get( ADDR_POINT1, g.reg.point1);
+EEPROM.get( ADDR_POINT2, g.reg.point2);
+update_backlash();
+update_save_energy();
+return;
 }
+*/
 
 
 void rail_reverse(byte fix_points)
@@ -555,7 +561,7 @@ void rail_reverse(byte fix_points)
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
   d_pos = g.limit1 + g.limit2 + g.backlash;
-  if (g.backlash_on)
+  if (g.reg.backlash_on)
   {
     d_pos = d_pos - BACKLASH_2;
     g.backlash_init = 2;
@@ -567,9 +573,7 @@ void rail_reverse(byte fix_points)
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.pos = d_pos - g.pos;
 #ifdef TELESCOPE
-  if (g.telescope)
-    EEPROM.put( ADDR_POS_TEL, g.pos );
-  else
+  if (!g.telescope)
 #endif
     EEPROM.put( ADDR_POS, g.pos );
   g.pos0 = g.pos;
@@ -578,11 +582,10 @@ void rail_reverse(byte fix_points)
   if (fix_points)
   {
     // Updating the current two points positions:
-    pos_target = d_pos - g.point2;
-    g.point2 = d_pos - g.point1;
-    g.point1 = pos_target;
-    EEPROM.put( ADDR_POINT1, g.point1);
-    EEPROM.put( ADDR_POINT2, g.point2);
+    pos_target = d_pos - g.reg.point2;
+    g.reg.point2 = d_pos - g.reg.point1;
+    g.reg.point1 = pos_target;
+    EEPROM.put( g.addr_reg[0], g.reg);
   }
 
   return;
@@ -597,19 +600,19 @@ COORD_TYPE frame_coordinate()
 
 
 
-void read_params(const int addr, byte n)
+void read_params(byte n)
 {
-  byte straight_old = g.straight;
-  EEPROM.get( addr, g.reg);
-  from_reg();
-  put_reg();
+  byte straight_old = g.reg.straight;
+  EEPROM.get( g.addr_reg[n], g.reg);
+  // Memorizing as default environment:
+  EEPROM.put( g.addr_reg[0], g.reg);
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
   display_all();
   display_comment_line("Read from Reg");
   lcd.print(n);
   lcd.clearRestOfLine();
-  if (g.straight != straight_old)
+  if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
   {
     // Not updating point1,2:
@@ -619,10 +622,9 @@ void read_params(const int addr, byte n)
 }
 
 
-void save_params(const int addr, byte n)
+void save_params(byte n)
 {
-  to_reg();
-  EEPROM.put( addr, g.reg);
+  EEPROM.put( g.addr_reg[n], g.reg);
   display_comment_line("Saved to Reg");
   lcd.print(n);
   lcd.clearRestOfLine();
@@ -631,9 +633,9 @@ void save_params(const int addr, byte n)
 
 
 void update_backlash()
-// Call this every time g.backlash_on changes
+// Call this every time g.reg.backlash_on changes
 {
-  if (g.backlash_on)
+  if (g.reg.backlash_on)
   {
 #ifdef TELESCOPE
     if (g.telescope)
@@ -651,12 +653,12 @@ void update_backlash()
 
 
 void update_save_energy()
-// Call it every time g.save_energy is changed
+// Call it every time g.reg.save_energy is changed
 {
 #ifdef DISABLE_MOTOR
   return;
 #else
-  if (g.save_energy)
+  if (g.reg.save_energy)
     digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
   else
     digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)

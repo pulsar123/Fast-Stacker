@@ -98,14 +98,14 @@ void motor_control()
   if (g.speed > 0.0 && g.speed_old <= 0.0)
   {
 #ifndef DISABLE_MOTOR
-    digitalWrite(PIN_DIR, g.straight);
+    digitalWrite(PIN_DIR, g.reg.straight);
 #endif
     delayMicroseconds(STEP_LOW_DT);
   }
   else if (g.speed < 0.0 && g.speed_old >= 0.0)
   {
 #ifndef DISABLE_MOTOR
-    digitalWrite(PIN_DIR, 1 - g.straight);
+    digitalWrite(PIN_DIR, 1 - g.reg.straight);
 #endif
     delayMicroseconds(STEP_LOW_DT);
   }

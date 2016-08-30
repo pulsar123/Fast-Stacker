@@ -121,35 +121,35 @@ void process_keypad()
       case '2': // #2: Save parameters to first memory bank
         if (g.paused)
           break;
-        save_params(ADDR_REG1, 1);
+        save_params(1);
         break;
 
       case '3': // #3: Read parameters from first memory bank
         if (g.paused)
           break;
-        read_params(ADDR_REG1, 1);
+        read_params(1);
         break;
 
       case '5': // #5: Save parameters to second memory bank
         if (g.paused)
           break;
-        save_params(ADDR_REG2, 2);
+        save_params(2);
         break;
 
       case '6': // #6: Read parameters from second memory bank
         if (g.paused)
           break;
-        read_params(ADDR_REG2, 2);
+        read_params(2);
         break;
 
       case '8': // #8: Cycle through the table for FIRST_DELAY parameter
         if (g.paused)
           break;
-        if (g.i_first_delay < N_FIRST_DELAY - 1)
-          g.i_first_delay++;
+        if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
+          g.reg.i_first_delay++;
         else
-          g.i_first_delay = 0;
-        EEPROM.put( ADDR_I_FIRST_DELAY, g.i_first_delay);
+          g.reg.i_first_delay = 0;
+        EEPROM.put( g.addr_reg[0], g.reg);
         // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
         delay_buffer();
         display_comment_line(g.buffer);
@@ -158,11 +158,11 @@ void process_keypad()
       case '9': // #9: Cycle through the table for SECOND_DELAY parameter
         if (g.paused)
           break;
-        if (g.i_second_delay < N_SECOND_DELAY - 1)
-          g.i_second_delay++;
+        if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
+          g.reg.i_second_delay++;
         else
-          g.i_second_delay = 0;
-        EEPROM.put( ADDR_I_SECOND_DELAY, g.i_second_delay);
+          g.reg.i_second_delay = 0;
+        EEPROM.put( g.addr_reg[0], g.reg);
         // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
         delay_buffer();
         display_comment_line(g.buffer);
@@ -252,20 +252,20 @@ void process_keypad()
         if (g.paused)
           break;
         // Checking the correctness of point1/2
-        if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
+        if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
         {
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to((float)g.point1 + 0.5, g.speed_limit);
-          g.starting_point = g.point1;
-          g.destination_point = g.point2;
+          go_to((float)g.reg.point1 + 0.5, g.speed_limit);
+          g.starting_point = g.reg.point1;
+          g.destination_point = g.reg.point2;
           g.stacker_mode = 1;
           // This is a non-continuous mode:
           g.continuous_mode = 0;
           g.start_stacking = 0;
           g.timelapse_counter = 0;
-          if (N_TIMELAPSE[g.i_n_timelapse] > 1)
+          if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
             g.timelapse_mode = 1;
           display_comment_line("2-points stack");
         }
@@ -292,65 +292,66 @@ void process_keypad()
         case '1': // *1: Rail reverse
 #ifdef TELESCOPE
           if (g.telescope)
-// Rail reverse is disabled in telescope mode as its unsafe and is not needed:
+            // Rail reverse is disabled in telescope mode as its unsafe and is not needed:
             break;
 #endif
-          g.straight = 1 - g.straight;
-          EEPROM.put( ADDR_STRAIGHT, g.straight);
+          g.reg.straight = 1 - g.reg.straight;
+
+          EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           // Reversing the rail and updating the point1,2 parameters:
           rail_reverse(1);
           break;
 
         case '2': // *2: Save parameters to third memory bank
-          save_params(ADDR_REG3, 3);
+          save_params(3);
           break;
 
         case '3': // *3: Read parameters from third memory bank
-          read_params(ADDR_REG3, 3);
+          read_params(3);
           break;
 
         case '5': // *5: Save parameters to fourth memory bank
-          save_params(ADDR_REG4, 4);
+          save_params(4);
           break;
 
         case '6': // *6: Read parameters from fourth memory bank
-          read_params(ADDR_REG4, 4);
+          read_params(4);
           break;
 
         case '8': // *8: Save parameters to fifth memory bank
-          save_params(ADDR_REG5, 5);
+          save_params(5);
           break;
 
         case '9': // *9: Read parameters from fifth memory bank
-          read_params(ADDR_REG5, 5);
+          read_params(5);
           break;
 
         case 'A': // *A: Change accel_factor
-          if (g.i_accel_factor < N_ACCEL_FACTOR - 1)
-            g.i_accel_factor++;
+          if (g.reg.i_accel_factor < N_ACCEL_FACTOR - 1)
+            g.reg.i_accel_factor++;
           else
-            g.i_accel_factor = 0;
-          EEPROM.put( ADDR_I_ACCEL_FACTOR, g.i_accel_factor);
+            g.reg.i_accel_factor = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           // Five possible floating point values for acceleration
           set_accel_v();
           break;
 
         case 'B': // *B: Backlash compensation on / off
-          g.backlash_on = 1 - g.backlash_on;
+          g.reg.backlash_on = 1 - g.reg.backlash_on;
           update_backlash();
           display_all();
-          EEPROM.put( ADDR_BACKLASH_ON, g.backlash_on);
+          EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
         case 'C': // *C: Mirror lock: 0, 1, 2
-          if (g.mirror_lock < 2)
-            g.mirror_lock++;
+          if (g.reg.mirror_lock < 2)
+            g.reg.mirror_lock++;
           else
-            g.mirror_lock = 0;
+            g.reg.mirror_lock = 0;
           display_all();
-          EEPROM.put( ADDR_MIRROR_LOCK, g.mirror_lock);
+          EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
         case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
@@ -359,28 +360,28 @@ void process_keypad()
           break;
 
         case '4': // *4: Change N_timelapse
-          if (g.i_n_timelapse < N_N_TIMELAPSE - 1)
-            g.i_n_timelapse++;
+          if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
+            g.reg.i_n_timelapse++;
           else
-            g.i_n_timelapse = 0;
-          EEPROM.put( ADDR_I_N_TIMELAPSE, g.i_n_timelapse);
+            g.reg.i_n_timelapse = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           break;
 
         case '7': // *7: Change dt_timelapse
-          if (g.i_dt_timelapse < N_DT_TIMELAPSE - 1)
-            g.i_dt_timelapse++;
+          if (g.reg.i_dt_timelapse < N_DT_TIMELAPSE - 1)
+            g.reg.i_dt_timelapse++;
           else
-            g.i_dt_timelapse = 0;
-          EEPROM.put( ADDR_I_DT_TIMELAPSE, g.i_dt_timelapse);
+            g.reg.i_dt_timelapse = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           break;
 
         case '0': // *0: Save energy on / off
-          g.save_energy = 1 - g.save_energy;
+          g.reg.save_energy = 1 - g.reg.save_energy;
           update_save_energy();
           display_all();
-          EEPROM.put( ADDR_SAVE_ENERGY, g.save_energy);
+          EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
       } // switch
@@ -482,8 +483,8 @@ void process_keypad()
             case '4':  // 4: Set foreground point
               if (g.paused || g.moving)
                 break;
-              g.point1 = g.pos_short_old;
-              EEPROM.put( ADDR_POINT1, g.point1);
+              g.reg.point1 = g.pos_short_old;
+              EEPROM.put( g.addr_reg[0], g.reg);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
@@ -495,8 +496,8 @@ void process_keypad()
             case 'B':  // B: Set background point
               if (g.paused || g.moving)
                 break;
-              g.point2 = g.pos_short_old;
-              EEPROM.put( ADDR_POINT2, g.point2);
+              g.reg.point2 = g.pos_short_old;
+              EEPROM.put( g.addr_reg[0], g.reg);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
               points_status();
@@ -508,14 +509,14 @@ void process_keypad()
             case '7':  // 7: Go to the foreground point
               if (g.paused)
                 break;
-              go_to((float)g.point1 + 0.5, g.speed_limit);
+              go_to((float)g.reg.point1 + 0.5, g.speed_limit);
               display_comment_line(" Going to P1  ");
               break;
 
             case 'C':  // C: Go to the background point
               if (g.paused)
                 break;
-              go_to((float)g.point2 + 0.5, g.speed_limit);
+              go_to((float)g.reg.point2 + 0.5, g.speed_limit);
               display_comment_line(" Going to P2  ");
               break;
 
@@ -523,7 +524,7 @@ void process_keypad()
               if (g.moving)
                 break;
               // Checking the correctness of point1/2
-              if (g.point2 > g.point1 && g.point1 >= g.limit1 && g.point2 <= g.limit2)
+              if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
               {
                 if (g.paused == 1)
                   // Resuming 2-point stacking from a paused state
@@ -554,7 +555,7 @@ void process_keypad()
                 else if (g.paused == 2)
                   // Restarting from a pause which happened during the initial travel to the starting point
                 {
-                  go_to((float)g.point1 + 0.5, g.speed_limit);
+                  go_to((float)g.reg.point1 + 0.5, g.speed_limit);
                   g.stacker_mode = 1;
                   g.start_stacking = 0;
                   g.paused = 0;
@@ -565,14 +566,14 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  go_to((float)g.point1 + 0.5, g.speed_limit);
-                  g.starting_point = g.point1;
-                  g.destination_point = g.point2;
+                  go_to((float)g.reg.point1 + 0.5, g.speed_limit);
+                  g.starting_point = g.reg.point1;
+                  g.destination_point = g.reg.point2;
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
                   g.start_stacking = 0;
                   g.timelapse_counter = 0;
-                  if (N_TIMELAPSE[g.i_n_timelapse] > 1)
+                  if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
                     g.timelapse_mode = 1;
                   display_comment_line("2-points stack");
                 }
@@ -620,11 +621,11 @@ void process_keypad()
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
 #ifndef DELAY_DEBUG
-              if (g.i_n_shots > 0)
-                g.i_n_shots--;
+              if (g.reg.i_n_shots > 0)
+                g.reg.i_n_shots--;
               else
                 break;
-              EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+              EEPROM.put( g.addr_reg[0], g.reg);
 #else //DELAY_DEBUG
               // The meaning of "2" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
               SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
@@ -653,11 +654,11 @@ void process_keypad()
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
 #ifndef DELAY_DEBUG
-              if (g.i_n_shots < N_PARAMS - 1)
-                g.i_n_shots++;
+              if (g.reg.i_n_shots < N_PARAMS - 1)
+                g.reg.i_n_shots++;
               else
                 break;
-              EEPROM.put( ADDR_I_N_SHOTS, g.i_n_shots);
+              EEPROM.put( g.addr_reg[0], g.reg);
 #else //DELAY_DEBUG
               // The meaning of "3" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
               SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
@@ -682,8 +683,8 @@ void process_keypad()
             case '5':  // 5: Decrease parameter mm_per_frame
               if (g.paused)
                 break;
-              if (g.i_mm_per_frame > 0)
-                g.i_mm_per_frame--;
+              if (g.reg.i_mm_per_frame > 0)
+                g.reg.i_mm_per_frame--;
               else
                 break;
               // Required microsteps per frame:
@@ -692,27 +693,27 @@ void process_keypad()
               if (g.Nframes > 9999)
                 // Too many frames; recovering the old values
               {
-                g.i_mm_per_frame++;
+                g.reg.i_mm_per_frame++;
                 g.msteps_per_frame = Msteps_per_frame();
                 g.Nframes = Nframes();
                 break;
               }
               display_all();
-              EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+              EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
             case '6':  // 6: Increase parameter mm_per_frame
               if (g.paused)
                 break;
-              if (g.i_mm_per_frame < N_PARAMS - 1)
+              if (g.reg.i_mm_per_frame < N_PARAMS - 1)
               {
-                g.i_mm_per_frame++;
+                g.reg.i_mm_per_frame++;
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
                 if (speed > g.speed_limit)
                 {
-                  g.i_mm_per_frame--;
+                  g.reg.i_mm_per_frame--;
                   break;
                 }
               }
@@ -721,39 +722,39 @@ void process_keypad()
               // Required microsteps per frame:
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
-              EEPROM.put( ADDR_I_MM_PER_FRAME, g.i_mm_per_frame);
+              EEPROM.put( g.addr_reg[0], g.reg);
               display_all();
               break;
 
             case '8':  // 8: Decrease parameter fps
               if (g.paused)
                 break;
-              if (g.i_fps > 0)
-                g.i_fps--;
+              if (g.reg.i_fps > 0)
+                g.reg.i_fps--;
               else
                 break;
-              EEPROM.put( ADDR_I_FPS, g.i_fps);
+              EEPROM.put( g.addr_reg[0], g.reg);
               display_all();
               break;
 
             case '9':  // 9: Increase parameter fps
               if (g.paused)
                 break;
-              if (g.i_fps < N_PARAMS - 1)
+              if (g.reg.i_fps < N_PARAMS - 1)
               {
-                g.i_fps++;
+                g.reg.i_fps++;
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > g.speed_limit || FPS[g.i_fps] > MAXIMUM_FPS)
+                if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
                 {
-                  g.i_fps--;
+                  g.reg.i_fps--;
                   break;
                 }
               }
               else
                 break;
-              EEPROM.put( ADDR_I_FPS, g.i_fps);
+              EEPROM.put( g.addr_reg[0], g.reg);
               display_all();
               break;
 
@@ -825,7 +826,7 @@ void process_keypad()
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
         {
 #ifdef EXTENDED_REWIND
-          if (g.key_old == '1' && g.speed < 0.0 && g.backlash_on && !g.no_extended_rewind)
+          if (g.key_old == '1' && g.speed < 0.0 && g.reg.backlash_on && !g.no_extended_rewind)
             // Moving in the bad (negative) direction
           {
             // Estimating how much rail would travel if the maximum breaking started now (that's how much

@@ -61,14 +61,14 @@ void camera()
   // Non-continuous stacking mode
   if (g.continuous_mode == 0 && g.start_stacking == 3 && g.moving == 0 && g.started_moving == 0 && g.stacker_mode == 2)
   {
-    if (g.noncont_flag == 2 && g.t - g.t_shot > FIRST_DELAY[g.i_first_delay] * 1e6)
+    if (g.noncont_flag == 2 && g.t - g.t_shot > FIRST_DELAY[g.reg.i_first_delay] * 1e6)
     {
       g.noncont_flag = 3;
       // Initiating the second camera trigger (actual shot) in MIRROR_LOCK situation, or the only shot otherwise:
       g.make_shot = 1;
       g.t_shot = g.t;
     }
-    else if (g.noncont_flag == 3 && g.t - g.t_shot > SECOND_DELAY[g.i_second_delay] * 1e6)
+    else if (g.noncont_flag == 3 && g.t - g.t_shot > SECOND_DELAY[g.reg.i_second_delay] * 1e6)
     {
       if (g.frame_counter < g.Nframes)
       {
@@ -99,7 +99,7 @@ void camera()
       // Setting the shutter on:
       // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
       // If it is defined, it will also happen in non-continuous mode, where it will be used to lock the mirror
-      if (g.continuous_mode || g.mirror_lock == 1)
+      if (g.continuous_mode || g.reg.mirror_lock == 1)
       {
         g.make_shot = 1;
       }
@@ -109,7 +109,7 @@ void camera()
       g.frame_counter++;
       // Position at which to shoot the next shot:
       g.pos_to_shoot = frame_coordinate();
-      if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.i_n_shots])
+      if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.reg.i_n_shots])
       {
         // End of one-point stacking
         change_speed(0.0, 0, 2);
@@ -130,7 +130,7 @@ void camera()
   }
 
 
-  if (g.paused && g.noncont_flag == 2 && g.mirror_lock == 1)
+  if (g.paused && g.noncont_flag == 2 && g.reg.mirror_lock == 1)
     // We paused when the mirror is locked; release the lock right away
   {
     g.make_shot = 1;
@@ -164,7 +164,7 @@ void camera()
   }
 
   // Triggering camera's shutter:
-  if (g.make_shot == 1 && g.AF_on == 1 && ((g.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
+  if (g.make_shot == 1 && g.AF_on == 1 && ((g.reg.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
   {
 #ifndef DISABLE_SHUTTER
 #ifdef TELESCOPE
@@ -199,7 +199,7 @@ void camera()
 
   // Depress the camera's AF when it's no longer needed
   // and only if the shutter has been off for at least SHUTTER_OFF_DELAY microseconds:
-  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
+  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.reg.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
       (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
 #ifdef TELESCOPE    
@@ -217,18 +217,18 @@ void camera()
   // Timelapse module:
   if (g.end_of_stacking && g.moving == 0 && g.paused == 0)
   {
-    if (g.timelapse_counter < N_TIMELAPSE[g.i_n_timelapse] - 1)
+    if (g.timelapse_counter < N_TIMELAPSE[g.reg.i_n_timelapse] - 1)
     {
       // Special stacker mode: waiting between stacks in a timelapse sequence:
       g.stacker_mode = 4;
       g.t_mil = millis();
-      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > (float)DT_TIMELAPSE[g.i_dt_timelapse])
+      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > (float)DT_TIMELAPSE[g.reg.i_dt_timelapse])
         // We are initiating the next stacking in the timelapse sequence
       {
         g.end_of_stacking = 0;
         g.t0_mil = g.t_mil;
         g.timelapse_counter++;
-        go_to((float)g.point1 + 0.5, g.speed_limit);
+        go_to((float)g.reg.point1 + 0.5, g.speed_limit);
         g.stacker_mode = 1;
         g.start_stacking = 0;
       }

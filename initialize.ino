@@ -5,6 +5,7 @@ void initialize(byte factory_reset)
   unsigned char limit_on;
   g.error = 0;
   g.calibrate_warning = 0;
+  int address;
 
 #ifdef TELESCOPE
   if (!g.telescope)
@@ -46,12 +47,20 @@ void initialize(byte factory_reset)
     lcd.setCursor(0, 0);
     lcd.print("TELESCOPE");
     delay(500);
+    // Setting the pointer to the telescope memory registers in EEPROM:
+    address = ADDR_REG1_TEL;
   }
   else
 #endif
   {
     g.accel_limit = ACCEL_LIMIT;
     g.mm_per_microstep = MM_PER_MICROSTEP;
+    address = ADDR_REG1;
+  }
+  // EEPROM addresses for memory registers (different for macro and telscope modes), including the 0th (default) register:
+  for (unsigned char jj = 0; jj <= N_REGS; jj++)
+  {
+    g.addr_reg[jj] = address + jj * SIZE_REG;
   }
 
   // Initializing program parameters:
@@ -78,68 +87,59 @@ void initialize(byte factory_reset)
     g.calibrate = 3;
 #endif
     // Parameters for the reg structure:
-    g.i_n_shots = 9;
-    g.i_mm_per_frame = 5;
-    g.i_fps = 16;
-    g.i_first_delay = 4;
-    g.i_second_delay = 3;
-    g.i_accel_factor = 1;
-    g.i_n_timelapse = 0;
-    g.i_dt_timelapse = 5;
-    g.mirror_lock = 1;
-    g.backlash_on = 1;
+    g.reg.i_n_shots = 9;
+    g.reg.i_mm_per_frame = 5;
+    g.reg.i_fps = 16;
+    g.reg.i_first_delay = 4;
+    g.reg.i_second_delay = 3;
+    g.reg.i_accel_factor = 1;
+    g.reg.i_n_timelapse = 0;
+    g.reg.i_dt_timelapse = 5;
+    g.reg.mirror_lock = 1;
+    g.reg.backlash_on = 1;
     update_backlash();
-    g.straight = 1;
-    g.save_energy = 1;
+    g.reg.straight = 1;
+    g.reg.save_energy = 1;
     update_save_energy();
-    g.point1 = 2000;
-    g.point2 = 3000;
+    g.reg.point1 = 2000;
+    g.reg.point2 = 3000;
 
     g.limit1 = 0;
     g.limit2 = 32767;
-    g.pos = (g.point1 + g.point2) / 2.0;
+    g.pos = (g.reg.point1 + g.reg.point2) / 2.0;
     g.backlight = 0;
-    // Assigning values to the reg structure:
-    to_reg();
     // Saving these values in EEPROM:
-#ifdef TELESCOPE
-    if (g.telescope)
-      EEPROM.put( ADDR_POS_TEL, g.pos );
-    else
-#endif
-      EEPROM.put( ADDR_POS, g.pos );
     EEPROM.put( ADDR_CALIBRATE, g.calibrate );
     EEPROM.put( ADDR_LIMIT1, g.limit1);
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-    EEPROM.put( ADDR_REG1, g.reg);
-    EEPROM.put( ADDR_REG2, g.reg);
-    EEPROM.put( ADDR_REG3, g.reg);
-    EEPROM.put( ADDR_REG4, g.reg);
-    EEPROM.put( ADDR_REG5, g.reg);
-    put_reg();
+#ifdef TELESCOPE
+    if (!g.telescope)
+#endif
+      EEPROM.put( ADDR_POS, g.pos );
+
+    // Initializing all EEPROM registers (including the default one):
+    for (unsigned char jj = 0; jj <= N_REGS; jj++)
+    {
+      EEPROM.put(g.addr_reg[jj], g.reg);
+    }
   }
   else
   {
     // Reading the values from EEPROM:
 #ifdef TELESCOPE
-    if (g.telescope)
-      EEPROM.get( ADDR_POS_TEL, g.pos );
-    else
+    if (!g.telescope)
 #endif
       EEPROM.get( ADDR_POS, g.pos );
     EEPROM.get( ADDR_CALIBRATE, g.calibrate );
     EEPROM.get( ADDR_LIMIT1, g.limit1);
     EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
-    get_reg();
+    // Reading the default memory register:
+    EEPROM.put(g.addr_reg[0], g.reg);
+    update_backlash();
+    update_save_energy();
   }  // if factory_reset
-
-#ifdef TELESCOPE
-  if (g.telescope)
-    // For now, initial position in telescope mode is fixed (because telescope focus is often changed manually, which breaks calibration):
-    g.pos = (COORD_TYPE)6667;
-#endif
 
 
   // Five possible floating point values for acceleration
@@ -175,7 +175,7 @@ void initialize(byte factory_reset)
   g.start_stacking = 0;
   g.make_shot = 0;
   g.paused = 0;
-  g.starting_point = g.point1;
+  g.starting_point = g.reg.point1;
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
@@ -234,8 +234,8 @@ void initialize(byte factory_reset)
     g.calibrate = 0;
     g.calibrate_warning = 0;
     g.calibrate_init = g.calibrate;
-// No rail reverse in telescope mode:
-    g.straight = 1;
+    // No rail reverse in telescope mode:
+    g.reg.straight = 1;
     g.pos = 0.0;
     g.pos_short_old = (COORD_TYPE) 0;
     g.pos0 = 0.0;
@@ -250,8 +250,8 @@ void initialize(byte factory_reset)
 #ifdef CAMERA_DEBUG
   shutter_status(0);
   AF_status(0);
-  g.i_first_delay = 4;
-  g.i_second_delay = 3;
+  g.reg.i_first_delay = 4;
+  g.reg.i_second_delay = 3;
 #endif
 
   return;

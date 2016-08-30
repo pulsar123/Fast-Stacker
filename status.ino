@@ -17,19 +17,19 @@ void display_all()
   if (g.alt_flag)
   {
     // Line 1:
-    sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.straight, ACCEL_FACTOR[g.i_accel_factor]);
+    sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
     lcd.print(g.buffer);
     // Line 2:
-    sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.i_n_timelapse], g.backlash_on);
+    sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
     lcd.print(g.buffer);
     // Line 3:
-    sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.i_dt_timelapse]);
+    sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
     lcd.print(g.buf6);
-    sprintf(g.buffer, "Mir=%1d", g.mirror_lock);
+    sprintf(g.buffer, "Mir=%1d", g.reg.mirror_lock);
     lcd.setCursor(9, 2);
     lcd.print(g.buffer);
     // Line 4:
-    sprintf(g.buffer, "  Save=%1d Deb=%1d", g.save_energy, g.disable_limiters);
+    sprintf(g.buffer, "  Save=%1d Deb=%1d", g.reg.save_energy, g.disable_limiters);
     lcd.print(g.buffer);
     // Line 5:
     //    lcd.print("              ");
@@ -169,16 +169,16 @@ void display_frame_counter()
 
 
 void points_status()
-/* Displays F or B if the current coordinate is exactly the foreground (g.point1) or background (g.point2) point.
+/* Displays F or B if the current coordinate is exactly the foreground (g.reg.point1) or background (g.reg.point2) point.
 */
 {
   if (g.error || g.alt_flag)
     return;
   lcd.setCursor(10, 5);
 
-  if (g.pos_short_old == g.point1)
+  if (g.pos_short_old == g.reg.point1)
     lcd.print("F ");
-  else if (g.pos_short_old == g.point2)
+  else if (g.pos_short_old == g.reg.point2)
     lcd.print("B ");
   else
     lcd.print("  ");
@@ -275,11 +275,11 @@ void display_u_per_f()
   if (g.error || g.alt_flag)
     return;
 
-  if (MM_PER_FRAME[g.i_mm_per_frame] >= 0.00995)
-    sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.i_mm_per_frame]));
+  if (MM_PER_FRAME[g.reg.i_mm_per_frame] >= 0.00995)
+    sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.reg.i_mm_per_frame]));
   else
     // +0.05 is for proper round-off:
-    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, 1000.0 * MM_PER_FRAME[g.i_mm_per_frame] + 0.05, 1));
+    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, 1000.0 * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05, 1));
 
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
@@ -295,10 +295,10 @@ void display_fps()
 {
   if (g.error || g.alt_flag)
     return;
-  if (FPS[g.i_fps] >= 1.0)
-    sprintf(g.buffer, " %3sfps", ftoa(g.buf7, FPS[g.i_fps], 1));
+  if (FPS[g.reg.i_fps] >= 1.0)
+    sprintf(g.buffer, " %3sfps", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
   else
-    sprintf(g.buffer, "%4sfps", ftoa(g.buf7, FPS[g.i_fps], 2));
+    sprintf(g.buffer, "%4sfps", ftoa(g.buf7, FPS[g.reg.i_fps], 2));
 
   lcd.setCursor(7, 2);
   lcd.print(g.buffer);
@@ -319,8 +319,8 @@ void display_one_point_params()
     return;
 
   // +0.05 for proper round off:
-  float dx = (float)(N_SHOTS[g.i_n_shots] - 1) * MM_PER_FRAME[g.i_mm_per_frame] + 0.05;
-  short dt = (short)roundMy((float)(N_SHOTS[g.i_n_shots] - 1) / FPS[g.i_fps]);
+  float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+  short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0 && dt >= 0.0)
@@ -333,7 +333,7 @@ void display_one_point_params()
   else
     sprintf(g.buf7, "****");
 
-  sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.i_n_shots], g.buf7 , g.buf6);
+  sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
   lcd.setCursor(0, 0);
   lcd.print(g.buffer);
   return;
@@ -354,8 +354,8 @@ void display_two_point_params()
     return;
 
   // +0.05 for proper round off:
-  dx = g.mm_per_microstep * (float)(g.point2 - g.point1) + 0.05;
-  short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.i_fps]);
+  dx = g.mm_per_microstep * (float)(g.reg.point2 - g.reg.point1) + 0.05;
+  short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.reg.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
   else if (dt < 10000.0 && dt >= 0.0)
@@ -363,7 +363,7 @@ void display_two_point_params()
   else
     sprintf(g.buf6, "****");
 
-  if (g.point2 >= g.point1)
+  if (g.reg.point2 >= g.reg.point1)
     sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
   else
     sprintf(g.buffer, "**** **** ****");
@@ -383,14 +383,14 @@ void display_two_points()
   if (g.error || g.alt_flag)
     return;
 
-  p = g.mm_per_microstep * (float)g.point1;
+  p = g.mm_per_microstep * (float)g.reg.point1;
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "F*****");
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
-  p = g.mm_per_microstep * (float)g.point2;
+  p = g.mm_per_microstep * (float)g.reg.point2;
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -435,7 +435,7 @@ void display_current_position()
   if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > (COORD_TYPE)0 || g.alt_flag)
     return;
 
-  if (g.straight)
+  if (g.reg.straight)
     g.rev_char = " ";
   else
     g.rev_char = "R";
@@ -495,12 +495,12 @@ void delay_buffer()
 // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
 {
   float y;
-  y = MM_PER_FRAME[g.i_mm_per_frame] / g.mm_per_microstep / g.accel_limit;
+  y = MM_PER_FRAME[g.reg.i_mm_per_frame] / g.mm_per_microstep / g.accel_limit;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);
-  float delay1 = FIRST_DELAY[g.i_first_delay];
-  float delay2 = SECOND_DELAY[g.i_second_delay];
-  short dt = (short)nintMy((float)(g.Nframes) * (FIRST_DELAY[g.i_first_delay] + SECOND_DELAY[g.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
+  float delay1 = FIRST_DELAY[g.reg.i_first_delay];
+  float delay2 = SECOND_DELAY[g.reg.i_second_delay];
+  short dt = (short)nintMy((float)(g.Nframes) * (FIRST_DELAY[g.reg.i_first_delay] + SECOND_DELAY[g.reg.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
   sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);
 
   return;

@@ -334,23 +334,25 @@ const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
 // Structure to have custom parameters saved to EEPROM
 struct regist
 {
-  byte i_n_shots;
-  byte i_mm_per_frame;
-  byte i_fps;
-  byte i_first_delay;
-  byte i_second_delay;
-  byte i_accel_factor;
-  byte i_n_timelapse;
-  byte i_dt_timelapse;
-  byte mirror_lock;
-  byte backlash_on;
-  byte straight;
-  byte save_energy;
-  COORD_TYPE point1;
-  COORD_TYPE point2;
+  byte i_n_shots; // counter for n_shots parameter;
+  byte i_mm_per_frame; // counter for mm_per_frame parameter;
+  byte i_fps; // counter for fps parameter;
+  byte i_first_delay; // counter for FIRST_DELAY parameter
+  byte i_second_delay; // counter for SECOND_DELAY parameter
+  byte i_accel_factor; // Index for accel_factor  
+  byte i_n_timelapse; // counter for N_TIMELAPSE parameter
+  byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
+  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
+  byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
+  byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
+  byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
+  COORD_TYPE point1;  // foreground point for 2-point focus stacking
+  COORD_TYPE point2;  // background point for 2-point focus stacking
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
+// Number of custom memory registers:
+const unsigned char N_REGS = 5;
 
 const short dA = sizeof(COORD_TYPE);
 
@@ -360,27 +362,27 @@ const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
 const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter (2 bytes)
 const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limiter (2 bytes)
-const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + dA;  // for the i_n_shots parameter
-const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
-const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
-const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
-const int ADDR_POINT2 = ADDR_POINT1 + dA; // Point 2 for 2-points stacking
-const int ADDR_STRAIGHT = ADDR_POINT2 + dA; // g.straight value
-const int ADDR_SAVE_ENERGY = ADDR_STRAIGHT + 2; // g.save_energy value
-const int ADDR_BACKLIGHT = ADDR_SAVE_ENERGY + 2;  // backlight level
-const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // register1
-const int ADDR_REG2 = ADDR_REG1 + SIZE_REG;  // register2
-const int ADDR_REG3 = ADDR_REG2 + SIZE_REG;  // register3
-const int ADDR_REG4 = ADDR_REG3 + SIZE_REG;  // register4
-const int ADDR_REG5 = ADDR_REG4 + SIZE_REG;  // register5
-const int ADDR_I_FIRST_DELAY = ADDR_REG5 + SIZE_REG;  // for the FIRST_DELAY parameter
-const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
-const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.mirror_lock
-const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.backlash_on
-const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.i_accel_factor
-const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
-const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
-const int ADDR_POS_TEL = ADDR_I_DT_TIMELAPSE + 2; // Position for alternative device (telescope), used only if TELESCOPE is defined; 4 bytes
+/*
+  const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + dA;  // for the i_n_shots parameter
+  const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
+  const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
+  const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
+  const int ADDR_POINT2 = ADDR_POINT1 + dA; // Point 2 for 2-points stacking
+  const int ADDR_STRAIGHT = ADDR_POINT2 + dA; // g.reg.straight value
+  const int ADDR_SAVE_ENERGY = ADDR_STRAIGHT + 2; // g.reg.save_energy value
+*/  
+const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
+const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
+const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
+/*
+  const int ADDR_I_FIRST_DELAY = ADDR_REG1 + N_REGS*SIZE_REG;  // for the FIRST_DELAY parameter
+  const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
+  const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.reg.mirror_lock
+  const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.reg.backlash_on
+  const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.reg.i_accel_factor
+  const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
+  const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
+*/  
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -396,13 +398,28 @@ const uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 
 // All global variables belong to one structure - global:
 struct global
 {
+  struct regist reg; // Custom parameters register
+  int addr_reg[N_REGS];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes)  
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
   char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
-  byte i_accel_factor; // Index for accel_factor  
+//  byte i_accel_factor;
+//  COORD_TYPE point1;
+//  COORD_TYPE point2;
+//  byte i_mm_per_frame;
+//  byte i_fps;
+//  byte i_n_shots; 
+//  byte i_first_delay;
+//  byte i_second_delay;
+//  byte i_n_timelapse;
+//  byte i_dt_timelapse;
+//  byte straight;
+//  byte mirror_lock;
+//  byte backlash_on;
+//  byte save_energy;
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
@@ -433,8 +450,6 @@ struct global
   byte moving_mode; // =0 when using speed_change, =1 when using go_to
   byte pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
-  COORD_TYPE point1;  // foreground point for 2-point focus stacking
-  COORD_TYPE point2;  // background point for 2-point focus stacking
   COORD_TYPE starting_point; // The starting point in the focus stacking with two points
   COORD_TYPE destination_point; // The destination point in the focus stacking with two points
   byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
@@ -448,20 +463,12 @@ struct global
   unsigned long t_shutter; // Time when the camera shutter was triggered
   unsigned long t_shutter_off; // Time when the camera shutter was switched off
   unsigned long t_AF; // Time when the camera AF was triggered
-  byte i_mm_per_frame; // counter for mm_per_frame parameter;
-  byte i_fps; // counter for fps parameter;
-  byte i_n_shots; // counter for n_shots parameter;
-  byte i_first_delay; // counter for FIRST_DELAY parameter
-  byte i_second_delay; // counter for SECOND_DELAY parameter
-  byte i_n_timelapse; // counter for N_TIMELAPSE parameter
-  byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
   char direction; // -1/1 for reverse/forward directions of moving
   char buffer[15];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
   unsigned long t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level;
-  struct regist reg; // Custom parameters register
   COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
@@ -477,10 +484,8 @@ struct global
   float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
-  byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   char* rev_char; // "R" if rail revered, " " otherwise
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
-  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
@@ -490,8 +495,6 @@ struct global
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
-  byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
-  byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
   float mm_per_microstep; // Rail specific setting
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
