@@ -41,6 +41,8 @@ void initialize(byte factory_reset)
 #ifdef TELESCOPE
   if (g.telescope)
   {
+    // Initially not displaying register #:
+    g.displayed_register = 0;
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
     lcd.clear();

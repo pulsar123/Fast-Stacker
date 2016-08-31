@@ -55,10 +55,11 @@ void display_all()
       else
       {
         lcd.print("  Calibration ");
-        lcd.print("  required!   ");
-        lcd.print("              ");
+        lcd.print("  required!"); lcd.clearRestOfLine();
+        //        lcd.print("              ");
+        lcd.clearRestOfLine();
         lcd.print("Press any key ");
-        lcd.print("to start      ");
+        lcd.print("to start"); lcd.clearRestOfLine();
         lcd.print("calibration.  ");
       }
     }
@@ -74,16 +75,18 @@ void display_all()
           lcd.print("limiter is on!");
           lcd.print("Only if cable ");
           lcd.print("is connected, ");
-          lcd.print("rewind.       ");
+          lcd.print("rewind."); lcd.clearRestOfLine();
           break;
 
         case 2: // Critically low battery level; not used when debugging
           lcd.print("Critically low");
           lcd.print("battery level!");
-          lcd.print("              ");
+          //          lcd.print("              ");
+          lcd.clearRestOfLine();
           lcd.print("Replace the   ");
-          lcd.print("batteries.    ");
-          lcd.print("              ");
+          lcd.print("batteries."); lcd.clearRestOfLine();
+          lcd.clearRestOfLine();
+          //          lcd.print("              ");
           break;
 
       } // case
@@ -318,23 +321,40 @@ void display_one_point_params()
   if (g.error || g.alt_flag)
     return;
 
-  // +0.05 for proper round off:
-  float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
-  short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
-  if (dt < 1000.0 && dt >= 0.0)
-    sprintf(g.buf6, "%3ds", dt);
-  else if (dt < 10000.0 && dt >= 0.0)
-    sprintf(g.buf6, "%4d", dt);
-  else
-    sprintf(g.buf6, "****");
-
-  if (dx < 100.0)
-    ftoa(g.buf7, dx, 1);
-  else
-    sprintf(g.buf7, "****");
-
-  sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
   lcd.setCursor(0, 0);
+
+#ifdef TELESCOPE
+  if (g.telescope)
+  {
+    if (g.displayed_register == 0)
+    {
+      lcd.clearRestOfLine();
+      return;
+    }
+    else
+      sprintf(g.buffer, "  Register %1d  ", g.displayed_register);
+  }
+  else
+#endif
+  {
+    // +0.05 for proper round off:
+    float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+    short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
+    if (dt < 1000.0 && dt >= 0.0)
+      sprintf(g.buf6, "%3ds", dt);
+    else if (dt < 10000.0 && dt >= 0.0)
+      sprintf(g.buf6, "%4d", dt);
+    else
+      sprintf(g.buf6, "****");
+
+    if (dx < 100.0)
+      ftoa(g.buf7, dx, 1);
+    else
+      sprintf(g.buf7, "****");
+
+    sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
+  }
+
   lcd.print(g.buffer);
   return;
 }
@@ -353,22 +373,33 @@ void display_two_point_params()
   if (g.error || g.alt_flag)
     return;
 
-  // +0.05 for proper round off:
-  dx = g.mm_per_microstep * (float)(g.reg.point2 - g.reg.point1) + 0.05;
-  short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.reg.i_fps]);
-  if (dt < 1000.0 && dt >= 0.0)
-    sprintf(g.buf6, "%3ds", dt);
-  else if (dt < 10000.0 && dt >= 0.0)
-    sprintf(g.buf6, "%4d", dt);
-  else
-    sprintf(g.buf6, "****");
-
-  if (g.reg.point2 >= g.reg.point1)
-    sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
-  else
-    sprintf(g.buffer, "**** **** ****");
   lcd.setCursor(0, 1);
-  lcd.print(g.buffer);
+
+#ifdef TELESCOPE
+  if (g.telescope)
+  {
+    lcd.clearRestOfLine();
+    return;
+  }
+  else
+#endif
+  {
+    // +0.05 for proper round off:
+    dx = g.mm_per_microstep * (float)(g.reg.point2 - g.reg.point1) + 0.05;
+    short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.reg.i_fps]);
+    if (dt < 1000.0 && dt >= 0.0)
+      sprintf(g.buf6, "%3ds", dt);
+    else if (dt < 10000.0 && dt >= 0.0)
+      sprintf(g.buf6, "%4d", dt);
+    else
+      sprintf(g.buf6, "****");
+
+    if (g.reg.point2 >= g.reg.point1)
+      sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
+    else
+      sprintf(g.buffer, "**** **** ****");
+    lcd.print(g.buffer);
+  }
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

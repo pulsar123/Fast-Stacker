@@ -612,6 +612,13 @@ void read_params(byte n)
   display_comment_line("Read from Reg");
   lcd.print(n);
   lcd.clearRestOfLine();
+#ifdef TELESCOPE
+  if (g.telescope)
+  {
+    g.displayed_register = n;
+    display_one_point_params();
+  }
+#endif
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
   {
@@ -628,6 +635,13 @@ void save_params(byte n)
   display_comment_line("Saved to Reg");
   lcd.print(n);
   lcd.clearRestOfLine();
+#ifdef TELESCOPE
+  if (g.telescope)
+  {
+    g.displayed_register = n;
+    display_one_point_params();
+  }
+#endif
   return;
 }
 

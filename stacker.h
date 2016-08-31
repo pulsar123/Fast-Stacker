@@ -15,9 +15,13 @@
 // (Though microswitches can be used, if you find a way to attach them to your telescope or whatever other device you are controlling.)
 // If you comment out this line, no telescope mode will be available. If you uncomment this line, then during initialization Arduino will read the state of PIN_SHUTTER (by putting it briefly
 // into INPUT_PULLUP mode). If the state is LOW (that would happen if the controller is connected to the macro rail, as the pin will be grounded via 500 Ohm relay), the controller
-// assumes that we are driving the macro rail; if the state is HIGH (when no relay is grounding the pin), the controller assumes that we are driving the alternatiev device (e.g. telescope), and
+// assumes that we are driving the macro rail; if the state is HIGH (when no relay is grounding the pin), the controller assumes that we are driving the alternative device (e.g. telescope), and
 // will modify its behaviour accordingly.
-// When in telescope mode, current position is stored in a different EEPROM register, so the current position is independently rememberd for the two devices.
+// Telescope mode has its own set of 5 memory registers, and a separate "last used environment" register. Meaning one can maintain independent 5 memory registers in both macro and tele modes, 
+// and the last used environment is stored separately for the two nodes.
+// In telescope mode, one has to always rotate the focuser manually to the closest position before turning the controller on; this establishes the zero point and enables absolute calibration
+// of the focuser (focusing positions memorized in memory registers should be still valid next time you use the telescope). Meaning you should only find the focusing positions for all your eyepieces
+// and cameras once.
 // In telescope mode: no calibration, no limiters, no camera AF and shutter.
 #define TELESCOPE
 
@@ -330,7 +334,6 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 const float TEL_INIT = TEL_INIT_MM / MM_PER_MICROSTEP_TEL;
 const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
 
-
 // Structure to have custom parameters saved to EEPROM
 struct regist
 {
@@ -511,6 +514,7 @@ struct global
 #endif
 #ifdef TELESCOPE
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
+  unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
 #endif  
 };
 

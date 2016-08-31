@@ -491,6 +491,14 @@ void process_keypad()
               display_two_point_params();
               display_two_points();
               display_comment_line("  P1 was set  ");
+#ifdef TELESCOPE
+              if (g.telescope)
+              {
+                // Pressing "4" removes the Register # line at the top:
+                g.displayed_register = 0;
+                display_one_point_params();
+              }
+#endif
               break;
 
             case 'B':  // B: Set background point
@@ -504,6 +512,14 @@ void process_keypad()
               display_two_point_params();
               display_two_points();
               display_comment_line("  P2 was set  ");
+#ifdef TELESCOPE
+              if (g.telescope)
+              {
+                // Pressing "B" removes the Register # line at the top:
+                g.displayed_register = 0;
+                display_one_point_params();
+              }
+#endif
               break;
 
             case '7':  // 7: Go to the foreground point
