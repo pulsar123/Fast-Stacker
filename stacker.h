@@ -60,6 +60,8 @@ const COORD_TYPE BL_STEP = 1;
 const long DELAY_STEP = 50000;
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
+// Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
+//#define SHOW_EEPROM
 
 
 //////// Camera related parameters: ////////
@@ -130,7 +132,7 @@ const short PIN_LCD_RST = 100;
 const float VOLTAGE_SCALER = 2.7273 * 5.0 / 1024.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = 1.125;  // 1.125V
+const float V_LOW = 1; 
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
 // The speed related critical voltage value; if the power voltage is above this value, we assume that we are
@@ -231,6 +233,8 @@ const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for r
 
 
 //////// INPUT PARAMETERS: ////////
+// Number of custom memory registers:
+const unsigned char N_REGS = 5;
 // Number of backlight levels:
 #define N_BACKLIGHT 3
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
@@ -263,6 +267,23 @@ const short N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
 const byte N_DT_TIMELAPSE = 9;
 const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
 
+
+//////////////////////  Telescope stuff //////////////////////
+#ifdef TELESCOPE
+// Names for different focusing points.
+char const Name[N_REGS][15] = {
+  // Reg1 (#2/3):
+  "Cross     20mm",
+  // Reg2 (#5/6):
+  "10mm       5mm",
+  // Reg3 (*2/3):
+  "2.4mm         ",
+  // Reg4 (*5/6):
+  "Toup    Toup+B",
+  // Reg5 (*8/9):
+  "50D      50D+B",
+};
+#endif
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
 
@@ -354,8 +375,6 @@ struct regist
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
-// Number of custom memory registers:
-const unsigned char N_REGS = 5;
 
 const short dA = sizeof(COORD_TYPE);
 
@@ -365,27 +384,12 @@ const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will
 //!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
 const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter (2 bytes)
 const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limiter (2 bytes)
-/*
-  const int ADDR_I_N_SHOTS = ADDR_LIMIT2 + dA;  // for the i_n_shots parameter
-  const int ADDR_I_MM_PER_FRAME = ADDR_I_N_SHOTS + 2; // for the i_mm_per_frame parameter;
-  const int ADDR_I_FPS = ADDR_I_MM_PER_FRAME + 2; // for the i_fps parameter;
-  const int ADDR_POINT1 = ADDR_I_FPS + 2; // Point 1 for 2-points stacking
-  const int ADDR_POINT2 = ADDR_POINT1 + dA; // Point 2 for 2-points stacking
-  const int ADDR_STRAIGHT = ADDR_POINT2 + dA; // g.reg.straight value
-  const int ADDR_SAVE_ENERGY = ADDR_STRAIGHT + 2; // g.reg.save_energy value
-*/  
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
-/*
-  const int ADDR_I_FIRST_DELAY = ADDR_REG1 + N_REGS*SIZE_REG;  // for the FIRST_DELAY parameter
-  const int ADDR_I_SECOND_DELAY = ADDR_I_FIRST_DELAY + 2;  // for the SECOND_DELAY parameter
-  const int ADDR_MIRROR_LOCK = ADDR_I_SECOND_DELAY + 2;  // for g.reg.mirror_lock
-  const int ADDR_BACKLASH_ON = ADDR_MIRROR_LOCK + 2; // for g.reg.backlash_on
-  const int ADDR_I_ACCEL_FACTOR = ADDR_BACKLASH_ON + 2; // for g.reg.i_accel_factor
-  const int ADDR_I_N_TIMELAPSE = ADDR_I_ACCEL_FACTOR + 2; // for g.i_n_timelaspe
-  const int ADDR_I_DT_TIMELAPSE = ADDR_I_N_TIMELAPSE + 2; // for g.i_dt_timelaspe
-*/  
+#ifdef SHOW_EEPROM
+const int ADDR_END = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG;  // End of used EEPROM
+#endif
 
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
@@ -402,27 +406,13 @@ const uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 
 struct global
 {
   struct regist reg; // Custom parameters register
-  int addr_reg[N_REGS];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes)  
+  int addr_reg[N_REGS+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
   char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
-//  byte i_accel_factor;
-//  COORD_TYPE point1;
-//  COORD_TYPE point2;
-//  byte i_mm_per_frame;
-//  byte i_fps;
-//  byte i_n_shots; 
-//  byte i_first_delay;
-//  byte i_second_delay;
-//  byte i_n_timelapse;
-//  byte i_dt_timelapse;
-//  byte straight;
-//  byte mirror_lock;
-//  byte backlash_on;
-//  byte save_energy;
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on

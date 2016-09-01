@@ -35,7 +35,12 @@ void display_all()
     //    lcd.print("              ");
     lcd.setCursor(0, 5);
     // Line 6:
+#ifdef SHOW_EEPROM
+    //  Showing amount of EEPROM used:
+    sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
+#else
     sprintf(g.buffer, "         s%s", VERSION);
+#endif
     lcd.print(g.buffer);
   }
   else
@@ -378,8 +383,13 @@ void display_two_point_params()
 #ifdef TELESCOPE
   if (g.telescope)
   {
-    lcd.clearRestOfLine();
-    return;
+    if (g.displayed_register == 0)
+    {
+      lcd.clearRestOfLine();
+      return;
+    }
+    else
+      sprintf(g.buffer, "%s", Name[g.displayed_register - 1]);
   }
   else
 #endif
@@ -398,8 +408,8 @@ void display_two_point_params()
       sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
     else
       sprintf(g.buffer, "**** **** ****");
-    lcd.print(g.buffer);
   }
+  lcd.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

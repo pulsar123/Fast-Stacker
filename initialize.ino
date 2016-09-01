@@ -86,8 +86,18 @@ void initialize(byte factory_reset)
     g.calibrate_warning = 0;
     g.calibrate_init = g.calibrate;
 #else
-    g.calibrate = 3;
-#endif
+#ifdef TELESCOPE
+    if (g.telescope)
+      // Disabling calibration when operating telescope
+    {
+      g.calibrate = 0;
+      g.calibrate_warning = 0;
+      g.calibrate_init = g.calibrate;
+    }
+    else
+#endif  // TELESCOPE
+      g.calibrate = 3;
+#endif  // MOTOR_DEBUG
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;
     g.reg.i_mm_per_frame = 5;
@@ -111,9 +121,14 @@ void initialize(byte factory_reset)
     g.pos = (g.reg.point1 + g.reg.point2) / 2.0;
     g.backlight = 0;
     // Saving these values in EEPROM:
-    EEPROM.put( ADDR_CALIBRATE, g.calibrate );
-    EEPROM.put( ADDR_LIMIT1, g.limit1);
-    EEPROM.put( ADDR_LIMIT2, g.limit2);
+#ifdef TELESCOPE
+    if (!g.telescope)
+#endif
+    {
+      EEPROM.put( ADDR_CALIBRATE, g.calibrate );
+      EEPROM.put( ADDR_LIMIT1, g.limit1);
+      EEPROM.put( ADDR_LIMIT2, g.limit2);
+    }
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 #ifdef TELESCOPE
     if (!g.telescope)
@@ -132,13 +147,15 @@ void initialize(byte factory_reset)
 #ifdef TELESCOPE
     if (!g.telescope)
 #endif
+    {
       EEPROM.get( ADDR_POS, g.pos );
-    EEPROM.get( ADDR_CALIBRATE, g.calibrate );
-    EEPROM.get( ADDR_LIMIT1, g.limit1);
-    EEPROM.get( ADDR_LIMIT2, g.limit2);
+      EEPROM.get( ADDR_CALIBRATE, g.calibrate );
+      EEPROM.get( ADDR_LIMIT1, g.limit1);
+      EEPROM.get( ADDR_LIMIT2, g.limit2);
+    }
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     // Reading the default memory register:
-    EEPROM.put(g.addr_reg[0], g.reg);
+    EEPROM.get(g.addr_reg[0], g.reg);
     update_backlash();
     update_save_energy();
   }  // if factory_reset

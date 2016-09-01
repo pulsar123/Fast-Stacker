@@ -16,6 +16,7 @@
     - Voltage divider for battery sensor: resistors 270k, 360k, capacitor 0.1 uF.
     New in h1.1: extra 10k resistor.
     New in h1.2: extra SIP-1A05 relay, 1N4004 diode, 0.1 uF capacitor, 33 Ohm and 47 k resistors.
+    New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil)
 
    I am using the following libraries:
 
@@ -58,15 +59,13 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
 #ifdef TELESCOPE
+// Temporarily borrowing the shutter pin to check if we are connected to the telescope or macro rail.
+// It uses the fact that in macro rail the shutter pin is grounded via a relay with the resistance ~500 Ohm (so it's in LOWW state when reading),
+// whereas in the telescope focuse this pin is not attached to anything.
   pinMode(PIN_SHUTTER, INPUT_PULLUP);
-  // Not sure if needed:
-//  delay(10);
   // Dynamically detecting whether we are connected to the macro rail (will return LOW) or telescope (returns HIGH, as there is no relay
   // grounding the pin):
   g.telescope = digitalRead(PIN_SHUTTER);
-//  delay(10);
-#else
-  //  g.telescope = 0;
 #endif
   pinMode(PIN_SHUTTER, OUTPUT);
   pinMode(PIN_AF, OUTPUT);

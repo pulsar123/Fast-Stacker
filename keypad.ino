@@ -496,7 +496,7 @@ void process_keypad()
               {
                 // Pressing "4" removes the Register # line at the top:
                 g.displayed_register = 0;
-                display_one_point_params();
+                display_all();
               }
 #endif
               break;
@@ -517,7 +517,7 @@ void process_keypad()
               {
                 // Pressing "B" removes the Register # line at the top:
                 g.displayed_register = 0;
-                display_one_point_params();
+                display_all();
               }
 #endif
               break;
