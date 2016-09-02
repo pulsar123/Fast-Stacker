@@ -12,7 +12,7 @@ void display_stuff()
         display_all();
       else
         display_current_position();
-//        display_all();
+    //        display_all();
   }
 
   // Refreshing battery status regularly (only when not moving, as it is slow):
@@ -20,6 +20,11 @@ void display_stuff()
   {
     g.t_display = g.t;
     battery_status();
+#ifdef TEMPERATURE
+    if (g.telescope)
+    // Measuring temperature (only in telescope mode), from thermistor connected to PIN_AF:
+      measure_temperature();
+#endif
   }
 
   return;

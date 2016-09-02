@@ -59,16 +59,21 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
 #ifdef TELESCOPE
-// Temporarily borrowing the shutter pin to check if we are connected to the telescope or macro rail.
-// It uses the fact that in macro rail the shutter pin is grounded via a relay with the resistance ~500 Ohm (so it's in LOWW state when reading),
-// whereas in the telescope focuse this pin is not attached to anything.
+  // Temporarily borrowing the shutter pin to check if we are connected to the telescope or macro rail.
+  // It uses the fact that in macro rail the shutter pin is grounded via a relay with the resistance ~500 Ohm (so it's in LOWW state when reading),
+  // whereas in the telescope focuse this pin is not attached to anything.
   pinMode(PIN_SHUTTER, INPUT_PULLUP);
   // Dynamically detecting whether we are connected to the macro rail (will return LOW) or telescope (returns HIGH, as there is no relay
   // grounding the pin):
   g.telescope = digitalRead(PIN_SHUTTER);
 #endif
   pinMode(PIN_SHUTTER, OUTPUT);
+#ifdef TEMPERATURE
+  if (g.telescope)
+    pinMode(PIN_AF, INPUT_PULLUP);
+#else
   pinMode(PIN_AF, OUTPUT);
+#endif
 
   pinMode(PIN_LCD_LED, OUTPUT);
 
@@ -106,15 +111,15 @@ void setup() {
     fsteps = MM_PER_FRAME[i] / g.mm_per_microstep;
 #ifdef TELESCOPE
     if (g.telescope)
-// Rescaling the MM_PER_FRAME table in telescope mode so the smallest value = one microstep:
+      // Rescaling the MM_PER_FRAME table in telescope mode so the smallest value = one microstep:
       fsteps = fsteps / scale;
 #endif
     short steps = (short)nintMy(fsteps);
 #ifdef TELESCOPE
     if (g.telescope || steps < 20)
-#else    
+#else
     if (steps < 20)
-#endif    
+#endif
       MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
   }
 #endif

@@ -24,6 +24,14 @@
 // and cameras once.
 // In telescope mode: no calibration, no limiters, no camera AF and shutter.
 #define TELESCOPE
+#ifdef TELESCOPE
+// Use temperature sensor (only in telescope mode): a ~50k thermistor between PIN_AF and ground, using an internal pull-up resistor to create a voltage divider.
+// The best temperature measurement accuracy is achieved when R_thermistor = R_pullup_resistor. If using a common Beta=3950K thermistor, the accuracy will be
+// better than 0.1 degrees for temperatures +5...+35 C, and better than 0.2 C for T=-20...+65 C. (This is only accounting for round-off errors of Arduino reads;
+// more errors can come from deviations of thermistor from Steinhart–Hart equation and/or inaccurately mesaured coefficients a, b, c in that equation; 
+// https://en.wikipedia.org/wiki/Thermistor#Steinhart.E2.80.93Hart_equation). 
+#define TEMPERATURE
+#endif
 
 //////// Debugging options ////////
 // Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000 (this is the case with my hardware - Velbon Super Mag Slider,
@@ -62,7 +70,12 @@ const long DELAY_STEP = 50000;
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
-
+#ifdef TELESCOPE
+#ifdef TEMPERATURE
+// Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
+#define SHOW_PIN_AF
+#endif
+#endif
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -283,6 +296,33 @@ char const Name[N_REGS][15] = {
   // Reg5 (*8/9):
   "50D      50D+B",
 };
+// Temperature related parameters
+#ifdef TEMPERATURE
+// Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_PIN_AF mode,
+// and pressing the * key: this will show the raw read value at PIN_AF, raw_AF (bottom line, on the left). Now R_pullup can be computed from the voltage
+// divider equation:
+//    R_pullup = R0 * (1024/raw_AF - 1)
+// Use R0 ~ R_pullup for the best measurement accuracy.
+const float R_pullup = 50.0;
+// The three thermistor coefficients in Steinhart–Hart equation (https://en.wikipedia.org/wiki/Thermistor). Should be computed by solving a set of three linear
+// equations (three instances of Steinhart–Hart equation written for three different temperatures), with a,b,c being the unknowns. One can use online solvers,
+// e.g. this one: http://octave-online.net . One has to enter two lines there. The first one contains the three measured resistances of the thermistor (k), at
+// three different temperatures, and then the temperature values (C):
+// > R1=49; R2=51; R3=53; T1=5; T2=15; T3=25;
+// The second line solves the system of three Steinhart–Hart equations, and prints the solutions - coefficients a, b, c:
+// > A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3)]; x=A\b
+const float SH_a = 1;
+const float SH_b = 1;
+const float SH_c = 1;
+// Reference temperature (at which the telescope tube has zero relative expansion), in Kelvin (K=C+273.15):
+const float Temp0 = 293.15;
+// Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by CTE*(Temp-Temp0) when temperature changes.
+// This is not the official CTE (normalized per 1mm of the telescope length), but rather the product of the official CTE x length of the telescope.
+// It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one
+// termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
+//   CTE = (x1-x0) / (Temp1-Temp0)
+const float CTE = 1.0;
+#endif
 #endif
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -506,6 +546,13 @@ struct global
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
 #endif  
+#ifdef SHOW_PIN_AF
+  int raw_AF;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
+#endif
+#ifdef TEMPERATURE
+  float Temp; // Temperature in Kelvins; only in telescope mode
+  float delta_pos; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps
+#endif
 };
 
 struct global g;

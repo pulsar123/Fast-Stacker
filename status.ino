@@ -39,7 +39,17 @@ void display_all()
     //  Showing amount of EEPROM used:
     sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
 #else
+#ifdef SHOW_PIN_AF
+// Showing the raw read value at PIN_AF (used for temperature sensor calibration):
+    sprintf(g.buffer, "%4d s%s", g.raw_AF, VERSION);
+#else
+#ifdef TEMPERATURE
+// Printing the temperature (Celcius), and version:
+    sprintf(g.buffer, "%4sC s%s", ftoa(g.buf6,g.Temp0-273.1,1), VERSION);
+#else
     sprintf(g.buffer, "         s%s", VERSION);
+#endif
+#endif
 #endif
     lcd.print(g.buffer);
   }
@@ -173,6 +183,8 @@ void display_frame_counter()
 
   return;
 }
+
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 

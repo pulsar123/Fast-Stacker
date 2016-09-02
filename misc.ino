@@ -682,3 +682,29 @@ void update_save_energy()
 #endif
 }
 
+
+#ifdef TEMPERATURE
+void measure_temperature()
+// Measuring temperature in telescope mode
+{
+  if (!g.telescope)
+    return;
+
+  // reading the raw value at PIN_AF (which connects to a grounded thermistor in telescope mode):
+  int raw = analogRead(PIN_AF);
+
+#ifdef SHOW_PIN_AF
+  g.raw_AF = raw;
+#endif
+
+  // Logarithm of the resistance of the thermistor (from voltage divider equation):
+  float lnR = log(R_pullup / (1024.0 / (float)raw - 1.0));
+  // Using  Steinhart–Hart equation to compute the temperature (in K):
+  g.Temp = 1.0 / (SH_a + SH_b * lnR + SH_c * lnR * lnR * lnR);
+  // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
+  g.delta_pos = CTE * (g.Temp - Temp0) / g.mm_per_microstep;
+
+  return;
+}
+#endif
+
