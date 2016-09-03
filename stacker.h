@@ -24,6 +24,7 @@
 // and cameras once.
 // In telescope mode: no calibration, no limiters, no camera AF and shutter.
 #define TELESCOPE
+
 #ifdef TELESCOPE
 // Use temperature sensor (only in telescope mode): a ~50k thermistor between PIN_AF and ground, using an internal pull-up resistor to create a voltage divider.
 // The best temperature measurement accuracy is achieved when R_thermistor = R_pullup_resistor. If using a common Beta=3950K thermistor, the accuracy will be
@@ -126,7 +127,7 @@ const short PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
 const short PIN_SHUTTER = 3;
 // Hardware h1.2: pin 6 was reassigned from RST LCD to operate the AF relay:
-const short PIN_AF = 6;
+#define PIN_AF A1
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
@@ -167,7 +168,7 @@ char keys[rows][cols] = {
   {'*', '0', '#', 'D'}
 };
 // Hardware v1.1: 4, 7, 12, A1 (was 4, 10, 12, A1; pin 10 was freed to be able to use hardware SPI for LCD)
-byte rowPins[rows] = {4, 7, 12, A1}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
+byte rowPins[rows] = {4, 7, 12, 6}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
 byte colPins[cols] = {A2, 2, 1, 0}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
@@ -242,7 +243,7 @@ const float TEL_LENGTH_MM = 45;
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
-const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
+const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
 
 
 //////// INPUT PARAMETERS: ////////

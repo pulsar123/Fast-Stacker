@@ -17,7 +17,6 @@ void initialize(byte factory_reset)
     digitalWrite(PIN_AF, LOW);
   }
 
-
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(65000);
