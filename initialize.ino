@@ -17,6 +17,12 @@ void initialize(byte factory_reset)
     digitalWrite(PIN_AF, LOW);
   }
 
+#ifdef TELESCOPE
+  if (g.telescope)
+  // Providing constant +5V to the temperature probe on telescope:
+    digitalWrite(PIN_SHUTTER, HIGH);
+#endif
+
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(65000);

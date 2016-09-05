@@ -59,18 +59,27 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
 #ifdef TELESCOPE
-  // Temporarily borrowing the shutter pin to check if we are connected to the telescope or macro rail.
-  // It uses the fact that in macro rail the shutter pin is grounded via a relay with the resistance ~500 Ohm (so it's in LOWW state when reading),
-  // whereas in the telescope focuse this pin is not attached to anything.
-  pinMode(PIN_SHUTTER, INPUT_PULLUP);
-  // Dynamically detecting whether we are connected to the macro rail (will return LOW) or telescope (returns HIGH, as there is no relay
-  // grounding the pin):
-  g.telescope = digitalRead(PIN_SHUTTER);
+  // Temporarily borrowing the AF pin to check if we are connected to the telescope or macro rail.
+  pinMode(PIN_AF, INPUT_PULLUP);
+  // Dynamically detecting whether we are connected to the macro rail
+  int raw = analogRead(PIN_SHUTTER);
+  // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
+  // if it's high, we are grounded via thermistor (~10k or higher) -> telescope mode:
+  g.telescope = (raw > 100);
 #endif
+
+  // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider
+  // (to measure temperature)
   pinMode(PIN_SHUTTER, OUTPUT);
+
 #ifdef TEMPERATURE
   if (g.telescope)
-    pinMode(PIN_AF, INPUT_PULLUP);
+  {
+    // In telescope mode, PIN_AF will be used to measure the temperature on the telescope
+//    pinMode(PIN_AF, INPUT_PULLUP);
+    // Without pullup, as for now I am using an external pullup resistor:
+    pinMode(PIN_AF, INPUT);
+  }
 #else
   pinMode(PIN_AF, OUTPUT);
 #endif

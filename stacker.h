@@ -74,7 +74,7 @@ const long DELAY_STEP = 50000;
 #ifdef TELESCOPE
 #ifdef TEMPERATURE
 // Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
-#define SHOW_PIN_AF
+//#define SHOW_PIN_AF
 #endif
 #endif
 
@@ -299,12 +299,15 @@ char const Name[N_REGS][15] = {
 };
 // Temperature related parameters
 #ifdef TEMPERATURE
+// Number of times temperature is measured in a loop (for better accuracy):
+const unsigned char N_TEMP=10;
 // Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_PIN_AF mode,
 // and pressing the * key: this will show the raw read value at PIN_AF, raw_AF (bottom line, on the left). Now R_pullup can be computed from the voltage
 // divider equation:
 //    R_pullup = R0 * (1024/raw_AF - 1)
 // Use R0 ~ R_pullup for the best measurement accuracy.
-const float R_pullup = 50.0;
+// For now, as I only have a 10k thermistor, my hack is to use an external pullup resistor, and use PIN_SHUTTER to deliver the +5V to the voltage divider on the telescope:
+const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor; 
 // The three thermistor coefficients in Steinhart–Hart equation (https://en.wikipedia.org/wiki/Thermistor). Should be computed by solving a set of three linear
 // equations (three instances of Steinhart–Hart equation written for three different temperatures), with a,b,c being the unknowns. One can use online solvers,
 // e.g. this one: http://octave-online.net . One has to enter two lines there. The first one contains the three measured resistances of the thermistor (k), at
@@ -312,11 +315,16 @@ const float R_pullup = 50.0;
 // > R1=49; R2=51; R3=53; T1=5; T2=15; T3=25;
 // The second line solves the system of three Steinhart–Hart equations, and prints the solutions - coefficients a, b, c:
 // > A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3)]; x=A\b
-const float SH_a = 1;
-const float SH_b = 1;
-const float SH_c = 1;
+/*  Or one can use least squares method fore more accurate results (needs >3 measurements). E.g. for four measurements:
+octave:22> R1=9.03; R2=11.94; R3=32.04; R4=9.99; T1=27.2; T2=21.3; T3=-1.05; T4=25.3;
+octave:23> A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3;1,log(R4),(log(R4))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3);1/(T0+T4)];
+octave:24> ols(b,A)
+ */
+const float SH_a = 2.777994e-03;
+const float SH_b = 2.403028e-04;
+const float SH_c = 1.551810e-06;
 // Reference temperature (at which the telescope tube has zero relative expansion), in Kelvin (K=C+273.15):
-const float Temp0 = 293.15;
+const float Temp0 = 298.15;
 // Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by CTE*(Temp-Temp0) when temperature changes.
 // This is not the official CTE (normalized per 1mm of the telescope length), but rather the product of the official CTE x length of the telescope.
 // It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one

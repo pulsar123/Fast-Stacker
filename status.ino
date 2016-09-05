@@ -45,7 +45,7 @@ void display_all()
 #else
 #ifdef TEMPERATURE
 // Printing the temperature (Celcius), and version:
-    sprintf(g.buffer, "%4sC s%s", ftoa(g.buf6,g.Temp0-273.1,1), VERSION);
+    sprintf(g.buffer, "%4sC s%s", ftoa(g.buf6,g.Temp-273.15,1), VERSION);
 #else
     sprintf(g.buffer, "         s%s", VERSION);
 #endif
