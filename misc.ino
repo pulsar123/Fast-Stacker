@@ -1,12 +1,11 @@
 float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
-#ifdef TELESCOPE
+  float x = FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
   if (g.telescope)
-    return SPEED_SCALE_TEL * FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
+    return SPEED_SCALE_TEL * x;
   else
-#endif
-    return SPEED_SCALE * FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
+    return SPEED_SCALE * x;
 }
 
 
@@ -14,11 +13,9 @@ float Msteps_per_frame ()
 /* Computing the "microsteps per frame" parameter - redo this every time g.reg.i_mm_per_frame changes.
 */
 {
-#ifdef TELESCOPE
   if (g.telescope)
     return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
   else
-#endif
     return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
 }
 
@@ -306,9 +303,7 @@ void stop_now()
   g.bad_timing_counter = (short)0;
 #endif
 
-#ifdef TELESCOPE
   if (g.telescope == 0)
-#endif
     if (g.error == 1)
     {
       unsigned char limit_on = digitalRead(PIN_LIMITERS);
@@ -326,9 +321,7 @@ void stop_now()
   }
 
   // Saving the current position to EEPROM:
-#ifdef TELESCOPE
   if (!g.telescope)
-#endif
     EEPROM.put( ADDR_POS, g.pos );
 
   if (g.calibrate_flag == 5)
@@ -441,9 +434,7 @@ void coordinate_recalibration()
   g.limit1 = g.limit1 + g.coords_change;
   EEPROM.put( ADDR_LIMIT1, g.limit1);
   // Saving the current position to EEPROM:
-#ifdef TELESCOPE
   if (!g.telescope)
-#endif
     EEPROM.put( ADDR_POS, g.pos );
   display_all();
 
@@ -558,10 +549,8 @@ void rail_reverse(byte fix_points)
   COORD_TYPE d_pos, pos_target;
 
   // Disabling rail reverse in telescope mode:
-#ifdef TELESCOPE
   if (g.telescope)
     return;
-#endif
 
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
@@ -611,12 +600,8 @@ void read_params(byte n)
   EEPROM.put( g.addr_reg[0], g.reg);
   g.msteps_per_frame = Msteps_per_frame();
   g.Nframes = Nframes();
-#ifdef TELESCOPE
   if (g.telescope)
-  {
     g.displayed_register = n;
-  }
-#endif
   display_all();
   display_comment_line("Read from Reg");
   lcd.print(n);
@@ -633,13 +618,11 @@ void read_params(byte n)
 
 void save_params(byte n)
 {
-#ifdef TELESCOPE
   if (g.telescope)
   {
     g.displayed_register = n;
     display_all();
   }
-#endif
   EEPROM.put( g.addr_reg[n], g.reg);
   display_comment_line("Saved to Reg");
   lcd.print(n);
@@ -653,11 +636,9 @@ void update_backlash()
 {
   if (g.reg.backlash_on)
   {
-#ifdef TELESCOPE
     if (g.telescope)
       g.backlash = BACKLASH_TEL;
     else
-#endif
       g.backlash = BACKLASH;
     g.BL_counter = g.backlash;
     g.backlash_init = 1;
@@ -705,7 +686,9 @@ void measure_temperature()
   // Using  Steinhart–Hart equation to compute the temperature (in K):
   g.Temp = 1.0 / (SH_a + SH_b * lnR + SH_c * lnR * lnR * lnR);
   // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
-  g.delta_pos = CTE * (g.Temp - Temp0) / g.mm_per_microstep;
+  // +0.5 is for proper round-off
+  if (g.reg.mirror_lock)
+    g.delta_pos = (COORD_TYPE)(CTE * (g.Temp - Temp0) / g.mm_per_microstep + 0.5);
 
   return;
 }

@@ -290,11 +290,9 @@ void process_keypad()
       switch (keypad.key[1].kchar)
       {
         case '1': // *1: Rail reverse
-#ifdef TELESCOPE
           if (g.telescope)
             // Rail reverse is disabled in telescope mode as its unsafe and is not needed:
             break;
-#endif
           g.reg.straight = 1 - g.reg.straight;
 
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -345,11 +343,15 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        case 'C': // *C: Mirror lock: 0, 1, 2
-          if (g.reg.mirror_lock < 2)
+        case 'C': // *C: Mirror lock: 0, 1, 2 (macro) or Temperature correction 0/1 (telescope)
+          if (g.reg.mirror_lock < 2 - g.telescope)
+            // This ensures that in telescope mode only two values (0/1) are allowed here:
             g.reg.mirror_lock++;
           else
+          {
             g.reg.mirror_lock = 0;
+            g.delta_pos = (COORD_TYPE)0;
+          }
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
@@ -483,7 +485,7 @@ void process_keypad()
             case '4':  // 4: Set foreground point
               if (g.paused || g.moving)
                 break;
-              g.reg.point1 = g.pos_short_old;
+              g.reg.point1 = g.pos_short_old + g.delta_pos;
               EEPROM.put( g.addr_reg[0], g.reg);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
@@ -491,20 +493,18 @@ void process_keypad()
               display_two_point_params();
               display_two_points();
               display_comment_line("  P1 was set  ");
-#ifdef TELESCOPE
               if (g.telescope)
               {
                 // Pressing "4" removes the Register # line at the top:
                 g.displayed_register = 0;
                 display_all();
               }
-#endif
               break;
 
             case 'B':  // B: Set background point
               if (g.paused || g.moving)
                 break;
-              g.reg.point2 = g.pos_short_old;
+              g.reg.point2 = g.pos_short_old + g.delta_pos;
               EEPROM.put( g.addr_reg[0], g.reg);
               g.msteps_per_frame = Msteps_per_frame();
               g.Nframes = Nframes();
@@ -512,27 +512,25 @@ void process_keypad()
               display_two_point_params();
               display_two_points();
               display_comment_line("  P2 was set  ");
-#ifdef TELESCOPE
               if (g.telescope)
               {
                 // Pressing "B" removes the Register # line at the top:
                 g.displayed_register = 0;
                 display_all();
               }
-#endif
               break;
 
             case '7':  // 7: Go to the foreground point
               if (g.paused)
                 break;
-              go_to((float)g.reg.point1 + 0.5, g.speed_limit);
+              go_to((float)(g.reg.point1 - g.delta_pos) + 0.5, g.speed_limit);
               display_comment_line(" Going to P1  ");
               break;
 
             case 'C':  // C: Go to the background point
               if (g.paused)
                 break;
-              go_to((float)g.reg.point2 + 0.5, g.speed_limit);
+              go_to((float)(g.reg.point2 - g.delta_pos) + 0.5, g.speed_limit);
               display_comment_line(" Going to P2  ");
               break;
 

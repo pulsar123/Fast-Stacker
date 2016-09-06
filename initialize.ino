@@ -3,13 +3,13 @@ void initialize(byte factory_reset)
 */
 {
   unsigned char limit_on;
-  g.error = 0;
-  g.calibrate_warning = 0;
   int address;
 
-#ifdef TELESCOPE
+  g.error = 0;
+  g.calibrate_warning = 0;
+  g.delta_pos = (COORD_TYPE)0;
+
   if (!g.telescope)
-#endif
   {
 #ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, LOW);
@@ -17,11 +17,9 @@ void initialize(byte factory_reset)
     digitalWrite(PIN_AF, LOW);
   }
 
-#ifdef TELESCOPE
   if (g.telescope)
-  // Providing constant +5V to the temperature probe on telescope:
+    // Providing constant +5V to the temperature probe on telescope:
     digitalWrite(PIN_SHUTTER, HIGH);
-#endif
 
   // Keypad stuff:
   // No locking for keys:
@@ -37,13 +35,10 @@ void initialize(byte factory_reset)
   {
     g.error = 1;
     // If cable is disconnected, by default using macro rail mode:
-#ifdef TELESCOPE
     g.telescope = 0;
-#endif
   }
 #endif
 
-#ifdef TELESCOPE
   if (g.telescope)
   {
     // Initially not displaying register #:
@@ -58,7 +53,6 @@ void initialize(byte factory_reset)
     address = ADDR_REG1_TEL;
   }
   else
-#endif
   {
     g.accel_limit = ACCEL_LIMIT;
     g.mm_per_microstep = MM_PER_MICROSTEP;
@@ -91,7 +85,6 @@ void initialize(byte factory_reset)
     g.calibrate_warning = 0;
     g.calibrate_init = g.calibrate;
 #else
-#ifdef TELESCOPE
     if (g.telescope)
       // Disabling calibration when operating telescope
     {
@@ -100,7 +93,6 @@ void initialize(byte factory_reset)
       g.calibrate_init = g.calibrate;
     }
     else
-#endif  // TELESCOPE
       g.calibrate = 3;
 #endif  // MOTOR_DEBUG
     // Parameters for the reg structure:
@@ -126,19 +118,14 @@ void initialize(byte factory_reset)
     g.pos = (g.reg.point1 + g.reg.point2) / 2.0;
     g.backlight = 0;
     // Saving these values in EEPROM:
-#ifdef TELESCOPE
     if (!g.telescope)
-#endif
     {
       EEPROM.put( ADDR_CALIBRATE, g.calibrate );
       EEPROM.put( ADDR_LIMIT1, g.limit1);
       EEPROM.put( ADDR_LIMIT2, g.limit2);
+      EEPROM.put( ADDR_POS, g.pos );
     }
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-#ifdef TELESCOPE
-    if (!g.telescope)
-#endif
-      EEPROM.put( ADDR_POS, g.pos );
 
     // Initializing all EEPROM registers (including the default one):
     for (unsigned char jj = 0; jj <= N_REGS; jj++)
@@ -149,9 +136,7 @@ void initialize(byte factory_reset)
   else
   {
     // Reading the values from EEPROM:
-#ifdef TELESCOPE
     if (!g.telescope)
-#endif
     {
       EEPROM.get( ADDR_POS, g.pos );
       EEPROM.get( ADDR_CALIBRATE, g.calibrate );
@@ -203,12 +188,8 @@ void initialize(byte factory_reset)
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
-  if (factory_reset
-#ifdef TELESCOPE
-      || g.telescope == 1
-      // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position)
-#endif
-     )
+  if (factory_reset || g.telescope == 1)
+      // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
   {
     g.BL_counter = 0;
     g.backlash_init = 0;
@@ -251,7 +232,6 @@ void initialize(byte factory_reset)
   g.calibrate_warning = 0;
   g.calibrate_init = g.calibrate;
 #endif
-#ifdef TELESCOPE
   if (g.telescope)
     // Disabling calibration when operating telescope
   {
@@ -269,7 +249,6 @@ void initialize(byte factory_reset)
     g.limit2 = TEL_LENGTH;
     go_to(TEL_INIT, g.speed_limit);
   }
-#endif
 
 #ifdef CAMERA_DEBUG
   shutter_status(0);

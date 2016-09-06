@@ -12,32 +12,19 @@
 #define VERSION "1.17"
 
 // New mode, telescope, to use the controller to drive another stepper motor (e.g., for telescope focuser). Only the motor part is used in this mode, camera shutter and AF and microswitches are not used.
-// (Though microswitches can be used, if you find a way to attach them to your telescope or whatever other device you are controlling.)
-// If you comment out this line, no telescope mode will be available. If you uncomment this line, then during initialization Arduino will read the state of PIN_SHUTTER (by putting it briefly
-// into INPUT_PULLUP mode). If the state is LOW (that would happen if the controller is connected to the macro rail, as the pin will be grounded via 500 Ohm relay), the controller
-// assumes that we are driving the macro rail; if the state is HIGH (when no relay is grounding the pin), the controller assumes that we are driving the alternative device (e.g. telescope), and
-// will modify its behaviour accordingly.
 // Telescope mode has its own set of 5 memory registers, and a separate "last used environment" register. Meaning one can maintain independent 5 memory registers in both macro and tele modes, 
 // and the last used environment is stored separately for the two nodes.
 // In telescope mode, one has to always rotate the focuser manually to the closest position before turning the controller on; this establishes the zero point and enables absolute calibration
 // of the focuser (focusing positions memorized in memory registers should be still valid next time you use the telescope). Meaning you should only find the focusing positions for all your eyepieces
 // and cameras once.
-// In telescope mode: no calibration, no limiters, no camera AF and shutter.
-#define TELESCOPE
 
-#ifdef TELESCOPE
-// Use temperature sensor (only in telescope mode): a ~50k thermistor between PIN_AF and ground, using an internal pull-up resistor to create a voltage divider.
-// The best temperature measurement accuracy is achieved when R_thermistor = R_pullup_resistor. If using a common Beta=3950K thermistor, the accuracy will be
-// better than 0.1 degrees for temperatures +5...+35 C, and better than 0.2 C for T=-20...+65 C. (This is only accounting for round-off errors of Arduino reads;
-// more errors can come from deviations of thermistor from Steinhart–Hart equation and/or inaccurately mesaured coefficients a, b, c in that equation; 
-// https://en.wikipedia.org/wiki/Thermistor#Steinhart.E2.80.93Hart_equation). 
+// Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
 #define TEMPERATURE
-#endif
 
 //////// Debugging options ////////
-// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000 (this is the case with my hardware - Velbon Super Mag Slider,
-// 1.8 degrees stepper motor and 8 microsteps/step motor driver), and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE long
+// Integer type for all coordinates. Use "unsigned int" if the total number of microsteps for your rail is <65,535 (this is the case with my hardware - Velbon Super Mag Slider,
+// 1.8 degrees stepper motor and 16 microsteps/step motor driver), and use "long" for larger numbers (will consume ~2kB more memory)
+#define COORD_TYPE unsigned int
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
@@ -71,11 +58,9 @@ const long DELAY_STEP = 50000;
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
-#ifdef TELESCOPE
 #ifdef TEMPERATURE
 // Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
 //#define SHOW_PIN_AF
-#endif
 #endif
 
 //////// Camera related parameters: ////////
@@ -243,7 +228,7 @@ const float TEL_LENGTH_MM = 45;
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
-const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status
+const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
 
 
 //////// INPUT PARAMETERS: ////////
@@ -283,7 +268,6 @@ const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 
 
 
 //////////////////////  Telescope stuff //////////////////////
-#ifdef TELESCOPE
 // Names for different focusing points.
 char const Name[N_REGS][15] = {
   // Reg1 (#2/3):
@@ -331,7 +315,6 @@ const float Temp0 = 298.15;
 // termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
 //   CTE = (x1-x0) / (Temp1-Temp0)
 const float CTE = 1.0;
-#endif
 #endif
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -551,17 +534,15 @@ struct global
   short dt_min;
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
-#ifdef TELESCOPE
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
-#endif  
 #ifdef SHOW_PIN_AF
   int raw_AF;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
 #endif
 #ifdef TEMPERATURE
   float Temp; // Temperature in Kelvins; only in telescope mode
-  float delta_pos; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps
 #endif
+  COORD_TYPE delta_pos; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps
 };
 
 struct global g;

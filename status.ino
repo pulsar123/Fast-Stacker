@@ -25,11 +25,15 @@ void display_all()
     // Line 3:
     sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
     lcd.print(g.buf6);
-    sprintf(g.buffer, "Mir=%1d", g.reg.mirror_lock);
+    if (g.telescope)
+      sprintf(g.buf6, "TC");
+    else
+      sprintf(g.buf6, "Mir");
+    sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
     lcd.setCursor(9, 2);
     lcd.print(g.buffer);
     // Line 4:
-    sprintf(g.buffer, "  Save=%1d Deb=%1d", g.reg.save_energy, g.disable_limiters);
+    sprintf(g.buffer, "Save=%1d Deb=%1d", g.reg.save_energy, g.disable_limiters);
     lcd.print(g.buffer);
     // Line 5:
     //    lcd.print("              ");
@@ -40,12 +44,12 @@ void display_all()
     sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
 #else
 #ifdef SHOW_PIN_AF
-// Showing the raw read value at PIN_AF (used for temperature sensor calibration):
-    sprintf(g.buffer, "%4d s%s", g.raw_AF, VERSION);
+    // Showing the raw read value at PIN_AF (used for temperature sensor calibration):
+    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
 #else
 #ifdef TEMPERATURE
-// Printing the temperature (Celcius), and version:
-    sprintf(g.buffer, "%4sC s%s", ftoa(g.buf6,g.Temp-273.15,1), VERSION);
+    // Printing the temperature (Celcius), and version:
+    sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp - 273.15, 1), VERSION);
 #else
     sprintf(g.buffer, "         s%s", VERSION);
 #endif
@@ -196,9 +200,9 @@ void points_status()
     return;
   lcd.setCursor(10, 5);
 
-  if (g.pos_short_old == g.reg.point1)
+  if (g.pos_short_old == g.reg.point1 - g.delta_pos)
     lcd.print("F ");
-  else if (g.pos_short_old == g.reg.point2)
+  else if (g.pos_short_old == g.reg.point2 - g.delta_pos)
     lcd.print("B ");
   else
     lcd.print("  ");
@@ -224,16 +228,13 @@ void battery_status()
   // This is done only once, when the decice is powerd up:
   if (g.setup_flag == 1)
   {
-    // Deciding which seep limit to use: using the larger value if powered from AC, smaller value if powered from batteries:
-#ifdef TELESCOPE
+    // Deciding which speed limit to use: using the larger value if powered from AC, smaller value if powered from batteries:
     if (g.telescope)
       g.speed_limit = SPEED_LIMIT_TEL;
+    else if (V > SPEED_VOLTAGE)
+      g.speed_limit = SPEED_LIMIT;
     else
-#endif
-      if (V > SPEED_VOLTAGE)
-        g.speed_limit = SPEED_LIMIT;
-      else
-        g.speed_limit = SPEED_LIMIT2;
+      g.speed_limit = SPEED_LIMIT2;
   }
 
   if (g.error)
@@ -340,7 +341,6 @@ void display_one_point_params()
 
   lcd.setCursor(0, 0);
 
-#ifdef TELESCOPE
   if (g.telescope)
   {
     if (g.displayed_register == 0)
@@ -352,7 +352,6 @@ void display_one_point_params()
       sprintf(g.buffer, "  Register %1d  ", g.displayed_register);
   }
   else
-#endif
   {
     // +0.05 for proper round off:
     float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
@@ -392,7 +391,6 @@ void display_two_point_params()
 
   lcd.setCursor(0, 1);
 
-#ifdef TELESCOPE
   if (g.telescope)
   {
     if (g.displayed_register == 0)
@@ -404,7 +402,6 @@ void display_two_point_params()
       sprintf(g.buffer, "%s", Name[g.displayed_register - 1]);
   }
   else
-#endif
   {
     // +0.05 for proper round off:
     dx = g.mm_per_microstep * (float)(g.reg.point2 - g.reg.point1) + 0.05;
@@ -436,14 +433,14 @@ void display_two_points()
   if (g.error || g.alt_flag)
     return;
 
-  p = g.mm_per_microstep * (float)g.reg.point1;
+  p = g.mm_per_microstep * (float)(g.reg.point1 - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "F*****");
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
-  p = g.mm_per_microstep * (float)g.reg.point2;
+  p = g.mm_per_microstep * (float)(g.reg.point2 - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else

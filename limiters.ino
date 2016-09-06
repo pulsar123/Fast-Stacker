@@ -8,10 +8,6 @@ void limiters()
 
   if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1)
     return;
-#ifdef TELESCOPE
-  //  if (g.telescope)
-  //    return;
-#endif
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
@@ -113,11 +109,7 @@ void limiters()
         return;
 
       // Preliminary test (for highest possible speed):
-#ifdef TELESCOPE
       if (g.telescope == 0 && dx <= roundMy(BREAKING_DISTANCE) || g.telescope == 1 && dx <= roundMy(BREAKING_DISTANCE_TEL))
-#else
-      if (dx <= roundMy(BREAKING_DISTANCE))
-#endif
       {
         // Breaking distance at the current speed:
         dx_break = roundMy(0.5 * g.speed * g.speed / g.accel_limit);

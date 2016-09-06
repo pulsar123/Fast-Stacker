@@ -21,7 +21,7 @@
    I am using the following libraries:
 
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
-    - Keypad library: http://playground.arduino.cc/Code/Keypad
+    - Keypad library: http://playground.arduino.cc/Code/KeypadT
 
    Since s0.10, I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
 
@@ -58,7 +58,6 @@ void setup() {
   digitalWrite(PIN_ENABLE, HIGH);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
-#ifdef TELESCOPE
   // Temporarily borrowing the AF pin to check if we are connected to the telescope or macro rail.
   pinMode(PIN_AF, INPUT_PULLUP);
   // Dynamically detecting whether we are connected to the macro rail
@@ -66,7 +65,6 @@ void setup() {
   // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
   // if it's high, we are grounded via thermistor (~10k or higher) -> telescope mode:
   g.telescope = (raw > 100);
-#endif
 
   // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider
   // (to measure temperature)
@@ -76,7 +74,7 @@ void setup() {
   if (g.telescope)
   {
     // In telescope mode, PIN_AF will be used to measure the temperature on the telescope
-//    pinMode(PIN_AF, INPUT_PULLUP);
+    //    pinMode(PIN_AF, INPUT_PULLUP);
     // Without pullup, as for now I am using an external pullup resistor:
     pinMode(PIN_AF, INPUT);
   }
@@ -112,23 +110,15 @@ void setup() {
 #ifdef ROUND_OFF
   float fsteps;
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
-#ifdef TELESCOPE
   float scale = MM_PER_FRAME[0] / g.mm_per_microstep;
-#endif
   for (int i = 0; i < N_PARAMS; i++)
   {
     fsteps = MM_PER_FRAME[i] / g.mm_per_microstep;
-#ifdef TELESCOPE
     if (g.telescope)
       // Rescaling the MM_PER_FRAME table in telescope mode so the smallest value = one microstep:
       fsteps = fsteps / scale;
-#endif
     short steps = (short)nintMy(fsteps);
-#ifdef TELESCOPE
     if (g.telescope || steps < 20)
-#else
-    if (steps < 20)
-#endif
       MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
   }
 #endif
