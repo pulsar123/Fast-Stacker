@@ -45,7 +45,7 @@ void display_all()
 #else
 #ifdef SHOW_PIN_AF
     // Showing the raw read value at PIN_AF (used for temperature sensor calibration):
-    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
+    sprintf(g.buffer, "%3d %4s %5d", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1), g.delta_pos);
 #else
 #ifdef TEMPERATURE
     // Printing the temperature (Celcius), and version:
@@ -55,8 +55,8 @@ void display_all()
 #endif // TEMPERATURE
 #endif // PIN_AF
 #endif  // EEPROM
-//!!!
-    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
+    //!!!
+//    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
     lcd.print(g.buffer);
   }
   else

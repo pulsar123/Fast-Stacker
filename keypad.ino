@@ -205,16 +205,7 @@ void process_keypad()
           g.frame_counter--;
           pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
         }
-        // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
-        // move the rail beyond g.limit1
-        if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-        {
-          // Recovering the original frame counter if aborting:
-          g.frame_counter = frame_counter0;
-          break;
-        }
-        go_to(pos_target + 0.5, g.speed_limit);
-        display_frame_counter();
+        make_step(&pos_target, &frame_counter0);
         break;
 
       case 'A': // #A: Fast-forward a single frame step (no shooting)
@@ -232,13 +223,7 @@ void process_keypad()
           g.frame_counter++;
           pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
         }
-        if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-        {
-          g.frame_counter = frame_counter0;
-          break;
-        }
-        go_to(pos_target + 0.5, g.speed_limit);
-        display_frame_counter();
+        make_step(&pos_target, &frame_counter0);
         break;
 
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
@@ -433,13 +418,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
                 pos_target = frame_coordinate();
-                if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-                {
-                  g.frame_counter = frame_counter0;
-                  break;
-                }
-                go_to(pos_target + 0.5, g.speed_limit);
-                display_frame_counter();
+                make_step(&pos_target, &frame_counter0);
               }
               else
               {
@@ -465,13 +444,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
                 pos_target = frame_coordinate();
-                if (pos_target < g.limit1 + (COORD_TYPE)100 || pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
-                {
-                  g.frame_counter = frame_counter0;
-                  break;
-                }
-                go_to(pos_target + 0.5, g.speed_limit);
-                display_frame_counter();
+                make_step(&pos_target, &frame_counter0);
               }
               else
               {

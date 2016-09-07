@@ -694,3 +694,23 @@ void measure_temperature()
 }
 #endif
 
+
+void make_step(COORD_TYPE * pos_target, short * frame_counter0)
+/*
+   Make a step to pos_target, update frame counter
+*/
+{
+  // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
+  // move the rail beyond g.limit1
+  if (*pos_target < g.limit1 + (COORD_TYPE)100 || *pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+  {
+    // Recovering the original frame counter if aborting:
+    g.frame_counter = *frame_counter0;
+    return;
+  }
+  go_to(*pos_target + 0.5, g.speed_limit);
+  display_frame_counter();
+  return;
+}
+
+

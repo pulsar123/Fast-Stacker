@@ -22,9 +22,9 @@
 #define TEMPERATURE
 
 //////// Debugging options ////////
-// Integer type for all coordinates. Use "unsigned int" if the total number of microsteps for your rail is <65,535 (this is the case with my hardware - Velbon Super Mag Slider,
-// 1.8 degrees stepper motor and 16 microsteps/step motor driver), and use "long" for larger numbers (will consume ~2kB more memory)
-#define COORD_TYPE unsigned int
+// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000,
+// and use "long" for larger numbers (will consume ~2kB more memory)
+#define COORD_TYPE long
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
@@ -408,9 +408,7 @@ struct regist
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
 
-//!!!
-//const short dA = sizeof(COORD_TYPE);
-const short dA = sizeof(long);
+const short dA = sizeof(COORD_TYPE);
 
 // EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -468,9 +466,9 @@ struct global
   unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
   // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
   unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
-long limit1; // pos_short for the foreground limiter
-long limit2; // pos_short for the background limiter
-long limit_tmp; // temporary value of a new limit when rail hits a limiter
+  COORD_TYPE limit1; // pos_short for the foreground limiter
+  COORD_TYPE limit2; // pos_short for the background limiter
+  COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter
   unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to

@@ -246,7 +246,7 @@ void initialize(byte factory_reset)
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit1 = (COORD_TYPE)TEL_INIT - BACKLASH_TEL;
     // the second limit is equal to the TEL_LENGTH parameter:
-    g.limit2 = TEL_LENGTH;
+    g.limit2 = (COORD_TYPE)TEL_LENGTH;
     go_to(TEL_INIT, g.speed_limit);
   }
 
