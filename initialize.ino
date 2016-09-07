@@ -113,8 +113,8 @@ void initialize(byte factory_reset)
     g.reg.point1 = 2000;
     g.reg.point2 = 3000;
 
-    g.limit1 = 0;
-    g.limit2 = 32767;
+    g.limit1 = 1000;
+    g.limit2 = 32000;
     g.pos = (g.reg.point1 + g.reg.point2) / 2.0;
     g.backlight = 0;
     // Saving these values in EEPROM:

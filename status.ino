@@ -33,7 +33,7 @@ void display_all()
     lcd.setCursor(9, 2);
     lcd.print(g.buffer);
     // Line 4:
-    sprintf(g.buffer, "Save=%1d Deb=%1d", g.reg.save_energy, g.disable_limiters);
+    sprintf(g.buffer, "Save=%1d   Deb=%1d", g.reg.save_energy, g.disable_limiters);
     lcd.print(g.buffer);
     // Line 5:
     //    lcd.print("              ");
@@ -52,9 +52,11 @@ void display_all()
     sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp - 273.15, 1), VERSION);
 #else
     sprintf(g.buffer, "         s%s", VERSION);
-#endif
-#endif
-#endif
+#endif // TEMPERATURE
+#endif // PIN_AF
+#endif  // EEPROM
+//!!!
+    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
     lcd.print(g.buffer);
   }
   else

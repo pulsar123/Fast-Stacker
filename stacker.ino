@@ -16,7 +16,8 @@
     - Voltage divider for battery sensor: resistors 270k, 360k, capacitor 0.1 uF.
     New in h1.1: extra 10k resistor.
     New in h1.2: extra SIP-1A05 relay, 1N4004 diode, 0.1 uF capacitor, 33 Ohm and 47 k resistors.
-    New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil)
+    New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil). Added telescope focuser module (second identical stepper motor
+       plus a voltage divider consisting of a thermistor and regular resistor with a similar resistance - both 10k in my case).
 
    I am using the following libraries:
 
@@ -33,7 +34,7 @@
                 Instead, display SCE pin is soldered to the ground via 10k (pulldown) resistor.
    h1.2 [s1.00 and newer]: LCD reset pin (RST) disconnected from Arduino; instead it is now hardware controlled via RC delay circuit (R=47k, C=0.1uF, connected to VCC=+3.3V).
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
-   h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2. Increased N_MICROSTEPS to 16.
+   h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2, and 6 with A2. Increased N_MICROSTEPS to 16. Added thermometer (10k resistor + 10k thermistor).
 */
 #include <EEPROM.h>
 #include <math.h>
@@ -61,7 +62,7 @@ void setup() {
   // Temporarily borrowing the AF pin to check if we are connected to the telescope or macro rail.
   pinMode(PIN_AF, INPUT_PULLUP);
   // Dynamically detecting whether we are connected to the macro rail
-  int raw = analogRead(PIN_SHUTTER);
+  int raw = analogRead(PIN_AF);
   // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
   // if it's high, we are grounded via thermistor (~10k or higher) -> telescope mode:
   g.telescope = (raw > 100);

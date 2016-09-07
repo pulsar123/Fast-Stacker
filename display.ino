@@ -1,5 +1,5 @@
 /* Regular (every Arduino loop) display processing stuff
- */
+*/
 
 void display_stuff()
 {
@@ -19,12 +19,14 @@ void display_stuff()
   if (g.moving == 0 && g.calibrate_warning == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
   {
     g.t_display = g.t;
-    battery_status();
 #ifdef TEMPERATURE
     if (g.telescope)
-    // Measuring temperature (only in telescope mode), from thermistor connected to PIN_AF:
+      // Measuring temperature (only in telescope mode), from thermistor connected to PIN_AF:
       measure_temperature();
 #endif
+    //    battery_status();
+    if (g.alt_flag)
+      display_all();
   }
 
   return;

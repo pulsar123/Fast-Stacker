@@ -68,9 +68,9 @@ COORD_TYPE nintMy(float x)
   if (frac >= 0.5)
   {
     if (x >= 0.0)
-      return x_short + 1;
+      return x_short + (COORD_TYPE)1;
     else
-      return x_short - 1;
+      return x_short - (COORD_TYPE)1;
   }
   else
     return x_short;
@@ -87,7 +87,7 @@ COORD_TYPE floorMy(float x)
   if (x >= 0.0)
     return m;
   else
-    return m - 1;
+    return m - (COORD_TYPE)1;
 }
 
 

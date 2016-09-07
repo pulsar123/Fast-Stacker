@@ -60,7 +60,7 @@ const long DELAY_STEP = 50000;
 //#define SHOW_EEPROM
 #ifdef TEMPERATURE
 // Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
-//#define SHOW_PIN_AF
+#define SHOW_PIN_AF
 #endif
 
 //////// Camera related parameters: ////////
@@ -205,7 +205,7 @@ const float SPEED_LIMIT_TEL_MM_S = 5;
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
-const float BREAKING_DISTANCE_MM = 2.0;
+const float BREAKING_DISTANCE_MM = 1.0;
 // The value for TELESCOPE mode:
 const float BREAKING_DISTANCE_TEL_MM = 1;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
@@ -219,7 +219,7 @@ const short STEP_LOW_DT = 3;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
 // Initial coordinate (mm) for telescope:
-const float TEL_INIT_MM = 5;
+const float TEL_INIT_MM = 1;
 // The maximum travel distance in telescope mode, starting from the closest position:
 const float TEL_LENGTH_MM = 45;
 
@@ -240,7 +240,7 @@ const unsigned char N_REGS = 5;
 #define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
-//  Mm per frame parameter (determined by DoF of the lens)
+//  Mm per frame parameter for macro rail mode (determined by DoF of the lens)
 float MM_PER_FRAME[] = {0.00125, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
@@ -248,11 +248,11 @@ const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0
 const short N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 // Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
 // The length of the first delay table:
-const short N_FIRST_DELAY = 7;
+const byte N_FIRST_DELAY = 7;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
 const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
-// The length of the first delay table:
-const short N_SECOND_DELAY = 7;
+// The length of the second delay table:
+const byte N_SECOND_DELAY = 7;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
 const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
@@ -408,7 +408,9 @@ struct regist
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
 
-const short dA = sizeof(COORD_TYPE);
+//!!!
+//const short dA = sizeof(COORD_TYPE);
+const short dA = sizeof(long);
 
 // EEPROM addresses: make sure they don't go beyong the Arduino Uno EEPROM size of 1024!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
@@ -466,9 +468,9 @@ struct global
   unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
   // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
   unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
-  COORD_TYPE limit1; // pos_short for the foreground limiter
-  COORD_TYPE limit2; // pos_short for the background limiter
-  COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter
+long limit1; // pos_short for the foreground limiter
+long limit2; // pos_short for the background limiter
+long limit_tmp; // temporary value of a new limit when rail hits a limiter
   unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
@@ -494,7 +496,7 @@ struct global
   byte comment_flag; // flag used to trigger the comment line briefly
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level;
-  COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
+long coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
   unsigned long t_shot; // the time shot was initiated

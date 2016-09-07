@@ -153,7 +153,7 @@ void motor_control()
       // Time correction depends on the travel history between t_old and now
       short dt1_backlash = 0;
       float pos_a;
-      COORD_TYPE pos_short_new = g.pos_short_old + d_sign;
+      COORD_TYPE pos_short_new = g.pos_short_old + (COORD_TYPE)d_sign;
       float pos_new = (float)pos_short_new;
       byte solve_square_equation = 0;
       switch (i_case)
@@ -229,7 +229,7 @@ void motor_control()
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     // Backlash cannot be negative:
     if (g.BL_counter < (COORD_TYPE)0)
-      g.BL_counter = 0;
+      g.BL_counter = (COORD_TYPE)0;
     // and cannot be larger than g.backlash:
     if (g.BL_counter > g.backlash)
       g.BL_counter = g.backlash;
