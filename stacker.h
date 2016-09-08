@@ -58,12 +58,8 @@ const long DELAY_STEP = 50000;
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
-#ifdef TEMPERATURE
-// Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
-#define SHOW_PIN_AF
-#endif
-// Display current position in microsteps:
-#define SHOW_STEPS
+// Display positions and temperature in raw units:
+#define SHOW_RAW
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -289,10 +285,10 @@ char const Name[N_REGS][15] = {
 #ifdef TEMPERATURE
 // Number of times temperature is measured in a loop (for better accuracy):
 const unsigned char N_TEMP=10;
-// Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_PIN_AF mode,
-// and pressing the * key: this will show the raw read value at PIN_AF, raw_AF (bottom line, on the left). Now R_pullup can be computed from the voltage
+// Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_RAW mode,
+// and pressing the * key: this will show the raw read value at PIN_AF, raw_T (bottom line, on the left). Now R_pullup can be computed from the voltage
 // divider equation:
-//    R_pullup = R0 * (1024/raw_AF - 1)
+//    R_pullup = R0 * (1024/raw_T - 1)
 // Use R0 ~ R_pullup for the best measurement accuracy.
 // For now, as I only have a 10k thermistor, my hack is to use an external pullup resistor, and use PIN_SHUTTER to deliver the +5V to the voltage divider on the telescope:
 const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor; 
@@ -311,14 +307,16 @@ octave:24> ols(b,A)
 const float SH_a = 2.777994e-03;
 const float SH_b = 2.403028e-04;
 const float SH_c = 1.551810e-06;
-// Reference temperature (at which the telescope tube has zero relative expansion), in Kelvin (K=C+273.15):
-const float Temp0 = 298.15;
 // Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by CTE*(Temp-Temp0) when temperature changes.
 // This is not the official CTE (normalized per 1mm of the telescope length), but rather the product of the official CTE x length of the telescope.
 // It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one
 // termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
 //   CTE = (x1-x0) / (Temp1-Temp0)
 const float CTE = 1.0;
+// Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
+// the memory point index in the status line starts flashing (meaning we need to travel to that point again).
+const short DELTA_POS_MAX = 2;
+const unsigned long FLASHING_DELAY = 500000;
 #endif
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -407,6 +405,7 @@ struct regist
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
   COORD_TYPE point[4];  // four memory points (only 0th - foreground, and 3rd - background, are used in macro mode; all four are used in telescope mode)
+  unsigned int raw_T[4]; // temperatures corresponding to the four memory points (only used in telescope mode), in raw units (so effectively resistance of the thermistor in relative units)
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
@@ -436,6 +435,8 @@ const uint8_t battery_char [][12] = {
 // 2-char bitmaps to display rewind/fast-forward symbols:
 const uint8_t rewind_char[] = {0x10, 0x38, 0x54, 0x92, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00};
 const uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 0x54, 0x38, 0x10, 0x00};
+
+const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 
 // All global variables belong to one structure - global:
 struct global
@@ -511,7 +512,8 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   unsigned long t_old;
   float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
-  byte alt_flag; // 0: normal display; 1: alternative display (when pressing *)
+  byte alt_flag; // 0: normal display; 1: alternative display
+  byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
   char* rev_char; // "R" if rail revered, " " otherwise
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
@@ -539,13 +541,14 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
 #endif
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
-#ifdef SHOW_PIN_AF
-  int raw_AF;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
-#endif
+  int raw_T;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
 #ifdef TEMPERATURE
-  float Temp; // Temperature in Kelvins; only in telescope mode
+  float Temp; // Current temperature in Kelvins; only in telescope mode
+  float Temp0[4]; // Temperature for the four memory points for the current register (Kelvin)
 #endif
-  COORD_TYPE delta_pos; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps
+  COORD_TYPE delta_pos[4]; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps, for each memory point
+  char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
+  unsigned long t_status; // time variable used in generating memory point flashing
 };
 
 struct global g;

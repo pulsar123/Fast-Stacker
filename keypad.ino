@@ -334,7 +334,8 @@ void process_keypad()
           else
           {
             g.reg.mirror_lock = 0;
-            g.delta_pos = (COORD_TYPE)0;
+            for (byte i = 0; i < 4; i++)
+              g.delta_pos[i] = (COORD_TYPE)0;
           }
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -545,6 +546,8 @@ void process_keypad()
               if (!g.moving && g.alt_flag == 0)
               {
                 g.alt_flag = 1;
+                // Kind=1 means "*" screen
+                g.alt_kind = 1;
                 display_all();
               }
               break;
@@ -733,10 +736,23 @@ void process_keypad()
               break;
 
             case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
-              if (g.moving || g.paused || g.telescope)
+              if (g.moving || g.paused)
                 break;
-              delay_buffer();
-              display_comment_line(g.buffer);
+              if (g.telescope)
+              {
+                if (g.alt_flag == 0)
+                {
+                  g.alt_flag = 1;
+                  // Kind=2 means "#" screen
+                  g.alt_kind = 2;
+                  display_all();
+                }
+              }
+              else
+              {
+                delay_buffer();
+                display_comment_line(g.buffer);
+              }
               break;
 
           } // End of case
@@ -817,8 +833,8 @@ void process_keypad()
 #endif
             change_speed(0.0, 0, 2);
         }
-        if (g.key_old == '*')
-          // The '*' key was just released: switch to default screen from the alternative one
+        if (g.key_old == '*' || g.telescope && g.key_old == '#')
+          // The '*' (or '#' in telescope mode) key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;
           display_all();

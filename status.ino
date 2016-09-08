@@ -7,6 +7,8 @@ void display_all()
   Refreshing the whole screen
 */
 {
+  float p;
+  byte row, col;
 #ifdef TIMING
   return;
 #endif
@@ -16,61 +18,101 @@ void display_all()
 
   if (g.alt_flag)
   {
-    // Line 1:
-    if (g.telescope)
-      sprintf(g.buffer, "         Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
-    else
-      sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
-    lcd.print(g.buffer);
-    // Line 2:
-    if (g.telescope)
-      sprintf(g.buffer, "          BL=%1d", g.reg.backlash_on);
-    else
-      sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
-    lcd.print(g.buffer);
-    // Line 3:
-    if (!g.telescope)
+    if (g.alt_kind == 1)
+      // Screen "*"
     {
-      sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
-      lcd.print(g.buf6);
-    }
-    if (g.telescope)
-      sprintf(g.buf6, "TC");
-    else
-      sprintf(g.buf6, "Mir");
-    sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
-    lcd.setCursor(9, 2);
-    lcd.print(g.buffer);
-    // Line 4:
-    sprintf(g.buffer, "Save=%1d   Deb=%1d", g.reg.save_energy, g.disable_limiters);
-    lcd.print(g.buffer);
-    // Line 5:
-    //    lcd.print("              ");
-    lcd.setCursor(0, 5);
-    // Line 6:
+      // Line 1:
+      if (g.telescope)
+        sprintf(g.buffer, "         Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
+      else
+        sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
+      lcd.print(g.buffer);
+      // Line 2:
+      if (g.telescope)
+        sprintf(g.buffer, "          BL=%1d", g.reg.backlash_on);
+      else
+        sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
+      lcd.print(g.buffer);
+      // Line 3:
+      if (!g.telescope)
+      {
+        sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
+        lcd.print(g.buf6);
+      }
+      if (g.telescope)
+        sprintf(g.buf6, "TC");
+      else
+        sprintf(g.buf6, "Mir");
+      sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
+      lcd.setCursor(9, 2);
+      lcd.print(g.buffer);
+      // Line 4:
+      sprintf(g.buffer, "Save=%1d   Deb=%1d", g.reg.save_energy, g.disable_limiters);
+      lcd.print(g.buffer);
+      // Line 5:
+      //    lcd.print("              ");
+      lcd.setCursor(0, 5);
+      // Line 6:
 #ifdef SHOW_EEPROM
-    //  Showing amount of EEPROM used:
-    sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
-#else
-#ifdef SHOW_PIN_AF
-    // Showing the raw read value at PIN_AF (used for temperature sensor calibration):
-    sprintf(g.buffer, "%3d %4s %5d", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1), g.delta_pos);
+      //  Showing amount of EEPROM used:
+      sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
 #else
 #ifdef TEMPERATURE
-    // Printing the temperature (Celcius), and version:
-    sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp - 273.15, 1), VERSION);
+      // Printing the temperature (Celcius), and version:
+      //      sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp, 1), VERSION);
+      sprintf(g.buffer, "%3d %4s", g.raw_T, ftoa(g.buf6, g.Temp, 1));
 #else
-    sprintf(g.buffer, "         s%s", VERSION);
+      sprintf(g.buffer, "         s%s", VERSION);
 #endif // TEMPERATURE
-#endif // PIN_AF
 #endif  // EEPROM
-    //!!!
-    //    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
-    lcd.print(g.buffer);
+      //!!!
+      //    sprintf(g.buffer, "%4d %4sC", g.raw_T, ftoa(g.buf6, g.Temp, 1));
+      lcd.print(g.buffer);
+    }
+
+    else
+      // Screen "#"
+    {
+      byte i = 0;
+      for (row = 0; row < 4; row = row + 3)
+        for (col = 0; col < 8; col = col + 7)
+        {
+          if (i == g.current_point)
+            // Marking the current point section of the screen with a "*":
+          {
+            lcd.setCursor(col, row);
+            lcd.print("*");
+          }
+          lcd.setCursor(col + 1, row);
+#ifdef SHOW_RAW
+          sprintf(g.buffer, "%1d)%4d", i + 1, g.delta_pos[i]);
+#else
+          p = g.mm_per_microstep * 1000 * (float)(g.delta_pos[i]);
+          sprintf(g.buffer, "%1d)%4s", i + 1, p);
+#endif
+          lcd.print(g.buffer);
+          lcd.setCursor(col + 2, row + 1);
+#ifdef SHOW_RAW
+          sprintf(g.buffer, "%5d", g.reg.raw_T[i]);
+#else
+          sprintf(g.buffer, "%5s", ftoa(g.buf6, g.Temp0[i], 1));
+#endif
+          lcd.print(g.buffer);
+          lcd.setCursor(col + 1, row + 2);
+#ifdef SHOW_RAW
+          sprintf(g.buffer, "%6d", g.reg.point[i]);
+#else
+          p = g.mm_per_microstep * (float)(g.reg.point[i]);
+          sprintf(g.buffer, "%6s", ftoa(g.buf7, p, 3));
+#endif
+          lcd.print(g.buffer);
+          i++;
+        }
+    }  // if alt_kind
   }
+
   else
   {
-
     if (g.error == 0)
     {
       if (g.calibrate_warning == 0)
@@ -209,14 +251,29 @@ void points_status()
 {
   if (g.error || g.alt_flag)
     return;
+
   lcd.setCursor(10, 5);
 
-  if (g.pos_short_old == g.reg.point[0] - g.delta_pos)
-    lcd.print("F ");
-  else if (g.pos_short_old == g.reg.point[3] - g.delta_pos)
-    lcd.print("B ");
-  else
+  if (g.current_point < 0 || abs(g.delta_pos[g.current_point])>DELTA_POS_MAX && g.t > g.t_status + FLASHING_DELAY)
+  {
+    if (g.current_point >= 0)
+      g.t_status = g.t;
     lcd.print("  ");
+    return;
+  }
+
+  if (g.telescope)
+  {
+    sprintf (g.buffer, "%1d ", g.current_point + 1);
+    lcd.print (g.buffer);
+  }
+  else
+  {
+    if (g.current_point == 0)
+      lcd.print("F ");
+    else
+      lcd.print("B ");
+  }
 
   return;
 }
@@ -447,11 +504,11 @@ void display_two_points()
   if (g.error || g.alt_flag)
     return;
 
-#ifdef SHOW_STEPS
-  p_int = g.reg.point[0] - g.delta_pos;
+#ifdef SHOW_RAW
+  p_int = g.reg.point[0] + g.delta_pos[0];
   sprintf(g.buffer, "F%5d", p_int);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[0] - g.delta_pos);
+  p = g.mm_per_microstep * (float)(g.reg.point[0] + g.delta_pos[0]);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
@@ -460,11 +517,11 @@ void display_two_points()
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
 
-#ifdef SHOW_STEPS
-  p_int = g.reg.point[3] - g.delta_pos;
+#ifdef SHOW_RAW
+  p_int = g.reg.point[3] + g.delta_pos[3];
   sprintf(g.buffer, "B%5d", p_int);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[3] - g.delta_pos);
+  p = g.mm_per_microstep * (float)(g.reg.point[3] + g.delta_pos[3]);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -534,7 +591,7 @@ void display_current_position()
 #endif
 
 
-#ifdef SHOW_STEPS
+#ifdef SHOW_RAW
   sprintf(g.buffer, "%1s %6d   %3s", g.rev_char, g.pos_short_old, g.buf6);
 #else
   sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
@@ -548,7 +605,7 @@ void display_current_position()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void display_comment_line(char const *l)
+void display_comment_line(char const * l)
 /*
   Display a comment line briefly (then it should be replaced with display_current_position() output).
 */

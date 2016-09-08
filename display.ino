@@ -24,9 +24,11 @@ void display_stuff()
       // Measuring temperature (only in telescope mode), from thermistor connected to PIN_AF:
       measure_temperature();
 #endif
-    //    battery_status();
     if (g.alt_flag)
       display_all();
+    else
+      //       battery_status();
+      display_status_line();
   }
 
   return;

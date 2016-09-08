@@ -7,7 +7,10 @@ void initialize(byte factory_reset)
 
   g.error = 0;
   g.calibrate_warning = 0;
-  g.delta_pos = (COORD_TYPE)0;
+  for (byte i = 0; i < 4; i++)
+  {
+    g.delta_pos[i] = (COORD_TYPE)0;
+  }
 
   if (!g.telescope)
   {
@@ -77,6 +80,7 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.comment_flag = 0;
+  g.current_point = -1;
 
   if (factory_reset)
   {
@@ -106,15 +110,22 @@ void initialize(byte factory_reset)
     g.reg.straight = 1;
     g.reg.save_energy = 1;
     update_save_energy();
-    g.reg.point[0] = 2000;
-    g.reg.point[3] = 3000;
-
+    for (byte i = 0; i < 4; i++)
+    {
+      g.reg.point[i] = 2000;
+    }
     g.limit1 = 1000;
     g.limit2 = 32000;
-    g.pos = (g.reg.point[0] + g.reg.point[3]) / 2.0;
+    g.pos = 2000;
     g.backlight = 0;
-    // Saving these values in EEPROM:
-    if (!g.telescope)
+    if (g.telescope)
+    {
+      for (byte i = 0; i < 4; i++)
+      {
+        g.reg.raw_T[i] = 512;
+      }
+    }
+    else
     {
       EEPROM.put( ADDR_CALIBRATE, g.calibrate );
       EEPROM.put( ADDR_LIMIT1, g.limit1);
@@ -129,6 +140,8 @@ void initialize(byte factory_reset)
       EEPROM.put(g.addr_reg[jj], g.reg);
     }
   }
+
+  // Regular initialization (not a factory reset):
   else
   {
     // Reading the values from EEPROM:
@@ -146,6 +159,17 @@ void initialize(byte factory_reset)
     update_save_energy();
   }  // if factory_reset
 
+  if (g.telescope)
+  {
+    for (byte i = 0; i < 4; i++)
+    {
+      g.Temp0[i] = compute_temperature(g.reg.raw_T[i]);
+    }
+#ifdef TEMPERATURE
+    // Measuring current temperature and updating delta_pos[] values:
+    measure_temperature();
+#endif
+  }
 
   // Five possible floating point values for acceleration
   set_accel_v();
@@ -169,6 +193,7 @@ void initialize(byte factory_reset)
   g.t_shutter = g.t0;
   g.t_shutter_off = g.t0;
   g.t_AF = g.t0;
+  g.t_status = g.t0;
   g.t_mil = millis();
 
   g.N_repeats = 0;
@@ -201,6 +226,7 @@ void initialize(byte factory_reset)
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
+  g.alt_kind = 1;
   g.disable_limiters = 0;
 #ifdef EXTENDED_REWIND
   g.no_extended_rewind = 0;
