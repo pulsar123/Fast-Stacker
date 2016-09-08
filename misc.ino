@@ -440,6 +440,8 @@ void coordinate_recalibration()
 
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 void set_accel_v()
@@ -452,93 +454,8 @@ void set_accel_v()
   g.accel_v[4] =  g.accel_limit;
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-
-/*
-  void to_reg()
-  // Parameters -> to reg structure
-  {
-  g.reg = {g.reg.i_n_shots, g.reg.i_mm_per_frame, g.reg.i_fps, g.reg.i_first_delay, g.reg.i_second_delay, g.reg.i_accel_factor, g.reg.i_n_timelapse,
-           g.reg.i_dt_timelapse, g.reg.mirror_lock, g.reg.backlash_on, g.reg.straight, g.reg.save_energy, g.reg.point1, g.reg.point2
-          };
-  return;
-  }
-*/
-
-
-/*
-  void from_reg()
-  // reg structure -> parameters
-  {
-  g.reg.i_n_shots = g.reg.i_n_shots;
-  g.reg.i_mm_per_frame = g.reg.i_mm_per_frame;
-  g.reg.i_fps = g.reg.i_fps;
-  g.reg.i_first_delay = g.reg.i_first_delay;
-  g.reg.i_second_delay = g.reg.i_second_delay;
-  g.reg.i_accel_factor = g.reg.i_accel_factor;
-  g.reg.i_n_timelapse = g.reg.i_n_timelapse;
-  g.reg.i_dt_timelapse = g.reg.i_dt_timelapse;
-  g.reg.mirror_lock = g.reg.mirror_lock;
-  g.reg.backlash_on = g.reg.backlash_on;
-  g.reg.straight = g.reg.straight;
-  g.reg.save_energy = g.reg.save_energy;
-  g.reg.point1 = g.reg.point1;
-  g.reg.point2 = g.reg.point2;
-  update_backlash();
-  update_save_energy();
-  return;
-  }
-*/
-
-/*
-
-  void put_reg()
-  // Putting all parameters which are part of reg structure to EEPROM
-  {
-  EEPROM.put( g.addr_reg[0], g.reg);
-  EEPROM.put( ADDR_I_N_SHOTS, g.reg.i_n_shots);
-  EEPROM.put( ADDR_I_MM_PER_FRAME, g.reg.i_mm_per_frame);
-  EEPROM.put( ADDR_I_FPS, g.reg.i_fps);
-  EEPROM.put( ADDR_I_FIRST_DELAY, g.reg.i_first_delay);
-  EEPROM.put( ADDR_I_SECOND_DELAY, g.reg.i_second_delay);
-  EEPROM.put( ADDR_I_ACCEL_FACTOR, g.reg.i_accel_factor);
-  EEPROM.put( ADDR_I_N_TIMELAPSE, g.reg.i_n_timelapse);
-  EEPROM.put( ADDR_I_DT_TIMELAPSE, g.reg.i_dt_timelapse);
-  EEPROM.put( ADDR_MIRROR_LOCK, g.reg.mirror_lock);
-  EEPROM.put( ADDR_BACKLASH_ON, g.reg.backlash_on);
-  EEPROM.put( ADDR_STRAIGHT, g.reg.straight);
-  EEPROM.put( ADDR_SAVE_ENERGY, g.reg.save_energy);
-  EEPROM.put( ADDR_POINT1, g.reg.point1);
-  EEPROM.put( ADDR_POINT2, g.reg.point2);
-  return;
-  }
-*/
-
-/*
-  void get_reg()
-  // Getting all parameters which are part of reg structure from EEPROM
-  {
-  EEPROM.get( g.addr_reg[0], g.reg);
-  EEPROM.get( ADDR_I_N_SHOTS, g.reg.i_n_shots);
-  EEPROM.get( ADDR_I_MM_PER_FRAME, g.reg.i_mm_per_frame);
-  EEPROM.get( ADDR_I_FPS, g.reg.i_fps);
-  EEPROM.get( ADDR_I_FIRST_DELAY, g.reg.i_first_delay);
-  EEPROM.get( ADDR_I_SECOND_DELAY, g.reg.i_second_delay);
-  EEPROM.get( ADDR_I_ACCEL_FACTOR, g.reg.i_accel_factor);
-  EEPROM.get( ADDR_I_N_TIMELAPSE, g.reg.i_n_timelapse);
-  EEPROM.get( ADDR_I_DT_TIMELAPSE, g.reg.i_dt_timelapse);
-  EEPROM.get( ADDR_MIRROR_LOCK, g.reg.mirror_lock);
-  EEPROM.get( ADDR_BACKLASH_ON, g.reg.backlash_on);
-  EEPROM.get( ADDR_STRAIGHT, g.reg.straight);
-  EEPROM.get( ADDR_SAVE_ENERGY, g.reg.save_energy);
-  EEPROM.get( ADDR_POINT1, g.reg.point1);
-  EEPROM.get( ADDR_POINT2, g.reg.point2);
-  update_backlash();
-  update_save_energy();
-  return;
-  }
-*/
 
 
 void rail_reverse(byte fix_points)
@@ -582,6 +499,8 @@ void rail_reverse(byte fix_points)
 
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 COORD_TYPE frame_coordinate()
@@ -589,6 +508,8 @@ COORD_TYPE frame_coordinate()
 {
   return g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 
@@ -614,6 +535,8 @@ void read_params(byte n)
   }
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 void save_params(byte n)
@@ -629,6 +552,8 @@ void save_params(byte n)
   lcd.clearRestOfLine();
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 void update_backlash()
@@ -647,6 +572,8 @@ void update_backlash()
     g.backlash = (COORD_TYPE)1;
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 void update_save_energy()
@@ -662,6 +589,8 @@ void update_save_energy()
   return;
 #endif
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 #ifdef TEMPERATURE
@@ -693,6 +622,8 @@ void measure_temperature()
   return;
 }
 #endif
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 void make_step(COORD_TYPE * pos_target, short * frame_counter0)
@@ -712,5 +643,19 @@ void make_step(COORD_TYPE * pos_target, short * frame_counter0)
   display_frame_counter();
   return;
 }
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+void clear_calibrate_state()
+// Clear calibrate state
+{
+  g.calibrate = 0;
+  g.calibrate_flag = 0;
+  g.calibrate_warning = 0;
+  g.calibrate_init = g.calibrate;
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 

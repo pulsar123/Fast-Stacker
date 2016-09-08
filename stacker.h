@@ -22,14 +22,14 @@
 #define TEMPERATURE
 
 //////// Debugging options ////////
-// Integer type for all coordinates. Use "short" if the total number of microsteps for your rail is <32,000,
-// and use "long" for larger numbers (will consume ~2kB more memory)
+// Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
+// and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE long
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
 //#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
@@ -62,6 +62,8 @@ const long DELAY_STEP = 50000;
 // Uncomment to see the read value on pin PIN_AF in "*" screen (bottom line), in internal units. Used to calibrate the temperature sensor (thermistor connected to PIN_AF) in telescope mode.
 #define SHOW_PIN_AF
 #endif
+// Display current position in microsteps:
+#define SHOW_STEPS
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -232,8 +234,8 @@ const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for re
 
 
 //////// INPUT PARAMETERS: ////////
-// Number of custom memory registers:
-const unsigned char N_REGS = 5;
+// Number of custom memory registers (largest between macro and telescope mode; we have 5 for macro and 6 for telescope):
+const unsigned char N_REGS = 6;
 // Number of backlight levels:
 #define N_BACKLIGHT 3
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
@@ -280,6 +282,8 @@ char const Name[N_REGS][15] = {
   "Toup    Toup+B",
   // Reg5 (*8/9):
   "50D      50D+B",
+  // Misc:
+  ""
 };
 // Temperature related parameters
 #ifdef TEMPERATURE

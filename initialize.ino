@@ -81,16 +81,12 @@ void initialize(byte factory_reset)
   if (factory_reset)
   {
 #ifdef MOTOR_DEBUG
-    g.calibrate = 0;
-    g.calibrate_warning = 0;
-    g.calibrate_init = g.calibrate;
+    clear_calibrate_state();
 #else
     if (g.telescope)
       // Disabling calibration when operating telescope
     {
-      g.calibrate = 0;
-      g.calibrate_warning = 0;
-      g.calibrate_init = g.calibrate;
+      clear_calibrate_state();
     }
     else
       g.calibrate = 3;
@@ -189,7 +185,7 @@ void initialize(byte factory_reset)
   g.timelapse_mode = 0;
 
   if (factory_reset || g.telescope == 1)
-      // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
+    // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
   {
     g.BL_counter = 0;
     g.backlash_init = 0;
@@ -228,16 +224,12 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef MOTOR_DEBUG
-  g.calibrate = 0;
-  g.calibrate_warning = 0;
-  g.calibrate_init = g.calibrate;
+  clear_calibrate_state();
 #endif
   if (g.telescope)
     // Disabling calibration when operating telescope
   {
-    g.calibrate = 0;
-    g.calibrate_warning = 0;
-    g.calibrate_init = g.calibrate;
+    clear_calibrate_state();
     // No rail reverse in telescope mode:
     g.reg.straight = 1;
     g.pos = 0.0;

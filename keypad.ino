@@ -81,7 +81,7 @@ void process_keypad()
     {
       case 'C': // #C: Initiate a full calibration
         // Ignore if moving:
-        if (g.moving == 1 || g.paused)
+        if (g.moving == 1 || g.paused || g.telescope)
           break;
         g.calibrate = 3;
         g.calibrate_flag = 0;
@@ -111,10 +111,7 @@ void process_keypad()
           // This should be done after change_speed(0.0):
           g.breaking = 1;
           letter_status("B");
-          g.calibrate = 0;
-          g.calibrate_flag = 0;
-          g.calibrate_warning = 0;
-          g.calibrate_init = g.calibrate;
+          clear_calibrate_state();
         }
         break;
 
@@ -142,30 +139,44 @@ void process_keypad()
         read_params(2);
         break;
 
-      case '8': // #8: Cycle through the table for FIRST_DELAY parameter
+      case '8': // #8: Cycle through the table for FIRST_DELAY parameter (macro mode), or save parameters to memory bank #6 (telescope mode)
         if (g.paused)
           break;
-        if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
-          g.reg.i_first_delay++;
+        if (g.telescope)
+        {
+          save_params(6);
+        }
         else
-          g.reg.i_first_delay = 0;
-        EEPROM.put( g.addr_reg[0], g.reg);
-        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-        delay_buffer();
-        display_comment_line(g.buffer);
+        {
+          if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
+            g.reg.i_first_delay++;
+          else
+            g.reg.i_first_delay = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
+          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+          delay_buffer();
+          display_comment_line(g.buffer);
+        }
         break;
 
-      case '9': // #9: Cycle through the table for SECOND_DELAY parameter
+      case '9': // #9: Cycle through the table for SECOND_DELAY parameter (macro mode), or read parameters from memory bank #6 (telescope mode)
         if (g.paused)
           break;
-        if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
-          g.reg.i_second_delay++;
+        if (g.telescope)
+        {
+          read_params(6);
+        }
         else
-          g.reg.i_second_delay = 0;
-        EEPROM.put( g.addr_reg[0], g.reg);
-        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-        delay_buffer();
-        display_comment_line(g.buffer);
+        {
+          if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
+            g.reg.i_second_delay++;
+          else
+            g.reg.i_second_delay = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
+          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+          delay_buffer();
+          display_comment_line(g.buffer);
+        }
         break;
 
       case '4': // #4: Backlighting control
@@ -183,7 +194,7 @@ void process_keypad()
         break;
 
       case '7': // #7: Manual camera shutter triggering
-        if (g.moving)
+        if (g.moving || g.telescope)
           break;
         g.make_shot = 1;
         g.single_shot = 1;
@@ -195,46 +206,35 @@ void process_keypad()
         if (g.moving || g.paused > 1)
           break;
         frame_counter0 = g.frame_counter;
+        g.frame_counter--;
         if (g.paused)
-        {
-          g.frame_counter--;
           pos_target = frame_coordinate();
-        }
         else
-        {
-          g.frame_counter--;
           pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
-        }
         make_step(&pos_target, &frame_counter0);
         break;
 
       case 'A': // #A: Fast-forward a single frame step (no shooting)
         if (g.moving || g.paused > 1)
           break;
-        // Required microsteps per frame:
         frame_counter0 = g.frame_counter;
+        g.frame_counter++;
         if (g.paused)
-        {
-          g.frame_counter++;
           pos_target = frame_coordinate();
-        }
         else
-        {
-          g.frame_counter++;
           pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
-        }
         make_step(&pos_target, &frame_counter0);
         break;
 
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
-        if (g.paused)
+        if (g.paused || g.telescope)
           break;
         go_to((float)g.starting_point + 0.5, g.speed_limit);
         display_comment_line(" Going to P0  ");
         break;
 
       case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
-        if (g.paused)
+        if (g.paused || g.telescope)
           break;
         // Checking the correctness of point1/2
         if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
@@ -279,7 +279,6 @@ void process_keypad()
             // Rail reverse is disabled in telescope mode as its unsafe and is not needed:
             break;
           g.reg.straight = 1 - g.reg.straight;
-
           EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           // Reversing the rail and updating the point1,2 parameters:
@@ -347,6 +346,8 @@ void process_keypad()
           break;
 
         case '4': // *4: Change N_timelapse
+          if (g.telescope)
+            break;
           if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
             g.reg.i_n_timelapse++;
           else
@@ -356,6 +357,8 @@ void process_keypad()
           break;
 
         case '7': // *7: Change dt_timelapse
+          if (g.telescope)
+            break;
           if (g.reg.i_dt_timelapse < N_DT_TIMELAPSE - 1)
             g.reg.i_dt_timelapse++;
           else
@@ -508,7 +511,7 @@ void process_keypad()
               break;
 
             case '0': // 0: Start shooting (2-point focus stacking) from the foreground point (backlash compensated)
-              if (g.moving)
+              if (g.moving || g.telescope)
                 break;
               // Checking the correctness of point1/2
               if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
@@ -583,7 +586,7 @@ void process_keypad()
               break;
 
             case 'D':  // D: Initiate one-point focus stacking forward
-              if (g.paused)
+              if (g.paused || g.telescope)
                 break;
               if (!g.moving)
               {
@@ -601,9 +604,9 @@ void process_keypad()
               }
               break;
 
-            case '2':  // 2: Decrease parameter n_shots (for 1-point sstacking)
+            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)
               // Also used for different debugging modes, to decrease debugged parameters
-              if (g.paused)
+              if (g.paused || g.telescope)
                 break;
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
@@ -634,9 +637,9 @@ void process_keypad()
               display_all();
               break;
 
-            case '3':  // 3: Increase parameter n_shots (for 1-point sstacking)
+            case '6':  // 6: Increase parameter n_shots (for 1-point sstacking)
               // Also used for different debugging modes, to increase debugged parameters
-              if (g.paused)
+              if (g.paused || g.telescope)
                 break;
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
@@ -667,7 +670,7 @@ void process_keypad()
               display_all();
               break;
 
-            case '5':  // 5: Decrease parameter mm_per_frame
+            case '2':  // 2: Decrease parameter mm_per_frame
               if (g.paused)
                 break;
               if (g.reg.i_mm_per_frame > 0)
@@ -689,7 +692,7 @@ void process_keypad()
               EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
-            case '6':  // 6: Increase parameter mm_per_frame
+            case '3':  // 3: Increase parameter mm_per_frame
               if (g.paused)
                 break;
               if (g.reg.i_mm_per_frame < N_PARAMS - 1)
@@ -714,7 +717,7 @@ void process_keypad()
               break;
 
             case '8':  // 8: Decrease parameter fps
-              if (g.paused)
+              if (g.paused || g.telescope)
                 break;
               if (g.reg.i_fps > 0)
                 g.reg.i_fps--;
@@ -725,7 +728,7 @@ void process_keypad()
               break;
 
             case '9':  // 9: Increase parameter fps
-              if (g.paused)
+              if (g.paused || g.telescope)
                 break;
               if (g.reg.i_fps < N_PARAMS - 1)
               {
@@ -746,7 +749,7 @@ void process_keypad()
               break;
 
             case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
-              if (g.moving || g.paused)
+              if (g.moving || g.paused || g.telescope)
                 break;
               delay_buffer();
               display_comment_line(g.buffer);

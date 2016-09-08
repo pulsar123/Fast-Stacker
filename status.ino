@@ -17,14 +17,23 @@ void display_all()
   if (g.alt_flag)
   {
     // Line 1:
-    sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
+    if (g.telescope)
+      sprintf(g.buffer, "         Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
+    else
+      sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
     lcd.print(g.buffer);
     // Line 2:
-    sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
+    if (g.telescope)
+      sprintf(g.buffer, "          BL=%1d", g.reg.backlash_on);
+    else
+      sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
     lcd.print(g.buffer);
     // Line 3:
-    sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
-    lcd.print(g.buf6);
+    if (!g.telescope)
+    {
+      sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
+      lcd.print(g.buf6);
+    }
     if (g.telescope)
       sprintf(g.buf6, "TC");
     else
@@ -56,7 +65,7 @@ void display_all()
 #endif // PIN_AF
 #endif  // EEPROM
     //!!!
-//    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
+    //    sprintf(g.buffer, "%4d %4sC", g.raw_AF, ftoa(g.buf6, g.Temp - 273.15, 1));
     lcd.print(g.buffer);
   }
   else
@@ -282,7 +291,8 @@ void display_status_line()
     return;
   letter_status(" ");
   motion_status();
-  display_frame_counter();
+  if (!g.telescope)
+    display_frame_counter();
   points_status();
   battery_status();
   return;
@@ -316,7 +326,7 @@ void display_fps()
   Display the input parameter fps (frames per second)
 */
 {
-  if (g.error || g.alt_flag)
+  if (g.error || g.alt_flag || g.telescope)
     return;
   if (FPS[g.reg.i_fps] >= 1.0)
     sprintf(g.buffer, " %3sfps", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
@@ -432,21 +442,34 @@ void display_two_points()
 */
 {
   float p;
+  COORD_TYPE p_int;
+
   if (g.error || g.alt_flag)
     return;
 
+#ifdef SHOW_STEPS
+  p_int = g.reg.point1 - g.delta_pos;
+  sprintf(g.buffer, "F%5d", p_int);
+#else
   p = g.mm_per_microstep * (float)(g.reg.point1 - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "F*****");
+#endif
   lcd.setCursor(0, 3);
   lcd.print(g.buffer);
+
+#ifdef SHOW_STEPS
+  p_int = g.reg.point2 - g.delta_pos;
+  sprintf(g.buffer, "B%5d", p_int);
+#else
   p = g.mm_per_microstep * (float)(g.reg.point2 - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
     sprintf(g.buffer, "B*****");
+#endif
   lcd.setCursor(8, 3);
   lcd.print(g.buffer);
   return;
@@ -510,8 +533,12 @@ void display_current_position()
   sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2 / 10000);
 #endif
 
-  p = g.mm_per_microstep * (float)g.pos;
+
+#ifdef SHOW_STEPS
+  sprintf(g.buffer, "%1s %6d   %3s", g.rev_char, g.pos_short_old, g.buf6);
+#else
   sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
+#endif
 
   lcd.setCursor(0, 4);
   lcd.print(g.buffer);
@@ -523,7 +550,7 @@ void display_current_position()
 
 void display_comment_line(char const *l)
 /*
-  Display a comment line briefly (then it should be replaced with display_current_positio() output)
+  Display a comment line briefly (then it should be replaced with display_current_position() output).
 */
 {
 #ifdef TIMING
@@ -547,6 +574,8 @@ void delay_buffer()
 // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
 {
   float y;
+  if (g.telescope)
+    return;
   y = MM_PER_FRAME[g.reg.i_mm_per_frame] / g.mm_per_microstep / g.accel_limit;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);
