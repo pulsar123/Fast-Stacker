@@ -22,10 +22,10 @@ float Msteps_per_frame ()
 
 short Nframes ()
 /* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
-   g.msteps_per_frame, g.reg.point1, or g.reg.point2 changes.
+   g.msteps_per_frame, g.reg.point[0], or g.reg.point[3] changes.
 */
 {
-  return short(((float)(g.reg.point2 - g.reg.point1)) / g.msteps_per_frame) + 1;
+  return short(((float)(g.reg.point[3] - g.reg.point[0])) / g.msteps_per_frame) + 1;
 }
 
 
@@ -491,9 +491,9 @@ void rail_reverse(byte fix_points)
   if (fix_points)
   {
     // Updating the current two points positions:
-    pos_target = d_pos - g.reg.point2;
-    g.reg.point2 = d_pos - g.reg.point1;
-    g.reg.point1 = pos_target;
+    pos_target = d_pos - g.reg.point[3];
+    g.reg.point[3] = d_pos - g.reg.point[0];
+    g.reg.point[0] = pos_target;
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
@@ -658,4 +658,40 @@ void clear_calibrate_state()
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+void set_memory_point(byte n)
+{
+  if (g.paused || g.moving)
+    return;
+  g.reg.point[n - 1] = g.pos_short_old + g.delta_pos;
+  EEPROM.put( g.addr_reg[0], g.reg);
+  g.msteps_per_frame = Msteps_per_frame();
+  g.Nframes = Nframes();
+  points_status();
+  display_two_point_params();
+  display_two_points();
+  sprintf(g.buffer, "  P%1d was set  ", n);
+  display_comment_line(g.buffer);
+  if (g.telescope)
+  {
+    // Removing the Register # line at the top:
+    g.displayed_register = 0;
+    display_all();
+  }
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void goto_memory_point(byte n)
+// Go to memory point # n
+{
+  if (g.paused)
+    return;
+  go_to((float)(g.reg.point[n-1] - g.delta_pos) + 0.5, g.speed_limit);
+  sprintf(g.buffer, " Going to P%1d  ", n);
+  display_comment_line(g.buffer);
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

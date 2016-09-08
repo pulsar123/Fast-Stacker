@@ -237,14 +237,14 @@ void process_keypad()
         if (g.paused || g.telescope)
           break;
         // Checking the correctness of point1/2
-        if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
+        if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
         {
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to((float)g.reg.point1 + 0.5, g.speed_limit);
-          g.starting_point = g.reg.point1;
-          g.destination_point = g.reg.point2;
+          go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+          g.starting_point = g.reg.point[0];
+          g.destination_point = g.reg.point[3];
           g.stacker_mode = 1;
           // This is a non-continuous mode:
           g.continuous_mode = 0;
@@ -458,63 +458,27 @@ void process_keypad()
               }
               break;
 
-            case '4':  // 4: Set foreground point
-              if (g.paused || g.moving)
-                break;
-              g.reg.point1 = g.pos_short_old + g.delta_pos;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              g.msteps_per_frame = Msteps_per_frame();
-              g.Nframes = Nframes();
-              points_status();
-              display_two_point_params();
-              display_two_points();
-              display_comment_line("  P1 was set  ");
-              if (g.telescope)
-              {
-                // Pressing "4" removes the Register # line at the top:
-                g.displayed_register = 0;
-                display_all();
-              }
+            case '4':  // 4: Set foreground point (#1)
+              set_memory_point(1);
               break;
 
-            case 'B':  // B: Set background point
-              if (g.paused || g.moving)
-                break;
-              g.reg.point2 = g.pos_short_old + g.delta_pos;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              g.msteps_per_frame = Msteps_per_frame();
-              g.Nframes = Nframes();
-              points_status();
-              display_two_point_params();
-              display_two_points();
-              display_comment_line("  P2 was set  ");
-              if (g.telescope)
-              {
-                // Pressing "B" removes the Register # line at the top:
-                g.displayed_register = 0;
-                display_all();
-              }
+            case 'B':  // B: Set background point (#4)
+              set_memory_point(4);
               break;
 
-            case '7':  // 7: Go to the foreground point
-              if (g.paused)
-                break;
-              go_to((float)(g.reg.point1 - g.delta_pos) + 0.5, g.speed_limit);
-              display_comment_line(" Going to P1  ");
+            case '7':  // 7: Go to the foreground point (#1)
+              goto_memory_point(1);
               break;
 
-            case 'C':  // C: Go to the background point
-              if (g.paused)
-                break;
-              go_to((float)(g.reg.point2 - g.delta_pos) + 0.5, g.speed_limit);
-              display_comment_line(" Going to P2  ");
+            case 'C':  // C: Go to the background point (#4)
+              goto_memory_point(4);
               break;
 
             case '0': // 0: Start shooting (2-point focus stacking) from the foreground point (backlash compensated)
               if (g.moving || g.telescope)
                 break;
               // Checking the correctness of point1/2
-              if (g.reg.point2 > g.reg.point1 && g.reg.point1 >= g.limit1 && g.reg.point2 <= g.limit2)
+              if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
               {
                 if (g.paused == 1)
                   // Resuming 2-point stacking from a paused state
@@ -545,7 +509,7 @@ void process_keypad()
                 else if (g.paused == 2)
                   // Restarting from a pause which happened during the initial travel to the starting point
                 {
-                  go_to((float)g.reg.point1 + 0.5, g.speed_limit);
+                  go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
                   g.stacker_mode = 1;
                   g.start_stacking = 0;
                   g.paused = 0;
@@ -556,9 +520,9 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  go_to((float)g.reg.point1 + 0.5, g.speed_limit);
-                  g.starting_point = g.reg.point1;
-                  g.destination_point = g.reg.point2;
+                  go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+                  g.starting_point = g.reg.point[0];
+                  g.destination_point = g.reg.point[3];
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
                   g.start_stacking = 0;
@@ -604,70 +568,80 @@ void process_keypad()
               }
               break;
 
-            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)
+            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking), or save to register #2 (telescope mode)
               // Also used for different debugging modes, to decrease debugged parameters
-              if (g.paused || g.telescope)
-                break;
+              if (g.telescope)
+                set_memory_point(2);
+              else
+              {
+                if (g.paused)
+                  break;
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
 #ifndef DELAY_DEBUG
-              if (g.reg.i_n_shots > 0)
-                g.reg.i_n_shots--;
-              else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
+                if (g.reg.i_n_shots > 0)
+                  g.reg.i_n_shots--;
+                else
+                  break;
+                EEPROM.put( g.addr_reg[0], g.reg);
 #else //DELAY_DEBUG
-              // The meaning of "2" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
-              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
-              if (SHUTTER_ON_DELAY2 < 0)
-                SHUTTER_ON_DELAY2 = 0;
+                // The meaning of "2" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
+                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
+                if (SHUTTER_ON_DELAY2 < 0)
+                  SHUTTER_ON_DELAY2 = 0;
 #endif // DELAY_DEBUG              
 #else // BL2_DEBUG
-              // The meaning of "2" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
-              BACKLASH_2 = BACKLASH_2 - BL_STEP;
-              if (BACKLASH_2 < 0)
-                BACKLASH_2 = 0;
+                // The meaning of "2" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
+                BACKLASH_2 = BACKLASH_2 - BL_STEP;
+                if (BACKLASH_2 < 0)
+                  BACKLASH_2 = 0;
 #endif //BL2_DEBUG
 #else // BL_DEBUG
-              // The meaning of "2" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
-              g.backlash = g.backlash - BL_STEP;
-              if (g.backlash < 1)
-                g.backlash = 1;
+                // The meaning of "2" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
+                g.backlash = g.backlash - BL_STEP;
+                if (g.backlash < 1)
+                  g.backlash = 1;
 #endif // BL_DEBUG
-              display_all();
+                display_all();
+              }
               break;
 
-            case '6':  // 6: Increase parameter n_shots (for 1-point sstacking)
+            case '6':  // 6: Increase parameter n_shots (for 1-point sstacking), or save to register #3 (telescope mode)
               // Also used for different debugging modes, to increase debugged parameters
-              if (g.paused || g.telescope)
-                break;
+              if (g.telescope)
+                set_memory_point(3);
+              else
+              {
+                if (g.paused)
+                  break;
 #ifndef BL_DEBUG
 #ifndef BL2_DEBUG
 #ifndef DELAY_DEBUG
-              if (g.reg.i_n_shots < N_PARAMS - 1)
-                g.reg.i_n_shots++;
-              else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
+                if (g.reg.i_n_shots < N_PARAMS - 1)
+                  g.reg.i_n_shots++;
+                else
+                  break;
+                EEPROM.put( g.addr_reg[0], g.reg);
 #else //DELAY_DEBUG
-              // The meaning of "3" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
-              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
-              if (SHUTTER_ON_DELAY2 > 10000000)
-                SHUTTER_ON_DELAY2 = 10000000;
+                // The meaning of "3" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
+                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
+                if (SHUTTER_ON_DELAY2 > 10000000)
+                  SHUTTER_ON_DELAY2 = 10000000;
 #endif // DELAY_DEBUG              
 #else // BL2_DEBUG
-              // The meaning of "3" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
-              BACKLASH_2 = BACKLASH_2 + BL_STEP;
-              if (BACKLASH_2 > 10000)
-                BACKLASH_2 = 10000;
+                // The meaning of "3" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
+                BACKLASH_2 = BACKLASH_2 + BL_STEP;
+                if (BACKLASH_2 > 10000)
+                  BACKLASH_2 = 10000;
 #endif // BL2_DEBUG
 #else // BL_DEBUG
-              // The meaning of "3" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
-              g.backlash = g.backlash + BL_STEP;
-              if (g.backlash > 10000)
-                g.backlash = 10000;
+                // The meaning of "3" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
+                g.backlash = g.backlash + BL_STEP;
+                if (g.backlash > 10000)
+                  g.backlash = 10000;
 #endif // BL_DEBUG
-              display_all();
+                display_all();
+              }
               break;
 
             case '2':  // 2: Decrease parameter mm_per_frame
@@ -716,36 +690,46 @@ void process_keypad()
               display_all();
               break;
 
-            case '8':  // 8: Decrease parameter fps
-              if (g.paused || g.telescope)
-                break;
-              if (g.reg.i_fps > 0)
-                g.reg.i_fps--;
+            case '8':  // 8: Decrease parameter fps, or go to memory point #2 (telescope mode)
+              if (g.telescope)
+                goto_memory_point(2);
               else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_all();
+              {
+                if (g.paused)
+                  break;
+                if (g.reg.i_fps > 0)
+                  g.reg.i_fps--;
+                else
+                  break;
+                EEPROM.put( g.addr_reg[0], g.reg);
+                display_all();
+              }
               break;
 
-            case '9':  // 9: Increase parameter fps
-              if (g.paused || g.telescope)
-                break;
-              if (g.reg.i_fps < N_PARAMS - 1)
-              {
-                g.reg.i_fps++;
-                // Estimating the required speed in microsteps per microsecond
-                speed = target_speed();
-                // Reverting back if required speed > maximum allowed:
-                if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
-                {
-                  g.reg.i_fps--;
-                  break;
-                }
-              }
+            case '9':  // 9: Increase parameter fps, or go to memory point #3 (telescope mode)
+              if (g.telescope)
+                goto_memory_point(3);
               else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_all();
+              {
+                if (g.paused)
+                  break;
+                if (g.reg.i_fps < N_PARAMS - 1)
+                {
+                  g.reg.i_fps++;
+                  // Estimating the required speed in microsteps per microsecond
+                  speed = target_speed();
+                  // Reverting back if required speed > maximum allowed:
+                  if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
+                  {
+                    g.reg.i_fps--;
+                    break;
+                  }
+                }
+                else
+                  break;
+                EEPROM.put( g.addr_reg[0], g.reg);
+                display_all();
+              }
               break;
 
             case '#': // #: Show the non-continuous parameters in the 5th line of the LCD

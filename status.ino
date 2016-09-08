@@ -204,16 +204,16 @@ void display_frame_counter()
 
 
 void points_status()
-/* Displays F or B if the current coordinate is exactly the foreground (g.reg.point1) or background (g.reg.point2) point.
+/* Displays F or B if the current coordinate is exactly the foreground (g.reg.point[0]) or background (g.reg.point[3]) point.
 */
 {
   if (g.error || g.alt_flag)
     return;
   lcd.setCursor(10, 5);
 
-  if (g.pos_short_old == g.reg.point1 - g.delta_pos)
+  if (g.pos_short_old == g.reg.point[0] - g.delta_pos)
     lcd.print("F ");
-  else if (g.pos_short_old == g.reg.point2 - g.delta_pos)
+  else if (g.pos_short_old == g.reg.point[3] - g.delta_pos)
     lcd.print("B ");
   else
     lcd.print("  ");
@@ -416,7 +416,7 @@ void display_two_point_params()
   else
   {
     // +0.05 for proper round off:
-    dx = g.mm_per_microstep * (float)(g.reg.point2 - g.reg.point1) + 0.05;
+    dx = g.mm_per_microstep * (float)(g.reg.point[3] - g.reg.point[0]) + 0.05;
     short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.reg.i_fps]);
     if (dt < 1000.0 && dt >= 0.0)
       sprintf(g.buf6, "%3ds", dt);
@@ -425,7 +425,7 @@ void display_two_point_params()
     else
       sprintf(g.buf6, "****");
 
-    if (g.reg.point2 >= g.reg.point1)
+    if (g.reg.point[3] >= g.reg.point[0])
       sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
     else
       sprintf(g.buffer, "**** **** ****");
@@ -448,10 +448,10 @@ void display_two_points()
     return;
 
 #ifdef SHOW_STEPS
-  p_int = g.reg.point1 - g.delta_pos;
+  p_int = g.reg.point[0] - g.delta_pos;
   sprintf(g.buffer, "F%5d", p_int);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point1 - g.delta_pos);
+  p = g.mm_per_microstep * (float)(g.reg.point[0] - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
@@ -461,10 +461,10 @@ void display_two_points()
   lcd.print(g.buffer);
 
 #ifdef SHOW_STEPS
-  p_int = g.reg.point2 - g.delta_pos;
+  p_int = g.reg.point[3] - g.delta_pos;
   sprintf(g.buffer, "B%5d", p_int);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point2 - g.delta_pos);
+  p = g.mm_per_microstep * (float)(g.reg.point[3] - g.delta_pos);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else

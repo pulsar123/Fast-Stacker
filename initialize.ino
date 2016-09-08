@@ -106,12 +106,12 @@ void initialize(byte factory_reset)
     g.reg.straight = 1;
     g.reg.save_energy = 1;
     update_save_energy();
-    g.reg.point1 = 2000;
-    g.reg.point2 = 3000;
+    g.reg.point[0] = 2000;
+    g.reg.point[3] = 3000;
 
     g.limit1 = 1000;
     g.limit2 = 32000;
-    g.pos = (g.reg.point1 + g.reg.point2) / 2.0;
+    g.pos = (g.reg.point[0] + g.reg.point[3]) / 2.0;
     g.backlight = 0;
     // Saving these values in EEPROM:
     if (!g.telescope)
@@ -180,7 +180,7 @@ void initialize(byte factory_reset)
   g.start_stacking = 0;
   g.make_shot = 0;
   g.paused = 0;
-  g.starting_point = g.reg.point1;
+  g.starting_point = g.reg.point[0];
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 

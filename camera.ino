@@ -220,7 +220,7 @@ void camera()
         g.end_of_stacking = 0;
         g.t0_mil = g.t_mil;
         g.timelapse_counter++;
-        go_to((float)g.reg.point1 + 0.5, g.speed_limit);
+        go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
         g.stacker_mode = 1;
         g.start_stacking = 0;
       }

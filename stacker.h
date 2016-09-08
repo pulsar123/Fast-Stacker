@@ -406,8 +406,7 @@ struct regist
   byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
-  COORD_TYPE point1;  // foreground point for 2-point focus stacking
-  COORD_TYPE point2;  // background point for 2-point focus stacking
+  COORD_TYPE point[4];  // four memory points (only 0th - foreground, and 3rd - background, are used in macro mode; all four are used in telescope mode)
 };
   // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
