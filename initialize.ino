@@ -9,7 +9,7 @@ void initialize(byte factory_reset)
   g.calibrate_warning = 0;
   for (byte i = 0; i < 4; i++)
   {
-    g.delta_pos[i] = (COORD_TYPE)0;
+    g.delta_pos[i] = 0;
   }
 
   if (!g.telescope)
@@ -80,6 +80,7 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.comment_flag = 0;
+  g.status_flag = 0;
   g.current_point = -1;
 
   if (factory_reset)
@@ -259,7 +260,7 @@ void initialize(byte factory_reset)
     // No rail reverse in telescope mode:
     g.reg.straight = 1;
     g.pos = 0.0;
-    g.pos_short_old = (COORD_TYPE) 0;
+    g.pos_short_old = 0;
     g.pos0 = 0.0;
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit1 = (COORD_TYPE)TEL_INIT - BACKLASH_TEL;

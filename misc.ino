@@ -72,9 +72,9 @@ COORD_TYPE nintMy(float x)
   if (frac >= 0.5)
   {
     if (x >= 0.0)
-      return x_short + (COORD_TYPE)1;
+      return x_short + 1;
     else
-      return x_short - (COORD_TYPE)1;
+      return x_short - 1;
   }
   else
     return x_short;
@@ -91,7 +91,7 @@ COORD_TYPE floorMy(float x)
   if (x >= 0.0)
     return m;
   else
-    return m - (COORD_TYPE)1;
+    return m - 1;
 }
 
 
@@ -193,7 +193,7 @@ void go_to(float pos1, float speed)
   float pos_phys = g.pos + (float)g.BL_counter;
 
   // We are already there, and no need for backlash compensation, so just returning:
-  if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == (COORD_TYPE)0)
+  if (g.moving == 0 && pos1_short == g.pos_short_old && g.BL_counter == 0)
     return;
 
   // The "shortcut" direction - if there was no acceleration limit and no need for backlash compensation:
@@ -540,9 +540,11 @@ void read_params(byte n)
 #endif
   }
   display_all();
-  display_comment_line("Read from Reg");
-  lcd.print(n);
-  lcd.clearRestOfLine();
+//  display_comment_line("Read from Reg");
+  //  lcd.print(n);
+  sprintf(g.buffer, "Read from Reg%1d", n);
+  display_comment_line(g.buffer);
+//  lcd.clearRestOfLine();
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
   {
@@ -565,8 +567,10 @@ void save_params(byte n)
     display_all();
   }
   EEPROM.put( g.addr_reg[n], g.reg);
-  display_comment_line("Saved to Reg");
-  lcd.print(n);
+  //  display_comment_line("Saved to Reg");
+  //  lcd.print(n);
+  sprintf(g.buffer, "Saved to Reg%1d", n);
+  display_comment_line(g.buffer);
   lcd.clearRestOfLine();
   return;
 }
@@ -587,7 +591,7 @@ void update_backlash()
     g.backlash_init = 1;
   }
   else
-    g.backlash = (COORD_TYPE)1;
+    g.backlash = 1;
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -642,7 +646,7 @@ void measure_temperature()
   if (g.reg.mirror_lock)
     for (byte i = 0; i < 4; i++)
     {
-      g.delta_pos[i] = (COORD_TYPE)(CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
+      g.delta_pos[i] = (COORD_STYPE)(CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
     }
 
   return;
@@ -659,7 +663,7 @@ void make_step(COORD_TYPE * pos_target, short * frame_counter0)
 {
   // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
   // move the rail beyond g.limit1
-  if (*pos_target < g.limit1 + (COORD_TYPE)100 || *pos_target > g.limit2 - (COORD_TYPE)100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+  if (*pos_target < g.limit1 + 100 || *pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
   {
     // Recovering the original frame counter if aborting:
     g.frame_counter = *frame_counter0;

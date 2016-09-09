@@ -335,7 +335,7 @@ void process_keypad()
           {
             g.reg.mirror_lock = 0;
             for (byte i = 0; i < 4; i++)
-              g.delta_pos[i] = (COORD_TYPE)0;
+              g.delta_pos[i] = 0;
           }
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -475,68 +475,75 @@ void process_keypad()
               goto_memory_point(4);
               break;
 
-            case '0': // 0: Start shooting (2-point focus stacking) from the foreground point (backlash compensated)
-              if (g.moving || g.telescope)
+            case '0': // 0: Start shooting (2-point focus stacking) from the foreground point, or goto current memory point
+              if (g.moving)
                 break;
               // Checking the correctness of point1/2
-              if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
+              if (g.telescope)
               {
-                if (g.paused == 1)
-                  // Resuming 2-point stacking from a paused state
-                {
-                  g.paused = 0;
-                  g.start_stacking = 1;
-                  if (g.continuous_mode)
-                  {
-                    // The flag means we just initiated stacking:
-                    letter_status(" ");
-                  }
-                  else
-                  {
-                    g.noncont_flag = 1;
-                    letter_status("S");
-                  }
-                  // Time when stacking was initiated:
-                  g.t0_stacking = g.t;
-                  g.pos_to_shoot = g.pos_short_old;
-                  g.stacker_mode = 2;
-                }
-                else if (g.paused == 3)
-                  // Restarting from a pause which happened between stacks (in timelapse mode)
-                {
-                  g.paused = 0;
-                  display_all();
-                }
-                else if (g.paused == 2)
-                  // Restarting from a pause which happened during the initial travel to the starting point
-                {
-                  go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
-                  g.stacker_mode = 1;
-                  g.start_stacking = 0;
-                  g.paused = 0;
-                  display_all();
-                }
-                else
-                  // Initiating a new stack (or timelapse sequence of stacks)
-                {
-                  // Using the simplest approach which will result the last shot to always slightly undershoot
-                  g.Nframes = Nframes();
-                  go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
-                  g.starting_point = g.reg.point[0];
-                  g.destination_point = g.reg.point[3];
-                  g.stacker_mode = 1;
-                  g.continuous_mode = 1;
-                  g.start_stacking = 0;
-                  g.timelapse_counter = 0;
-                  if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
-                    g.timelapse_mode = 1;
-                  display_comment_line("2-points stack");
-                }
+              goto_memory_point(g.current_point+1);
               }
               else
               {
-                // Should print error message
-                display_comment_line("Bad 2 points! ");
+                if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
+                {
+                  if (g.paused == 1)
+                    // Resuming 2-point stacking from a paused state
+                  {
+                    g.paused = 0;
+                    g.start_stacking = 1;
+                    if (g.continuous_mode)
+                    {
+                      // The flag means we just initiated stacking:
+                      letter_status(" ");
+                    }
+                    else
+                    {
+                      g.noncont_flag = 1;
+                      letter_status("S");
+                    }
+                    // Time when stacking was initiated:
+                    g.t0_stacking = g.t;
+                    g.pos_to_shoot = g.pos_short_old;
+                    g.stacker_mode = 2;
+                  }
+                  else if (g.paused == 3)
+                    // Restarting from a pause which happened between stacks (in timelapse mode)
+                  {
+                    g.paused = 0;
+                    display_all();
+                  }
+                  else if (g.paused == 2)
+                    // Restarting from a pause which happened during the initial travel to the starting point
+                  {
+                    go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+                    g.stacker_mode = 1;
+                    g.start_stacking = 0;
+                    g.paused = 0;
+                    display_all();
+                  }
+                  else
+                    // Initiating a new stack (or timelapse sequence of stacks)
+                  {
+                    // Using the simplest approach which will result the last shot to always slightly undershoot
+                    g.Nframes = Nframes();
+                    go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+                    g.starting_point = g.reg.point[0];
+                    g.destination_point = g.reg.point[3];
+                    g.stacker_mode = 1;
+                    g.continuous_mode = 1;
+                    g.start_stacking = 0;
+                    g.timelapse_counter = 0;
+                    if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                      g.timelapse_mode = 1;
+                    display_comment_line("2-points stack");
+                  }
+                }
+                else
+                {
+                  // Should print error message
+                  display_comment_line("Bad 2 points! ");
+                }
               }
               break;
 

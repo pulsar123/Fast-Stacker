@@ -126,13 +126,18 @@ void display_all()
       }
       else
       {
-        lcd.print("  Calibration ");
-        lcd.print("  required!"); lcd.clearRestOfLine();
-        //        lcd.print("              ");
-        lcd.clearRestOfLine();
-        lcd.print("Press any key ");
-        lcd.print("to start"); lcd.clearRestOfLine();
-        lcd.print("calibration.  ");
+        lcd.print("  Calibration\n  required!\n");
+        lcd.print("\nPress any key\nto start\n");
+        lcd.print("calibration");
+        /*
+          lcd.print("  Calibration ");
+          lcd.print("  required!"); lcd.clearRestOfLine();
+          //        lcd.print("              ");
+          lcd.clearRestOfLine();
+          lcd.print("Press any key ");
+          lcd.print("to start"); lcd.clearRestOfLine();
+          lcd.print("calibration.  ");
+        */
       }
     }
 
@@ -142,23 +147,31 @@ void display_all()
       switch (g.error)
       {
         case 1:
-          lcd.print("Cable discon- ");
-          lcd.print("nected, or    ");
-          lcd.print("limiter is on!");
-          lcd.print("Only if cable ");
-          lcd.print("is connected, ");
-          lcd.print("rewind."); lcd.clearRestOfLine();
+          lcd.print("Cable discon- nected, or    limiter is on!");
+          lcd.print("Only if cable is connected, rewind");
+          /*
+                    lcd.print("Cable discon- ");
+                    lcd.print("nected, or    ");
+                    lcd.print("limiter is on!");
+                    lcd.print("Only if cable ");
+                    lcd.print("is connected, ");
+                    lcd.print("rewind."); lcd.clearRestOfLine();
+          */
           break;
 
         case 2: // Critically low battery level; not used when debugging
-          lcd.print("Critically low");
-          lcd.print("battery level!");
-          //          lcd.print("              ");
-          lcd.clearRestOfLine();
-          lcd.print("Replace the   ");
-          lcd.print("batteries."); lcd.clearRestOfLine();
-          lcd.clearRestOfLine();
-          //          lcd.print("              ");
+//          lcd.print("Critically lowbattery level!\n");
+//          lcd.print("Replace the   batteries");
+          
+            lcd.print("Critically low");
+            lcd.print("battery level!");
+            //          lcd.print("              ");
+//            lcd.clearRestOfLine();
+//            lcd.print("Replace the   ");
+//            lcd.print("batteries."); lcd.clearRestOfLine();
+//            lcd.clearRestOfLine();
+            //          lcd.print("              ");
+          
           break;
 
       } // case
@@ -254,13 +267,32 @@ void points_status()
 
   lcd.setCursor(10, 5);
 
-  if (g.current_point < 0 || abs(g.delta_pos[g.current_point])>DELTA_POS_MAX && g.t > g.t_status + FLASHING_DELAY)
+  if (g.status_flag == 2 && g.t > g.t_status + FLASHING_DELAY)
+  {
+    g.status_flag = 0;
+  }
+
+  //  if (g.current_point < 0 || abs(g.delta_pos[g.current_point])>DELTA_POS_MAX && g.t > g.t_status + FLASHING_DELAY)
+  if (g.current_point < 0 || abs(g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
   {
     if (g.current_point >= 0)
-      g.t_status = g.t;
+    {
+      if (g.status_flag == 0)
+      {
+        g.status_flag = 1;
+        g.t_status = g.t;
+      }
+      if (g.status_flag == 1 && g.t > g.t_status + FLASHING_DELAY)
+      {
+        g.status_flag = 2;
+        g.t_status = g.t;
+      }
+    }
     lcd.print("  ");
     return;
   }
+  else
+    g.status_flag = 0;
 
   if (g.telescope)
   {
@@ -564,7 +596,7 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > (COORD_TYPE)0 || g.alt_flag)
+  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
   if (g.reg.straight)

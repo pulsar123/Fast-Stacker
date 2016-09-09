@@ -25,11 +25,15 @@
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE long
+// Coordinates type for non-negative variables:
+#define COORD_UTYPE unsigned int
+// Signed shorter type:
+#define COORD_STYPE short
 // For timing the main loop:
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
 //#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
@@ -316,7 +320,7 @@ const float CTE = 1.0;
 // Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
 // the memory point index in the status line starts flashing (meaning we need to travel to that point again).
 const short DELTA_POS_MAX = 2;
-const unsigned long FLASHING_DELAY = 500000;
+const unsigned long FLASHING_DELAY = 300000;
 #endif
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -442,7 +446,7 @@ const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 struct global
 {
   struct regist reg; // Custom parameters register
-  int addr_reg[N_REGS+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
+  unsigned int addr_reg[N_REGS+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
@@ -463,7 +467,7 @@ struct global
   COORD_TYPE pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
   unsigned long t_key_pressed; // Last time when a key was pressed
   unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
-  short N_repeats; // Counter of key repeats
+  unsigned int N_repeats; // Counter of key repeats
   unsigned long int t_display; // time since the last display refresh (only when not moving)
   unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
   unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
@@ -524,7 +528,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   unsigned long t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
-  COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
+  COORD_UTYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   float mm_per_microstep; // Rail specific setting
 #ifdef PRECISE_STEPPING
   unsigned long dt_backlash;
@@ -541,14 +545,15 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
 #endif
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
-  int raw_T;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
+  unsigned int raw_T;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
 #ifdef TEMPERATURE
-  float Temp; // Current temperature in Kelvins; only in telescope mode
-  float Temp0[4]; // Temperature for the four memory points for the current register (Kelvin)
+  float Temp; // Current temperature in Celsius; only in telescope mode
+  float Temp0[4]; // Temperature for the four memory points for the current register (Celsius)
 #endif
-  COORD_TYPE delta_pos[4]; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps, for each memory point
+  COORD_STYPE delta_pos[4]; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps, for each memory point
   char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
   unsigned long t_status; // time variable used in generating memory point flashing
+  byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
 };
 
 struct global g;

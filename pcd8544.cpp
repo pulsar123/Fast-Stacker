@@ -186,6 +186,7 @@ pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hard
 #endif
 }
 
+
 pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin)
 {
 	dc = dc_pin;
@@ -195,6 +196,7 @@ pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin
 	sclk = sclk_pin;
 	hardware_spi_num = 0;
 }
+
 
 void pcd8544::begin(void)
 {

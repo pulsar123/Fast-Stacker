@@ -126,7 +126,7 @@ void motor_control()
 
     // How many steps we'd need to take at this call:
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
-    COORD_TYPE d = abs(pos_short - g.pos_short_old);
+    COORD_UTYPE d = abs(pos_short - g.pos_short_old);
 
 #ifdef PRECISE_STEPPING               //  Precise stepping module
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -228,8 +228,8 @@ void motor_control()
     // and gets smaller as we move in the good - positive - direction):
     g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
     // Backlash cannot be negative:
-    if (g.BL_counter < (COORD_TYPE)0)
-      g.BL_counter = (COORD_TYPE)0;
+    if (g.BL_counter < 0)
+      g.BL_counter = 0;
     // and cannot be larger than g.backlash:
     if (g.BL_counter > g.backlash)
       g.BL_counter = g.backlash;
