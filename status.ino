@@ -126,6 +126,9 @@ void display_all()
       }
       else
       {
+#ifdef SHORT_ERRORS
+        lcd.print("Calibration");
+#else
         lcd.print("  Calibration\n  required!\n");
         lcd.print("\nPress any key\nto start\n");
         lcd.print("calibration");
@@ -138,6 +141,7 @@ void display_all()
           lcd.print("to start"); lcd.clearRestOfLine();
           lcd.print("calibration.  ");
         */
+#endif
       }
     }
 
@@ -147,6 +151,9 @@ void display_all()
       switch (g.error)
       {
         case 1:
+#ifdef SHORT_ERRORS
+          lcd.print("No cable");
+#else
           lcd.print("Cable discon- nected, or    limiter is on!");
           lcd.print("Only if cable is connected, rewind");
           /*
@@ -157,21 +164,25 @@ void display_all()
                     lcd.print("is connected, ");
                     lcd.print("rewind."); lcd.clearRestOfLine();
           */
+#endif
           break;
 
         case 2: // Critically low battery level; not used when debugging
-//          lcd.print("Critically lowbattery level!\n");
-//          lcd.print("Replace the   batteries");
-          
-            lcd.print("Critically low");
-            lcd.print("battery level!");
-            //          lcd.print("              ");
-//            lcd.clearRestOfLine();
-//            lcd.print("Replace the   ");
-//            lcd.print("batteries."); lcd.clearRestOfLine();
-//            lcd.clearRestOfLine();
-            //          lcd.print("              ");
-          
+#ifdef SHORT_ERRORS
+          lcd.print("Low battery");
+#else
+          //          lcd.print("Critically lowbattery level!\n");
+          //          lcd.print("Replace the   batteries");
+
+          lcd.print("Critically low");
+          lcd.print("battery level!");
+          //          lcd.print("              ");
+          //            lcd.clearRestOfLine();
+          //            lcd.print("Replace the   ");
+          //            lcd.print("batteries."); lcd.clearRestOfLine();
+          //            lcd.clearRestOfLine();
+          //          lcd.print("              ");
+#endif
           break;
 
       } // case

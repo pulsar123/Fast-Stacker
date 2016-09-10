@@ -63,7 +63,10 @@ const long DELAY_STEP = 50000;
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
-#define SHOW_RAW
+//#define SHOW_RAW
+// Memory saving tricks:
+// Show only short error messages instead of detailed ones:
+#define SHORT_ERRORS 
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
