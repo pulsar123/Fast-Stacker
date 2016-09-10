@@ -87,15 +87,16 @@ void display_all()
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%1d)%4d", i + 1, g.delta_pos[i]);
 #else
-          p = g.mm_per_microstep * 1000 * (float)(g.delta_pos[i]);
-          sprintf(g.buffer, "%1d)%4s", i + 1, p);
+          short p_int = g.mm_per_microstep * 1000 * (float)(g.delta_pos[i]) + 0.5;
+          // Showing delta_pos in microns:
+          sprintf(g.buffer, "%1d)%4d", i + 1, p_int);
 #endif
           lcd.print(g.buffer);
-          lcd.setCursor(col + 2, row + 1);
+          lcd.setCursor(col + 1, row + 1);
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%5d", g.reg.raw_T[i]);
 #else
-          sprintf(g.buffer, "%5s", ftoa(g.buf6, g.Temp0[i], 1));
+          sprintf(g.buffer, "%5sC", ftoa(g.buf6, g.Temp0[i], 1));
 #endif
           lcd.print(g.buffer);
           lcd.setCursor(col + 1, row + 2);
@@ -293,8 +294,7 @@ void points_status()
     g.status_flag = 0;
   }
 
-  //  if (g.current_point < 0 || abs(g.delta_pos[g.current_point])>DELTA_POS_MAX && g.t > g.t_status + FLASHING_DELAY)
-  if (g.current_point < 0 || abs(g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
+  if (g.current_point < 0 || abs(g.delta_pos_curr-g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
   {
     if (g.current_point >= 0)
     {
@@ -567,14 +567,13 @@ void display_two_points()
   float p;
   COORD_TYPE p_int;
 
-  if (g.error || g.alt_flag)
+  if (g.error || g.alt_flag || g.telescope)
     return;
 
 #ifdef SHOW_RAW
-  p_int = g.reg.point[0] + g.delta_pos[0];
-  sprintf(g.buffer, "F%5d", p_int);
+  sprintf(g.buffer, "F%5d", g.reg.point[0]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[0] + g.delta_pos[0]);
+  p = g.mm_per_microstep * (float)(g.reg.point[0]);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
@@ -584,10 +583,9 @@ void display_two_points()
   lcd.print(g.buffer);
 
 #ifdef SHOW_RAW
-  p_int = g.reg.point[3] + g.delta_pos[3];
-  sprintf(g.buffer, "B%5d", p_int);
+  sprintf(g.buffer, "B%5d", g.reg.point[3]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[3] + g.delta_pos[3]);
+  p = g.mm_per_microstep * (float)(g.reg.point[3]);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -660,6 +658,7 @@ void display_current_position()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "%1s %6d   %3s", g.rev_char, g.pos_short_old, g.buf6);
 #else
+  p = g.mm_per_microstep * g.pos;
   sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
 #endif
 

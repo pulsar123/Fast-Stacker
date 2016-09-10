@@ -387,10 +387,6 @@ void stop_now()
   g.no_extended_rewind = 0;
 #endif
 
-  // Any act of moving (followed by stopping) changes the coordinate, so we have to clear the current point index
-  // (because we're no longer at any specific memory point):
-  g.current_point = -1;
-
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -540,11 +536,11 @@ void read_params(byte n)
 #endif
   }
   display_all();
-//  display_comment_line("Read from Reg");
+  //  display_comment_line("Read from Reg");
   //  lcd.print(n);
   sprintf(g.buffer, "Read from Reg%1d", n);
   display_comment_line(g.buffer);
-//  lcd.clearRestOfLine();
+  //  lcd.clearRestOfLine();
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
   {
@@ -641,13 +637,15 @@ void measure_temperature()
 
   // Current temperature (Celsius):
   g.Temp = compute_temperature(raw);
-  // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
-  // +0.5 is for proper round-off
-  if (g.reg.mirror_lock)
-    for (byte i = 0; i < 4; i++)
-    {
+  for (byte i = 0; i < 4; i++)
+  {
+    if (g.reg.mirror_lock)
+      // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
+      // +0.5 is for proper round-off
       g.delta_pos[i] = (COORD_STYPE)(CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
-    }
+    else
+      g.delta_pos[i] = 0;
+  }
 
   return;
 }
@@ -689,9 +687,9 @@ void clear_calibrate_state()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void set_memory_point(byte n)
+void set_memory_point(char n)
 // Setting one of the two (macro mode) or four (telescope mode) memory points - current coordinate and (telescope mode only)
-// current raw temperature
+// current raw temperature. n=1...4
 {
   if (g.paused || g.moving)
     return;
@@ -705,11 +703,12 @@ void set_memory_point(byte n)
 #ifdef TEMPERATURE
   if (g.telescope)
   {
-    // Measuring current temperature
+    // Measuring current temperature g.raw_T / g.Temp
     measure_temperature();
     g.reg.raw_T[g.current_point] = g.raw_T;
-    g.Temp0[g.current_point] = compute_temperature(g.raw_T);
+    g.Temp0[g.current_point] = g.Temp;
     g.delta_pos[g.current_point] = 0;
+    g.delta_pos_curr = 0;
   }
 #endif
   EEPROM.put( g.addr_reg[0], g.reg);
@@ -723,17 +722,20 @@ void set_memory_point(byte n)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void goto_memory_point(byte n)
-// Go to memory point # n
+void goto_memory_point(char n)
+// Go to memory point # n (1..4)
 {
-  if (g.paused)
+  if (g.paused || n == 0)
     return;
 #ifdef TEMPERATURE
   if (g.telescope)
+  {
     // Computing delta_pos based on the current temperature
     measure_temperature();
+  }
 #endif
   g.current_point = n - 1;
+  g.delta_pos_curr = g.delta_pos[g.current_point];
   // Travelling to the memory point position corrected for the current temperature:
   go_to((float)(g.reg.point[g.current_point] + g.delta_pos[g.current_point]) + 0.5, g.speed_limit);
   sprintf(g.buffer, " Going to P%1d  ", n);

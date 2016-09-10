@@ -2,7 +2,7 @@
 
    User header file. Contains user adjustable parameters (constants), and other stuff.
 
-   To be used with automated macro rail for focus stacking
+   To be used with automated macro rail for focus stacking, and (since h1.3) for a telescope focuser
 */
 
 #ifndef STACKER_H
@@ -279,17 +279,17 @@ const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 
 // Names for different focusing points.
 char const Name[N_REGS][15] = {
   // Reg1 (#2/3):
-  "Cross     20mm",
+  "20  10  5  2.3",
   // Reg2 (#5/6):
-  "10mm       5mm",
+  "T  TB  TF  TFB",
   // Reg3 (*2/3):
-  "2.4mm         ",
+  "Cr Ca CaB Ca20",
   // Reg4 (*5/6):
-  "Toup    Toup+B",
+  "              ",
   // Reg5 (*8/9):
-  "50D      50D+B",
-  // Misc:
-  ""
+  "              ",
+  // Reg6:
+  "              "
 };
 // Temperature related parameters
 #ifdef TEMPERATURE
@@ -322,7 +322,7 @@ const float SH_c = 1.551810e-06;
 // It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one
 // termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
 //   CTE = (x1-x0) / (Temp1-Temp0)
-const float CTE = 1.0;
+const float CTE = 1.5e-2;
 // Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
 // the memory point index in the status line starts flashing (meaning we need to travel to that point again).
 const short DELTA_POS_MAX = 2;
@@ -561,6 +561,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   float Temp0[4]; // Temperature for the four memory points for the current register (Celsius)
 #endif
   COORD_STYPE delta_pos[4]; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps, for each memory point
+  COORD_STYPE delta_pos_curr; // delta_pos value at the last goto memory point operation (used to determine when T is drifting away too much and mempoint # should flash)
   char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
   unsigned long t_status; // time variable used in generating memory point flashing
   byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX

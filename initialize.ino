@@ -11,6 +11,7 @@ void initialize(byte factory_reset)
   {
     g.delta_pos[i] = 0;
   }
+  g.delta_pos_curr = 0;
 
   if (!g.telescope)
   {
@@ -98,7 +99,10 @@ void initialize(byte factory_reset)
 #endif  // MOTOR_DEBUG
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;
-    g.reg.i_mm_per_frame = 5;
+    if (g.telescope)
+      g.reg.i_mm_per_frame = 0;
+    else
+      g.reg.i_mm_per_frame = 5;
     g.reg.i_fps = 16;
     g.reg.i_first_delay = 4;
     g.reg.i_second_delay = 3;
@@ -160,17 +164,15 @@ void initialize(byte factory_reset)
     update_save_energy();
   }  // if factory_reset
 
+#ifdef TEMPERATURE
   if (g.telescope)
   {
     for (byte i = 0; i < 4; i++)
-    {
       g.Temp0[i] = compute_temperature(g.reg.raw_T[i]);
-    }
-#ifdef TEMPERATURE
     // Measuring current temperature and updating delta_pos[] values:
     measure_temperature();
-#endif
   }
+#endif
 
   // Five possible floating point values for acceleration
   set_accel_v();
@@ -263,10 +265,10 @@ void initialize(byte factory_reset)
     g.pos_short_old = 0;
     g.pos0 = 0.0;
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
-    g.limit1 = (COORD_TYPE)TEL_INIT - BACKLASH_TEL;
+    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
     // the second limit is equal to the TEL_LENGTH parameter:
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
-    go_to(TEL_INIT, g.speed_limit);
+    go_to((COORD_TYPE)TEL_INIT, g.speed_limit);
   }
 
 #ifdef CAMERA_DEBUG

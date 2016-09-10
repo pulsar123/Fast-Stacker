@@ -212,6 +212,7 @@ void process_keypad()
         else
           pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
         make_step(&pos_target, &frame_counter0);
+        g.current_point = -1;
         break;
 
       case 'A': // #A: Fast-forward a single frame step (no shooting)
@@ -224,6 +225,7 @@ void process_keypad()
         else
           pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
         make_step(&pos_target, &frame_counter0);
+        g.current_point = -1;
         break;
 
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
@@ -322,6 +324,7 @@ void process_keypad()
 
         case 'B': // *B: Backlash compensation on / off
           g.reg.backlash_on = 1 - g.reg.backlash_on;
+          g.current_point = -1;
           update_backlash();
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -334,8 +337,8 @@ void process_keypad()
           else
           {
             g.reg.mirror_lock = 0;
-            for (byte i = 0; i < 4; i++)
-              g.delta_pos[i] = 0;
+            //            for (byte i = 0; i < 4; i++)
+            //              g.delta_pos[i] = 0;
           }
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -435,6 +438,7 @@ void process_keypad()
                 motion_status();
                 // Rewinding is done with small acceleration:
                 change_speed(-g.speed_limit, 0, 1);
+                g.current_point = -1;
               }
               break;
 
@@ -456,6 +460,7 @@ void process_keypad()
                 motion_status();
                 // Rewinding is done with small acceleration:
                 change_speed(g.speed_limit, 0, 1);
+                g.current_point = -1;
               }
               break;
 
@@ -481,7 +486,7 @@ void process_keypad()
               // Checking the correctness of point1/2
               if (g.telescope)
               {
-              goto_memory_point(g.current_point+1);
+                goto_memory_point(g.current_point+1);
               }
               else
               {
@@ -742,7 +747,7 @@ void process_keypad()
               }
               break;
 
-            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
+            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD, or show points screen in telescope mode
               if (g.moving || g.paused)
                 break;
               if (g.telescope)
