@@ -217,7 +217,9 @@ void motion_status()
 {
   if (g.error || g.alt_flag)
     return;
+#ifdef REWIND_BITMAPS
   uint8_t i;
+#endif
   lcd.setCursor(2, 5);
 
   if (g.moving == 0 && g.started_moving == 0)
@@ -227,16 +229,24 @@ void motion_status()
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
+#ifdef REWIND_BITMAPS
         for (i = 0; i < 12; i++)
           lcd.data(rewind_char[i]);
+#else
+        lcd.print("<- ");
+#endif
       else
         lcd.print("<  ");
     }
     else
     {
       if (g.stacker_mode < 2)
+#ifdef REWIND_BITMAPS
         for (i = 0; i < 12; i++)
           lcd.data(forward_char[i]);
+#else
+        lcd.print("-> ");
+#endif
       else
         lcd.print(" > ");
     }
@@ -359,6 +369,8 @@ void battery_status()
   lcd.print(g.buffer);
 #else
   lcd.setCursor(12, 5);
+
+#ifdef BATTERY_BITMAPS
   // A 4-level bitmap indication (between V_LOW and V_HIGH):
   byte level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
   if (level < 0)
@@ -368,6 +380,17 @@ void battery_status()
   uint8_t i;
   for (i = 0; i < 12; i++)
     lcd.data(battery_char[level][i]);
+#else
+  if (V > 1.25)
+    // >50% charge:
+    lcd.print("##");
+  else if (V > V_LOW)
+    // Less than 50% charge:
+    lcd.print("#.");
+  else
+    // Critically low charge:
+    lcd.print("..");
+#endif
 
 #endif // BATTERY_DEBUG
 

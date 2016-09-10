@@ -67,6 +67,9 @@ const long DELAY_STEP = 50000;
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones:
 #define SHORT_ERRORS 
+// Show bitmaps (takes more space):
+#define BATTERY_BITMAPS
+//#define REWIND_BITMAPS
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -432,6 +435,7 @@ const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default 
 const int ADDR_END = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG;  // End of used EEPROM
 #endif
 
+#ifdef BATTERY_BITMAPS
 // 2-char bitmaps to display the battery status; 4 levels: 0 for empty, 3 for full:
 const uint8_t battery_char [][12] = {
   {0xfe, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfe, 0x38}, // level 0 (empty)
@@ -439,9 +443,12 @@ const uint8_t battery_char [][12] = {
   {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xb2, 0xa2, 0x82, 0x82, 0xfe, 0x38}, // level 2 (2/3 charge)
   {0xfe, 0x82, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0xba, 0x82, 0xfe, 0x38}  // level 3 (full charge)
 };
+#endif
+#ifdef REWIND_BITMAPS
 // 2-char bitmaps to display rewind/fast-forward symbols:
 const uint8_t rewind_char[] = {0x10, 0x38, 0x54, 0x92, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00};
 const uint8_t forward_char[] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x92, 0x54, 0x38, 0x10, 0x00};
+#endif
 
 const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 
