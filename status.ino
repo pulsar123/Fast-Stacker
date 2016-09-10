@@ -71,7 +71,7 @@ void display_all()
     }
 
     else
-      // Screen "#"
+      // Screen "D" (telescope mode only)
     {
       byte i = 0;
       for (row = 0; row < 4; row = row + 3)
@@ -263,7 +263,7 @@ void display_frame_counter()
   Printing the current stacking frame number in the status line.
 */
 {
-  if (g.error || g.alt_flag)
+  if (g.error || g.alt_flag || g.telescope)
     return;
   // Printing frame counter:
   if (g.stacker_mode == 0 && g.paused == 0 || g.paused > 1)
@@ -294,7 +294,7 @@ void points_status()
     g.status_flag = 0;
   }
 
-  if (g.current_point < 0 || abs(g.delta_pos_curr-g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
+  if (g.current_point < 0 || abs(g.delta_pos_curr - g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
   {
     if (g.current_point >= 0)
     {
@@ -414,8 +414,7 @@ void display_status_line()
     return;
   letter_status(" ");
   motion_status();
-  if (!g.telescope)
-    display_frame_counter();
+  display_frame_counter();
   points_status();
   battery_status();
   return;

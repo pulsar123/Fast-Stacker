@@ -486,7 +486,7 @@ void process_keypad()
               // Checking the correctness of point1/2
               if (g.telescope)
               {
-                goto_memory_point(g.current_point+1);
+                goto_memory_point(g.current_point + 1);
               }
               else
               {
@@ -564,22 +564,35 @@ void process_keypad()
               }
               break;
 
-            case 'D':  // D: Initiate one-point focus stacking forward
-              if (g.paused || g.telescope)
+            case 'D':  // D: Initiate one-point focus stacking forward, or show points screen in telescope mode
+              if (g.paused)
                 break;
               if (!g.moving)
               {
-                // The flag means we just initiated stacking:
-                g.start_stacking = 1;
-                // Time when stacking was initiated:
-                g.t0_stacking = g.t;
-                g.frame_counter = 0;
-                display_frame_counter();
-                g.pos_to_shoot = g.pos_short_old;
-                g.starting_point = g.pos_short_old;
-                g.stacker_mode = 3;
-                g.continuous_mode = 1;
-                display_comment_line("1-point stack ");
+                if (g.telescope)
+                {
+                  if (g.alt_flag == 0)
+                  {
+                    g.alt_flag = 1;
+                    // Kind=2 means "D" screen
+                    g.alt_kind = 2;
+                    display_all();
+                  }
+                }
+                else
+                {
+                  // The flag means we just initiated stacking:
+                  g.start_stacking = 1;
+                  // Time when stacking was initiated:
+                  g.t0_stacking = g.t;
+                  g.frame_counter = 0;
+                  display_frame_counter();
+                  g.pos_to_shoot = g.pos_short_old;
+                  g.starting_point = g.pos_short_old;
+                  g.stacker_mode = 3;
+                  g.continuous_mode = 1;
+                  display_comment_line("1-point stack ");
+                }
               }
               break;
 
@@ -747,24 +760,11 @@ void process_keypad()
               }
               break;
 
-            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD, or show points screen in telescope mode
-              if (g.moving || g.paused)
+            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
+              if (g.moving || g.paused || g.telescope)
                 break;
-              if (g.telescope)
-              {
-                if (g.alt_flag == 0)
-                {
-                  g.alt_flag = 1;
-                  // Kind=2 means "#" screen
-                  g.alt_kind = 2;
-                  display_all();
-                }
-              }
-              else
-              {
-                delay_buffer();
-                display_comment_line(g.buffer);
-              }
+              delay_buffer();
+              display_comment_line(g.buffer);
               break;
 
           } // End of case
@@ -845,8 +845,8 @@ void process_keypad()
 #endif
             change_speed(0.0, 0, 2);
         }
-        if (g.key_old == '*' || g.telescope && g.key_old == '#')
-          // The '*' (or '#' in telescope mode) key was just released: switch to default screen from the alternative one
+        if (g.key_old == '*' || g.telescope && g.key_old == 'D')
+          // The '*' (or 'D' in telescope mode) key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;
           display_all();
