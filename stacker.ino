@@ -50,7 +50,25 @@ void setup() {
   // Should be the first line in setup():
   g.setup_flag = 1;
 
-  // Setting pins for EasyDriver to OUTPUT:
+#ifdef DUMP_REGS
+  Serial.begin(9600);
+  Serial.setTimeout(5000);
+  // Dumping the old reg values from EEPROM to serial monitor:
+  dump_regs();
+//  Serial.println("Dump is done. Send new regs data if needed.");
+  // Optionally reading the new values from the serial monitor and updating EEPROM:
+  write_regs();
+//  Serial.println("New regs values in EEPROM:");
+  // Sending the new EEPROM values to serial monitor:
+  dump_regs();
+  Serial.end();
+  return;
+#endif
+
+  // Changing the frequency of PWM signal driving backlighting (trying to address the LCD instability at lower brightness levels):
+  //  TCCR1B = TCCR1B & 0b11111000 | 0x01;
+
+  // Setting pins for BigEasyDriver to OUTPUT:
 #ifndef DISABLE_MOTOR
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
@@ -67,7 +85,7 @@ void setup() {
   // if it's high, we are grounded via thermistor (~10k or higher) -> telescope mode:
   g.telescope = (raw > 100);
 
-  // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider
+  // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider with thermistor
   // (to measure temperature)
   pinMode(PIN_SHUTTER, OUTPUT);
 
@@ -131,6 +149,7 @@ void setup() {
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void loop()
 {
+#ifndef DUMP_REGS
 
   // Performing backlash compensation after bad direction moves:
   backlash();
@@ -156,6 +175,6 @@ void loop()
 #ifdef TIMING
   timing();
 #endif
-
+#endif // DUMP_REGS
 }
 

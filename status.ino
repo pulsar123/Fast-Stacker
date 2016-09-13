@@ -59,8 +59,8 @@ void display_all()
 #else
 #ifdef TEMPERATURE
       // Printing the temperature (Celcius), and version:
-      //      sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp, 1), VERSION);
-      sprintf(g.buffer, "%3d %4s", g.raw_T, ftoa(g.buf6, g.Temp, 1));
+      sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp, 1), VERSION);
+      //      sprintf(g.buffer, "%3d %4s", g.raw_T, ftoa(g.buf6, g.Temp, 1));
 #else
       sprintf(g.buffer, "         s%s", VERSION);
 #endif // TEMPERATURE
@@ -93,10 +93,12 @@ void display_all()
 #endif
           lcd.print(g.buffer);
           lcd.setCursor(col + 1, row + 1);
+#ifdef TEMPERATURE
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%5d", g.reg.raw_T[i]);
 #else
           sprintf(g.buffer, "%5sC", ftoa(g.buf6, g.Temp0[i], 1));
+#endif
 #endif
           lcd.print(g.buffer);
           lcd.setCursor(col + 1, row + 2);

@@ -397,6 +397,7 @@ void set_backlight()
 {
   unsigned char level;
   //  level = g.backlight * (255 / (N_BACKLIGHT - 1));
+  /*
   switch (g.backlight)
   {
     case 0:
@@ -404,12 +405,18 @@ void set_backlight()
       break;
     case 1:
       // Very low value for complete darkness:
-      level = 10;
+      // Values lower than 255 make LCD unstable for some reason - disabled for now.
+      
+      level = 5;
       break;
     case 2:
+    
       level = 255;
   }
   analogWrite(PIN_LCD_LED, level);
+  */
+
+  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
 
   EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
@@ -642,7 +649,9 @@ void measure_temperature()
     if (g.reg.mirror_lock)
       // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
       // +0.5 is for proper round-off
-      g.delta_pos[i] = (COORD_STYPE)(CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
+      // It is minus CTE because for positive CTE (telescope tube expanding with temperature increasing) the focus point moves closer to the
+      // telescope (meaning coordinate becomes smaller).
+      g.delta_pos[i] = (COORD_STYPE)(-CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
     else
       g.delta_pos[i] = 0;
   }

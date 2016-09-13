@@ -64,6 +64,9 @@ const long DELAY_STEP = 50000;
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
 //#define SHOW_RAW
+// Dumping the contents of the memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
+//#define DUMP_REGS
+
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones:
 #define SHORT_ERRORS 
@@ -215,7 +218,7 @@ const float SPEED_LIMIT_TEL_MM_S = 5;
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 1.0;
 // The value for TELESCOPE mode:
-const float BREAKING_DISTANCE_TEL_MM = 1;
+const float BREAKING_DISTANCE_TEL_MM = 1.0;
 // Padding (in microsteps) for a soft limit, before hitting the limiters:
 const COORD_TYPE LIMITER_PAD = 400;
 // A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
@@ -244,6 +247,8 @@ const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for re
 const unsigned char N_REGS = 6;
 // Number of backlight levels:
 #define N_BACKLIGHT 3
+// Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
+const byte Backlight[] = {0, 5, 255};
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
 #define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
@@ -323,11 +328,12 @@ const float SH_c = 1.551810e-06;
 // termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
 //   CTE = (x1-x0) / (Temp1-Temp0)
 const float CTE = 1.5e-2;
+#endif
 // Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
 // the memory point index in the status line starts flashing (meaning we need to travel to that point again).
 const short DELTA_POS_MAX = 2;
 const unsigned long FLASHING_DELAY = 300000;
-#endif
+
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
 

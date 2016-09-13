@@ -165,11 +165,11 @@ const unsigned char PROGMEM font6x8 [][5]  =  {
 
 
 
-pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi)
+pcd8544::pcd8544(uint8_t dc_pin, uint8_t cs_pin, uint8_t hardware_spi)
 {
 	dc = dc_pin;
 	cs = cs_pin;
-	reset = reset_pin;
+//	reset = reset_pin;
 	hardware_spi_num = hardware_spi;
 	if (hardware_spi_num > 2)
 		hardware_spi_num = 2;
@@ -187,11 +187,11 @@ pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hard
 }
 
 
-pcd8544::pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin)
+pcd8544::pcd8544(uint8_t dc_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin)
 {
 	dc = dc_pin;
 	cs = cs_pin;
-	reset = reset_pin;
+//	reset = reset_pin;
 	sdin = sdin_pin;
 	sclk = sclk_pin;
 	hardware_spi_num = 0;

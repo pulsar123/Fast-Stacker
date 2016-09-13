@@ -19,10 +19,10 @@ class pcd8544 : public Print {
 public:
 	// Constructor for harware SPI
 //	pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
-  pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
+  pcd8544(uint8_t dc_pin, uint8_t cs_pin, uint8_t hardware_spi = 1);
 
 	// Constructor for software SPI.
-	pcd8544(uint8_t dc_pin, uint8_t reset_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin);
+	pcd8544(uint8_t dc_pin, uint8_t cs_pin, uint8_t sdin_pin, uint8_t sclk_pin);
 
 	// Call this first
 	void begin(void);
@@ -56,7 +56,7 @@ private:
 	void inc_row_column(void);
 	uint8_t dc;
 	uint8_t cs;
-	uint8_t reset;
+//	uint8_t reset;
 	uint8_t hardware_spi_num;
 	uint8_t sdin;
 	uint8_t sclk;

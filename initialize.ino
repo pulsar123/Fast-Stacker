@@ -13,7 +13,10 @@ void initialize(byte factory_reset)
   }
   g.delta_pos_curr = 0;
 
-  if (!g.telescope)
+  if (g.telescope)
+    // Providing constant +5V to the temperature probe on telescope:
+    digitalWrite(PIN_SHUTTER, HIGH);
+  else
   {
 #ifndef DISABLE_SHUTTER
     digitalWrite(PIN_SHUTTER, LOW);
@@ -21,16 +24,11 @@ void initialize(byte factory_reset)
     digitalWrite(PIN_AF, LOW);
   }
 
-  if (g.telescope)
-    // Providing constant +5V to the temperature probe on telescope:
-    digitalWrite(PIN_SHUTTER, HIGH);
-
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(65000);
   keypad.setDebounceTime(50);
   g.key_old = '=';
-
 
 #ifndef MOTOR_DEBUG
   // Limiting switches should not be on when powering up:
@@ -62,7 +60,7 @@ void initialize(byte factory_reset)
     g.mm_per_microstep = MM_PER_MICROSTEP;
     address = ADDR_REG1;
   }
-  // EEPROM addresses for memory registers (different for macro and telscope modes), including the 0th (default) register:
+  // EEPROM addresses for memory registers (different for macro and telescope modes), including the 0th (default) register:
   for (unsigned char jj = 0; jj <= N_REGS; jj++)
   {
     g.addr_reg[jj] = address + jj * SIZE_REG;
@@ -86,23 +84,9 @@ void initialize(byte factory_reset)
 
   if (factory_reset)
   {
-#ifdef MOTOR_DEBUG
     clear_calibrate_state();
-#else
-    if (g.telescope)
-      // Disabling calibration when operating telescope
-    {
-      clear_calibrate_state();
-    }
-    else
-      g.calibrate = 3;
-#endif  // MOTOR_DEBUG
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;
-    if (g.telescope)
-      g.reg.i_mm_per_frame = 0;
-    else
-      g.reg.i_mm_per_frame = 5;
     g.reg.i_fps = 16;
     g.reg.i_first_delay = 4;
     g.reg.i_second_delay = 3;
@@ -123,15 +107,20 @@ void initialize(byte factory_reset)
     g.limit2 = 32000;
     g.pos = 2000;
     g.backlight = 0;
+
     if (g.telescope)
     {
+      // Disabling calibration when operating telescope
+      g.reg.i_mm_per_frame = 0;
       for (byte i = 0; i < 4; i++)
-      {
         g.reg.raw_T[i] = 512;
-      }
     }
     else
     {
+#ifndef MOTOR_DEBUG
+      g.calibrate = 3;
+#endif      
+      g.reg.i_mm_per_frame = 5;
       EEPROM.put( ADDR_CALIBRATE, g.calibrate );
       EEPROM.put( ADDR_LIMIT1, g.limit1);
       EEPROM.put( ADDR_LIMIT2, g.limit2);
@@ -212,7 +201,7 @@ void initialize(byte factory_reset)
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
-  if (factory_reset || g.telescope == 1)
+  if (factory_reset || g.telescope)
     // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
   {
     g.BL_counter = 0;
