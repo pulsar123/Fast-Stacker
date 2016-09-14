@@ -1,24 +1,31 @@
 float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
-  float x = FPS[g.reg.i_fps] * MM_PER_FRAME[g.reg.i_mm_per_frame];
+  return 1e-6 * FPS[g.reg.i_fps] * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  /*
   if (g.telescope)
     return SPEED_SCALE_TEL * x;
   else
     return SPEED_SCALE * x;
+    */
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
+/*
 float Msteps_per_frame ()
-/* Computing the "microsteps per frame" parameter - redo this every time g.reg.i_mm_per_frame changes.
-*/
+//Computing the "microsteps per frame" parameter - redo this every time g.reg.i_mm_per_frame changes.
+
 {
+  return MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+    
   if (g.telescope)
     return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
   else
     return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
 }
+*/
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -27,7 +34,7 @@ short Nframes ()
    g.msteps_per_frame, g.reg.point[0], or g.reg.point[3] changes.
 */
 {
-  return short(((float)(g.reg.point[3] - g.reg.point[0])) / g.msteps_per_frame) + 1;
+  return short(((float)(g.reg.point[3] - g.reg.point[0])) / (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame]) + 1;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -517,7 +524,7 @@ void rail_reverse(byte fix_points)
 COORD_TYPE frame_coordinate()
 // Coordinate (COORD_TYPE type) of a frame given by g.frame_number, in 2-point stacking
 {
-  return g.starting_point + nintMy(((float)g.frame_counter) * g.msteps_per_frame);
+  return g.starting_point + nintMy(((float)g.frame_counter) * MSTEP_PER_FRAME[g.reg.i_mm_per_frame]);
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -530,7 +537,7 @@ void read_params(byte n)
   EEPROM.get( g.addr_reg[n], g.reg);
   // Memorizing as default environment:
   EEPROM.put( g.addr_reg[0], g.reg);
-  g.msteps_per_frame = Msteps_per_frame();
+//  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
   if (g.telescope)
   {
@@ -722,7 +729,7 @@ void set_memory_point(char n)
   }
 #endif
   EEPROM.put( g.addr_reg[0], g.reg);
-  g.msteps_per_frame = Msteps_per_frame();
+//  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "  P%1d was set  ", n);

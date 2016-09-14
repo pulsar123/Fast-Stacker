@@ -24,7 +24,7 @@
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE unsigned int
+#define COORD_TYPE long
 // Coordinates type for non-negative variables:
 #define COORD_UTYPE unsigned int
 // Signed shorter type:
@@ -114,24 +114,24 @@ const unsigned long SHUTTER_OFF_DELAY2 = 100000;
 // LOW: enable motor; HIGH: disable motor (to save energy):
 #define PIN_ENABLE A3
 // LCD pins (Nokia 5110): following resistor scenario in https://learn.sparkfun.com/tutorials/graphic-lcd-hookup-guide
-const short PIN_LCD_DC = 5;  // Via 10 kOhm resistor
-const short PIN_LCD_LED = 9;  // Via 330 Ohm resistor
-const short PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
-const short PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
+const byte PIN_LCD_DC = 5;  // Via 10 kOhm resistor
+const byte PIN_LCD_LED = 9;  // Via 330 Ohm resistor
+const byte PIN_LCD_DN_ = 11;  // Via 10 kOhm resistor
+const byte PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
-const short PIN_LIMITERS = 8;
+const byte PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
-const short PIN_SHUTTER = 3;
+const byte PIN_SHUTTER = 3;
 // Hardware h1.2: pin 6 was reassigned from RST LCD to operate the AF relay:
 #define PIN_AF A1
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
 // (I modified the pcd8544 library to disable the use of this pin). Using a fake value:
-const short PIN_LCD_SCE = 100;
+const byte PIN_LCD_SCE = 100;
 // Hardware h1.2: Arduino is no longer needed, as the initial LCD reset is done with a delay RC circuit. Pin 6 can now be used to operate the AF relay
 // (I modified the pcd8544 library to disable the use of this pin). Using a fake value:
-const short PIN_LCD_RST = 100;
+const byte PIN_LCD_RST = 100;
 
 
 //////// Voltage parameters: ////////
@@ -163,9 +163,8 @@ char keys[rows][cols] = {
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
-// Hardware v1.1: 4, 7, 12, A1 (was 4, 10, 12, A1; pin 10 was freed to be able to use hardware SPI for LCD)
-byte rowPins[rows] = {4, 7, 12, 6}; //connect to the row pinouts of the keypad (6,7,8,9 for mine)
-byte colPins[cols] = {A2, 2, 1, 0}; //connect to the column pinouts of the keypad (2,3,4,5 for mine)
+byte rowPins[rows] = {4, 7, 12, 6}; //connect to the row pinouts of the keypad
+byte colPins[cols] = {A2, 2, 1, 0}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 
@@ -250,11 +249,13 @@ const unsigned char N_REGS = 6;
 // Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
 const byte Backlight[] = {0, 110, 127, 255};
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
-#define ROUND_OFF
+//#define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const short N_PARAMS = 25;
 //  Mm per frame parameter for macro rail mode (determined by DoF of the lens)
-float MM_PER_FRAME[] = {0.00125, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.5, 2};
+//float MM_PER_FRAME[] =        {0.00125, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8,   1,  1.5,   2};
+// Now we are using microsteps per frame input table, for both macro and telescope modes:
+const short MSTEP_PER_FRAME[] = {1,       2,          4,      6,    8,    12,   16,    20,   24,   32,   40,   48,   64,  80,  120, 160,  200, 240, 320, 400, 480, 640, 800, 1200, 1600};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
@@ -535,7 +536,8 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
-  char* rev_char; // "R" if rail revered, " " otherwise
+//  char rev_char[2]; // "R" if rail revered, " " otherwise
+  char tmp_char[2];
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying

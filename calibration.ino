@@ -3,7 +3,7 @@ void calibration()
    limits (triggering the limiting switches) normally doesn't occur.
 
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.
- */
+*/
 {
 
   // This module only works when not moving:
@@ -14,7 +14,15 @@ void calibration()
 
   if (g.calibrate == 3 && g.calibrate_flag == 0)
     // The very first calibration
-  {
+  {   
+    // These initializations guarantee that coordinates will be well within the int limits all the way to the background switch:
+    /*
+    g.limit1 = 0;
+    g.pos = 0.0;
+    g.pos_short_old = 0;
+    g.pos0 = g.pos;
+    g.t0 = g.t;
+    */
     // Moving towards switch 2 for its calibration, with maximum acceleration:
     change_speed(g.speed_limit, 0, 2);
     letter_status("C");
@@ -59,7 +67,7 @@ void calibration()
       g.limit2 = g.limit_tmp - LIMITER_PAD;
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       // Travelling back into safe area:
-      go_to((float)(g.limit2 - DELTA_LIMITER)+0.5, g.speed_limit);
+      go_to((float)(g.limit2 - DELTA_LIMITER) + 0.5, g.speed_limit);
     }
     else if (g.calibrate == 1)
     {
@@ -68,7 +76,7 @@ void calibration()
       // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       // Travelling back into safe area:
-      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE)+0.5, g.speed_limit);
+      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE) + 0.5, g.speed_limit);
     }
     g.calibrate = 0;
     letter_status(" ");

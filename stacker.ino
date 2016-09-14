@@ -126,6 +126,7 @@ void setup() {
   keypad.key[0].kstate = (KeyState)0;
   keypad.key[1].kstate = (KeyState)0;
 
+/*
 #ifdef ROUND_OFF
   float fsteps;
   // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
@@ -141,6 +142,7 @@ void setup() {
       MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
   }
 #endif
+*/
 
   // Should be the last line in setup:
   g.setup_flag = 0;

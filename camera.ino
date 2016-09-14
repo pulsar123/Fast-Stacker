@@ -41,7 +41,7 @@ void camera()
     if (g.continuous_mode)
     {
       // Required microsteps per frame:
-      g.msteps_per_frame = Msteps_per_frame();
+//      g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
       // Estimating the required speed in microsteps per microsecond
       speed = target_speed();
       if (g.stacker_mode == 3)

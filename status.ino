@@ -31,10 +31,10 @@ void display_all()
       if (g.telescope)
       {
         if (g.displayed_register > 0)
-          sprintf(g.rev_char, "%1d", g.locked[g.displayed_register - 1]);
+          sprintf(g.tmp_char, "%1d", g.locked[g.displayed_register - 1]);
         else
-          g.rev_char = " ";
-        sprintf(g.buffer, "Lock=%1s    BL=%1d", g.rev_char, g.reg.backlash_on);
+          sprintf(g.tmp_char, " ");
+        sprintf(g.buffer, "Lock=%1s    BL=%1d", g.tmp_char, g.reg.backlash_on);
       }
       else
         sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
@@ -193,6 +193,10 @@ void display_all()
           //          lcd.print("              ");
 #endif
           break;
+
+//        case 3:  // Factory reset initiated
+//          lcd.print("Factory reset?");
+//          break;
 
       } // case
     }
@@ -438,11 +442,13 @@ void display_u_per_f()
   if (g.error || g.alt_flag)
     return;
 
-  if (MM_PER_FRAME[g.reg.i_mm_per_frame] >= 0.00995)
-    sprintf(g.buffer, "%4duf ", nintMy(1000.0 * MM_PER_FRAME[g.reg.i_mm_per_frame]));
+  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+
+  if (um_per_frame >= 9.95)
+    sprintf(g.buffer, "%4duf ", nintMy(um_per_frame));
   else
     // +0.05 is for proper round-off:
-    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, 1000.0 * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05, 1));
+    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, um_per_frame + 0.05, 1));
 
   lcd.setCursor(0, 2);
   lcd.print(g.buffer);
@@ -492,17 +498,17 @@ void display_one_point_params()
     }
     else
     {
-      if (g.locked[g.displayed_register])
-        g.rev_char = "L";
+      if (g.locked[g.displayed_register - 1])
+        sprintf(g.tmp_char, "L");
       else
-        g.rev_char = " ";
-      sprintf(g.buffer, " Register %1d%1s  ", g.displayed_register, g.rev_char);
+        sprintf(g.tmp_char, " ");
+      sprintf(g.buffer, " Register %1d%1s  ", g.displayed_register, g.tmp_char);
     }
   }
   else
   {
     // +0.05 for proper round off:
-    float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+    float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
     short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
     if (dt < 1000.0 && dt >= 0.0)
       sprintf(g.buf6, "%3ds", dt);
@@ -645,9 +651,9 @@ void display_current_position()
     return;
 
   if (g.reg.straight)
-    g.rev_char = " ";
+    sprintf(g.tmp_char, " ");
   else
-    g.rev_char = "R";
+    sprintf(g.tmp_char, "R");
 
   if (g.timelapse_mode)
     sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
@@ -669,10 +675,10 @@ void display_current_position()
 
 
 #ifdef SHOW_RAW
-  sprintf(g.buffer, "%1s %6d   %3s", g.rev_char, g.pos_short_old, g.buf6);
+  sprintf(g.buffer, "%1s %6d   %3s", g.tmp_char, g.pos_short_old, g.buf6);
 #else
   p = g.mm_per_microstep * g.pos;
-  sprintf(g.buffer, "%1s %6smm %3s", g.rev_char, ftoa(g.buf7, p, 3), g.buf6);
+  sprintf(g.buffer, "%1s %6smm %3s", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
 #endif
 
   lcd.setCursor(0, 4);
@@ -711,7 +717,7 @@ void delay_buffer()
   float y;
   if (g.telescope)
     return;
-  y = MM_PER_FRAME[g.reg.i_mm_per_frame] / g.mm_per_microstep / g.accel_limit;
+  y = (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame] / g.accel_limit;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.reg.i_first_delay];

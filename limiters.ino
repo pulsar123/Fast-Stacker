@@ -26,6 +26,7 @@ void limiters()
   if (limit_on == HIGH)
     // Triggering the limiter is an exceptional event, should rarely happen, and will
     // trigger an automatic re-calibration of the rail
+    // This happens by design during the rail calibration.
   {
     // The flag=2 regime (moving in the opposite direction after hitting a limiter followed by emergency breaking): ignoring the limit_on-HIGH state:
     // Same in flag=5 mode (rewinding into safe zone after hitting the second limiter)

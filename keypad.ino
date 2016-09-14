@@ -190,6 +190,7 @@ void process_keypad()
       case '*': // #*: Factory reset
         if (g.paused)
           break;
+        //        g.error = 3;
         initialize(1);
         break;
 
@@ -210,7 +211,7 @@ void process_keypad()
         if (g.paused)
           pos_target = frame_coordinate();
         else
-          pos_target = (COORD_TYPE)(g.pos - g.msteps_per_frame);
+          pos_target = (COORD_TYPE)g.pos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
         make_step(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -223,7 +224,7 @@ void process_keypad()
         if (g.paused)
           pos_target = frame_coordinate();
         else
-          pos_target = (COORD_TYPE)(g.pos + g.msteps_per_frame);
+          pos_target = (COORD_TYPE)g.pos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
         make_step(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -356,7 +357,8 @@ void process_keypad()
             if (g.displayed_register == 0)
               break;
             // Toggling the value of the bit # g.displayed_register in the byte variable g.locked:
-            g.locked[g.displayed_register-1] = 1 - g.locked[g.displayed_register-1];
+            g.locked[g.displayed_register - 1] = 1 - g.locked[g.displayed_register - 1];
+            EEPROM.put( ADDR_LOCK + g.displayed_register - 1, g.locked[g.displayed_register - 1] );
           }
           else
           {
@@ -689,13 +691,13 @@ void process_keypad()
               else
                 break;
               // Required microsteps per frame:
-              g.msteps_per_frame = Msteps_per_frame();
+              //              g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
               g.Nframes = Nframes();
               if (g.Nframes > 9999)
                 // Too many frames; recovering the old values
               {
                 g.reg.i_mm_per_frame++;
-                g.msteps_per_frame = Msteps_per_frame();
+                //                g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
                 g.Nframes = Nframes();
                 break;
               }
@@ -721,7 +723,7 @@ void process_keypad()
               else
                 break;
               // Required microsteps per frame:
-              g.msteps_per_frame = Msteps_per_frame();
+              //              g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
               g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
               display_all();
