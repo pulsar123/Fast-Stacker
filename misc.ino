@@ -398,22 +398,22 @@ void set_backlight()
   unsigned char level;
   //  level = g.backlight * (255 / (N_BACKLIGHT - 1));
   /*
-  switch (g.backlight)
-  {
+    switch (g.backlight)
+    {
     case 0:
       level = 0;
       break;
     case 1:
       // Very low value for complete darkness:
       // Values lower than 255 make LCD unstable for some reason - disabled for now.
-      
+
       level = 5;
       break;
     case 2:
-    
+
       level = 255;
-  }
-  analogWrite(PIN_LCD_LED, level);
+    }
+    analogWrite(PIN_LCD_LED, level);
   */
 
   analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
@@ -566,12 +566,13 @@ void save_params(byte n)
 {
   if (g.telescope)
   {
+    // Exit if the lock is set:
+    if (g.locked[n - 1])
+      return;
     g.displayed_register = n;
     display_all();
   }
   EEPROM.put( g.addr_reg[n], g.reg);
-  //  display_comment_line("Saved to Reg");
-  //  lcd.print(n);
   sprintf(g.buffer, "Saved to Reg%1d", n);
   display_comment_line(g.buffer);
   lcd.clearRestOfLine();

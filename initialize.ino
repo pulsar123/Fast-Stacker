@@ -110,16 +110,23 @@ void initialize(byte factory_reset)
 
     if (g.telescope)
     {
+      byte i;
       // Disabling calibration when operating telescope
       g.reg.i_mm_per_frame = 0;
-      for (byte i = 0; i < 4; i++)
+      for (i = 0; i < 4; i++)
         g.reg.raw_T[i] = 512;
+      // Initially registers are no locked:
+      for (i = 0; i < N_REGS; i++)
+      {
+        g.locked[i] = 0;
+        EEPROM.put( ADDR_LOCK + i, g.locked[i] );
+      }
     }
     else
     {
 #ifndef MOTOR_DEBUG
       g.calibrate = 3;
-#endif      
+#endif
       g.reg.i_mm_per_frame = 5;
       EEPROM.put( ADDR_CALIBRATE, g.calibrate );
       EEPROM.put( ADDR_LIMIT1, g.limit1);
@@ -139,7 +146,14 @@ void initialize(byte factory_reset)
   else
   {
     // Reading the values from EEPROM:
-    if (!g.telescope)
+    if (g.telescope)
+    {
+      for (byte i = 0; i < N_REGS; i++)
+      {
+        EEPROM.get( ADDR_LOCK + i, g.locked[i] );
+      }
+    }
+    else
     {
       EEPROM.get( ADDR_POS, g.pos );
       EEPROM.get( ADDR_CALIBRATE, g.calibrate );

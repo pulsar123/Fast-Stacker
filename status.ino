@@ -29,7 +29,13 @@ void display_all()
       lcd.print(g.buffer);
       // Line 2:
       if (g.telescope)
-        sprintf(g.buffer, "          BL=%1d", g.reg.backlash_on);
+      {
+        if (g.displayed_register > 0)
+          sprintf(g.rev_char, "%1d", g.locked[g.displayed_register - 1]);
+        else
+          g.rev_char = " ";
+        sprintf(g.buffer, "Lock=%1s    BL=%1d", g.rev_char, g.reg.backlash_on);
+      }
       else
         sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
       lcd.print(g.buffer);
@@ -485,7 +491,13 @@ void display_one_point_params()
       return;
     }
     else
-      sprintf(g.buffer, "  Register %1d  ", g.displayed_register);
+    {
+      if (g.locked[g.displayed_register])
+        g.rev_char = "L";
+      else
+        g.rev_char = " ";
+      sprintf(g.buffer, " Register %1d%1s  ", g.displayed_register, g.rev_char);
+    }
   }
   else
   {

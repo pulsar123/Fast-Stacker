@@ -349,13 +349,22 @@ void process_keypad()
           display_all();
           break;
 
-        case '4': // *4: Change N_timelapse
+        case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
           if (g.telescope)
-            break;
-          if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
-            g.reg.i_n_timelapse++;
+          {
+            // No locking if no register currently loaded:
+            if (g.displayed_register == 0)
+              break;
+            // Toggling the value of the bit # g.displayed_register in the byte variable g.locked:
+            g.locked[g.displayed_register-1] = 1 - g.locked[g.displayed_register-1];
+          }
           else
-            g.reg.i_n_timelapse = 0;
+          {
+            if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
+              g.reg.i_n_timelapse++;
+            else
+              g.reg.i_n_timelapse = 0;
+          }
           EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           break;

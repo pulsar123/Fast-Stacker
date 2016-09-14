@@ -24,7 +24,7 @@
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
-#define COORD_TYPE long
+#define COORD_TYPE unsigned int
 // Coordinates type for non-negative variables:
 #define COORD_UTYPE unsigned int
 // Signed shorter type:
@@ -64,14 +64,14 @@ const long DELAY_STEP = 50000;
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
 //#define SHOW_RAW
-// Dumping the contents of the memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
+// Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones:
 #define SHORT_ERRORS 
 // Show bitmaps (takes more space):
-#define BATTERY_BITMAPS
+//#define BATTERY_BITMAPS
 //#define REWIND_BITMAPS
 
 //////// Camera related parameters: ////////
@@ -246,9 +246,9 @@ const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for re
 // Number of custom memory registers (largest between macro and telescope mode; we have 5 for macro and 6 for telescope):
 const unsigned char N_REGS = 6;
 // Number of backlight levels:
-#define N_BACKLIGHT 3
+#define N_BACKLIGHT 4
 // Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
-const byte Backlight[] = {0, 5, 255};
+const byte Backlight[] = {0, 110, 127, 255};
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
 #define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
@@ -437,8 +437,9 @@ const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limite
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
+const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG; // Lock flags for N_REGS telescope registers
 #ifdef SHOW_EEPROM
-const int ADDR_END = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG;  // End of used EEPROM
+const int ADDR_END = ADDR_LOCK + N_REGS;  // End of used EEPROM
 #endif
 
 #ifdef BATTERY_BITMAPS
@@ -571,6 +572,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
   unsigned long t_status; // time variable used in generating memory point flashing
   byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
+  byte locked[N_REGS]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
 };
 
 struct global g;
