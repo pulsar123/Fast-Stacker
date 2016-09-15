@@ -194,9 +194,9 @@ void display_all()
 #endif
           break;
 
-//        case 3:  // Factory reset initiated
-//          lcd.print("Factory reset?");
-//          break;
+        case 3:  // Factory reset initiated
+          lcd.print("Factory reset?");
+          break;
 
       } // case
     }

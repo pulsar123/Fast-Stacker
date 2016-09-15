@@ -33,9 +33,9 @@
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-//#define DISABLE_MOTOR
+#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:

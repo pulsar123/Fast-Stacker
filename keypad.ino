@@ -9,8 +9,8 @@ void process_keypad()
 
 
   // Ignore keypad during emergency breaking
-  //  if (g.breaking == 1 || (g.calibrate == 3 && g.calibrate_warning == 0) || g.error > 1)
-  if (g.breaking == 1 || g.error > 1)
+  //  if (g.breaking == 1 || g.error > 1)
+  if (g.breaking == 1)
     return;
 
   // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
@@ -190,8 +190,9 @@ void process_keypad()
       case '*': // #*: Factory reset
         if (g.paused)
           break;
-        //        g.error = 3;
-        initialize(1);
+        g.error = 3;
+        display_all();
+        //        initialize(1);
         break;
 
       case '7': // #7: Manual camera shutter triggering
@@ -414,6 +415,13 @@ void process_keypad()
             display_all();
             return;
           }
+          // Pressing any key except for '1' will cancel factory reset:
+          if (g.error == 3 && key0 != '1')
+          {
+            g.error = 0;
+            display_all();
+            return;
+          }
         }
 
         // Keys interpretation depends on the stacker_mode:
@@ -427,7 +435,13 @@ void process_keypad()
           switch (key0)
           {
             case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
-              if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0 || g.paused > 1)
+              // Using key "1" to confirm factory reset
+              if (g.error == 3)
+              {
+                initialize(1);
+                break;
+              }
+              else if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0 || g.paused > 1)
                 break;
               if (g.paused)
               {
