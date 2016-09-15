@@ -85,7 +85,7 @@ void process_keypad()
           break;
         g.calibrate = 3;
         g.calibrate_flag = 0;
-        g.calibrate_warning = 1;
+        g.error = 4;
         g.calibrate_init = g.calibrate;
         // Displaying the calibrate warning:
         display_all();
@@ -408,15 +408,9 @@ void process_keypad()
           // Memorizing the time when a key was pressed:
           // (Only when it is a true state change, not a fake key)
           g.t_key_pressed = g.t;
-          if (g.calibrate_warning == 1)
-            // Any key pressed when calibrate_warning=1 will initiate calibration:
-          {
-            g.calibrate_warning = 0;
-            display_all();
-            return;
-          }
-          // Pressing any key except for '1' will cancel factory reset:
-          if (g.error == 3 && key0 != '1')
+          // Any key pressed when g.error=4 (calibration warning) will initiate calibration
+          // Also, pressing any key except for '1' will cancel factory reset
+          if (g.error == 4 || g.error == 3 && key0 != '1')
           {
             g.error = 0;
             display_all();

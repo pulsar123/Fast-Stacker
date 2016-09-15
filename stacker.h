@@ -33,9 +33,9 @@
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-#define DISABLE_MOTOR
+//#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -71,8 +71,8 @@ const long DELAY_STEP = 50000;
 // Show only short error messages instead of detailed ones:
 #define SHORT_ERRORS 
 // Show bitmaps (takes more space):
-//#define BATTERY_BITMAPS
-//#define REWIND_BITMAPS
+#define BATTERY_BITMAPS
+#define REWIND_BITMAPS
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -491,7 +491,6 @@ struct global
   unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
   unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
   // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
-  unsigned char calibrate_warning; // 1: pause calibration until any key is pressed, and display a warning
   COORD_TYPE limit1; // pos_short for the foreground limiter
   COORD_TYPE limit2; // pos_short for the background limiter
   COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter

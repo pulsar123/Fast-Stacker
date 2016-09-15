@@ -126,24 +126,6 @@ void setup() {
   keypad.key[0].kstate = (KeyState)0;
   keypad.key[1].kstate = (KeyState)0;
 
-/*
-#ifdef ROUND_OFF
-  float fsteps;
-  // Rounding off small values of MM_PER_FRAME to the nearest whole number of microsteps:
-  float scale = MM_PER_FRAME[0] / g.mm_per_microstep;
-  for (int i = 0; i < N_PARAMS; i++)
-  {
-    fsteps = MM_PER_FRAME[i] / g.mm_per_microstep;
-    if (g.telescope)
-      // Rescaling the MM_PER_FRAME table in telescope mode so the smallest value = one microstep:
-      fsteps = fsteps / scale;
-    short steps = (short)nintMy(fsteps);
-    if (g.telescope || steps < 20)
-      MM_PER_FRAME[i] = ((float)steps) * g.mm_per_microstep;
-  }
-#endif
-*/
-
   // Should be the last line in setup:
   g.setup_flag = 0;
 }

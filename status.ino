@@ -27,6 +27,7 @@ void display_all()
       else
         sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
       lcd.print(g.buffer);
+
       // Line 2:
       if (g.telescope)
       {
@@ -124,34 +125,12 @@ void display_all()
   {
     if (g.error == 0)
     {
-      if (g.calibrate_warning == 0)
-      {
-        display_u_per_f();  display_fps();
-        display_one_point_params();
-        display_two_point_params();
-        display_two_points();
-        display_current_position();
-        display_status_line();
-      }
-      else
-      {
-#ifdef SHORT_ERRORS
-        lcd.print("Calibration");
-#else
-        lcd.print("  Calibration\n  required!\n");
-        lcd.print("\nPress any key\nto start\n");
-        lcd.print("calibration");
-        /*
-          lcd.print("  Calibration ");
-          lcd.print("  required!"); lcd.clearRestOfLine();
-          //        lcd.print("              ");
-          lcd.clearRestOfLine();
-          lcd.print("Press any key ");
-          lcd.print("to start"); lcd.clearRestOfLine();
-          lcd.print("calibration.  ");
-        */
-#endif
-      }
+      display_u_per_f();  display_fps();
+      display_one_point_params();
+      display_two_point_params();
+      display_two_points();
+      display_current_position();
+      display_status_line();
     }
 
     else
@@ -196,6 +175,25 @@ void display_all()
 
         case 3:  // Factory reset initiated
           lcd.print("Factory reset?");
+          break;
+
+        case 4:  // Calibration initiated
+#ifdef SHORT_ERRORS
+          lcd.print("Calibration");
+#else
+          lcd.print("  Calibration\n  required!\n");
+          lcd.print("\nPress any key\nto start\n");
+          lcd.print("calibration");
+          /*
+            lcd.print("  Calibration ");
+            lcd.print("  required!"); lcd.clearRestOfLine();
+            //        lcd.print("              ");
+            lcd.clearRestOfLine();
+            lcd.print("Press any key ");
+            lcd.print("to start"); lcd.clearRestOfLine();
+            lcd.print("calibration.  ");
+          */
+#endif
           break;
 
       } // case
@@ -442,12 +440,12 @@ void display_u_per_f()
   if (g.error || g.alt_flag)
     return;
 
-  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  // +0.05 is for proper round-off:
+  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
 
-  if (um_per_frame >= 9.95)
-    sprintf(g.buffer, "%4duf ", nintMy(um_per_frame));
+  if (um_per_frame >= 10.0)
+    sprintf(g.buffer, "%4duf ", (int)um_per_frame);
   else
-    // +0.05 is for proper round-off:
     sprintf(g.buffer, "%4suf ", ftoa(g.buf7, um_per_frame + 0.05, 1));
 
   lcd.setCursor(0, 2);
@@ -559,7 +557,8 @@ void display_two_point_params()
   {
     // +0.05 for proper round off:
     dx = g.mm_per_microstep * (float)(g.reg.point[3] - g.reg.point[0]) + 0.05;
-    short dt = (short)nintMy((float)(g.Nframes - 1) / FPS[g.reg.i_fps]);
+    // +0.5 for proper round off:
+    short dt = (short)((float)(g.Nframes - 1) / FPS[g.reg.i_fps] + 0.5);
     if (dt < 1000.0 && dt >= 0.0)
       sprintf(g.buf6, "%3ds", dt);
     else if (dt < 10000.0 && dt >= 0.0)
@@ -647,7 +646,7 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.calibrate_warning || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
+  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
   if (g.reg.straight)
@@ -722,7 +721,8 @@ void delay_buffer()
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.reg.i_first_delay];
   float delay2 = SECOND_DELAY[g.reg.i_second_delay];
-  short dt = (short)nintMy((float)(g.Nframes) * (FIRST_DELAY[g.reg.i_first_delay] + SECOND_DELAY[g.reg.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto);
+  // +0.5 for roundoff:
+  short dt = (short)((float)(g.Nframes) * (FIRST_DELAY[g.reg.i_first_delay] + SECOND_DELAY[g.reg.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto + 0.5);
   sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);
 
   return;

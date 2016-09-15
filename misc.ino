@@ -2,31 +2,10 @@ float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
   return 1e-6 * FPS[g.reg.i_fps] * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-  /*
-  if (g.telescope)
-    return SPEED_SCALE_TEL * x;
-  else
-    return SPEED_SCALE * x;
-    */
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-/*
-float Msteps_per_frame ()
-//Computing the "microsteps per frame" parameter - redo this every time g.reg.i_mm_per_frame changes.
-
-{
-  return MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-    
-  if (g.telescope)
-    return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION_TEL) * MICROSTEPS_PER_ROTATION;
-  else
-    return (MM_PER_FRAME[g.reg.i_mm_per_frame] / MM_PER_ROTATION) * MICROSTEPS_PER_ROTATION;
-}
-*/
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 short Nframes ()
@@ -46,47 +25,20 @@ char *ftoa(char *a, float f, int precision)
 
   char *ret = a;
   long heiltal = (long)f;
-  itoa(heiltal, a, 10);
+//  itoa(heiltal, a, 10);
+  sprintf(a, "%d", heiltal);
   while (*a != '\0') a++;
   *a++ = '.';
   long desimal = abs((long)((f - heiltal) * p[precision]));
   // Filling up with leading zeros if needed:
   for (byte i = snprintf(0, 0, "%+d", desimal) - 1; i < precision; i++)
     *a++ = '0';
-  itoa(desimal, a, 10);
+//  itoa(desimal, a, 10);
+  sprintf(a, "%d", desimal);
   return ret;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-COORD_TYPE nintMy(float x)
-/*
-  My version of nint. Float -> COORD_TYPE conversion. Valid for positive/negative/zero.
-*/
-{
-  // Rounding x towards 0:
-  COORD_TYPE x_short = (COORD_TYPE)x;
-  float frac;
-
-  if (x >= 0.0)
-  {
-    frac = x - (float)x_short;
-  }
-  else
-  {
-    frac = (float)x_short - x;
-  }
-
-  if (frac >= 0.5)
-  {
-    if (x >= 0.0)
-      return x_short + 1;
-    else
-      return x_short - 1;
-  }
-  else
-    return x_short;
-}
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 COORD_TYPE floorMy(float x)
@@ -348,12 +300,12 @@ void stop_now()
     g.calibrate_flag = 5;
 
   if ((g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
-    g.calibrate_warning = 1;
+    g.error = 4;
 
   // In the initial calibration, disable the warning flag after the first leg:
-  if (g.calibrate_init == 3 && g.calibrate_warning == 1)
+  if (g.calibrate_init == 3 && g.error == 4)
   {
-    g.calibrate_warning = 0;
+    g.error = 0;
     // To clear garbage in the status line:
     display_status_line();
   }
@@ -524,7 +476,7 @@ void rail_reverse(byte fix_points)
 COORD_TYPE frame_coordinate()
 // Coordinate (COORD_TYPE type) of a frame given by g.frame_number, in 2-point stacking
 {
-  return g.starting_point + nintMy(((float)g.frame_counter) * MSTEP_PER_FRAME[g.reg.i_mm_per_frame]);
+  return g.starting_point + (COORD_TYPE)g.frame_counter * (COORD_TYPE)MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -537,7 +489,7 @@ void read_params(byte n)
   EEPROM.get( g.addr_reg[n], g.reg);
   // Memorizing as default environment:
   EEPROM.put( g.addr_reg[0], g.reg);
-//  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
   if (g.telescope)
   {
@@ -697,7 +649,7 @@ void clear_calibrate_state()
 {
   g.calibrate = 0;
   g.calibrate_flag = 0;
-  g.calibrate_warning = 0;
+  g.error = 0;
   g.calibrate_init = g.calibrate;
   return;
 }
@@ -729,7 +681,7 @@ void set_memory_point(char n)
   }
 #endif
   EEPROM.put( g.addr_reg[0], g.reg);
-//  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "  P%1d was set  ", n);

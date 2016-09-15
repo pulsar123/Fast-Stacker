@@ -6,7 +6,6 @@ void initialize(byte factory_reset)
   int address;
 
   g.error = 0;
-  g.calibrate_warning = 0;
   for (byte i = 0; i < 4; i++)
   {
     g.delta_pos[i] = 0;
@@ -184,7 +183,7 @@ void initialize(byte factory_reset)
 
   g.calibrate_flag = 0;
   if (g.calibrate == 3)
-    g.calibrate_warning = 1;
+    g.error = 4;
   // Memorizing the initial value of g.calibrate:
   g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
