@@ -30,6 +30,10 @@ void limiters()
   {
     // The flag=2 regime (moving in the opposite direction after hitting a limiter followed by emergency breaking): ignoring the limit_on-HIGH state:
     // Same in flag=5 mode (rewinding into safe zone after hitting the second limiter)
+#ifdef TEST_SWITCH
+    if (g.test_flag != 3)
+      return;
+#endif      
     if (g.calibrate_flag == 2)
       return;
 
@@ -39,8 +43,11 @@ void limiters()
     // This should be after change_speed(0.0):
     g.breaking = 1;
     letter_status("B");
+#ifndef TEST_SWITCH
     display_comment_line("Hit a limiter ");
+#endif    
 
+#ifndef TEST_SWITCH  
     if (g.calibrate_flag == 0)
     {
       g.calibrate_flag = 1;
@@ -67,12 +74,14 @@ void limiters()
     {
       g.calibrate_flag = 4;
     }
+#endif // TEST_SWITCH    
     // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
     g.limit_tmp = g.pos_short_old;
   }
   else
 
     ////// Soft limits ///////
+#ifndef TEST_SWITCH    
   {
     // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
     if (g.calibrate_flag == 2)
@@ -125,6 +134,7 @@ void limiters()
       }
     }
   }
+#endif // TEST_SWITCH  
 
   return;
 }

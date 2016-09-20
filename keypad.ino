@@ -113,6 +113,9 @@ void process_keypad()
           letter_status("B");
           clear_calibrate_state();
         }
+#ifdef TEST_SWITCH
+        g.test_flag = 10;
+#endif        
         break;
 
       case '2': // #2: Save parameters to first memory bank

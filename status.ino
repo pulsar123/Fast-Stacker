@@ -625,6 +625,14 @@ void display_current_position()
 #ifdef CAMERA_DEBUG
   //  return;
 #endif
+#ifdef TEST_SWITCH
+  lcd.setCursor(0, 4);
+  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7,g.test_dev,2), ftoa(g.buf6,g.test_std,2));
+//  sprintf(g.buffer, "%2d %5d %5d", g.test_N, g.limit1, g.limit_tmp);
+  lcd.print(g.buffer);
+  return;
+#endif
+
 #ifdef TIMING
   // Average loop length for the last motion, in shortest miscrostep length units *100:
   short avr = (short)(100.0 * (float)(g.t - g.t0_timing) / (float)(g.i_timing - 1) * SPEED_LIMIT);

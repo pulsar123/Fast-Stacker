@@ -66,9 +66,12 @@ const long DELAY_STEP = 50000;
 //#define SHOW_RAW
 // Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
+// If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
+//#define TEST_SWITCH
+#define TEST_N_MAX 20
 
 // Memory saving tricks:
-// Show only short error messages instead of detailed ones:
+// Show only short error messages instead of detailed ones (saves space):
 #define SHORT_ERRORS 
 // Show bitmaps (takes more space):
 #define BATTERY_BITMAPS
@@ -168,7 +171,7 @@ byte colPins[cols] = {A2, 2, 1, 0}; //connect to the column pinouts of the keypa
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 
-//////// Parameters related to the motor and the rail: ////////
+//////// Parameters related to the motor, the rail, and the telescope: ////////
 // Number of full steps per rotation for the stepper motor:
 const COORD_TYPE MOTOR_STEPS = 200;
 // Number of microsteps in a step (default for BigEasyDriver is 16):
@@ -323,11 +326,12 @@ octave:24> ols(b,A)
 const float SH_a = 2.777994e-03;
 const float SH_b = 2.403028e-04;
 const float SH_c = 1.551810e-06;
-// Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by CTE*(Temp-Temp0) when temperature changes.
+// Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by -CTE*(Temp-Temp0) when temperature changes.
 // This is not the official CTE (normalized per 1mm of the telescope length), but rather the product of the official CTE x length of the telescope.
 // It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one
 // termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
-//   CTE = (x1-x0) / (Temp1-Temp0)
+//   CTE = -(x1-x0) / (Temp1-Temp0)
+// (the minus sign is because when the telescope tube expands, focus point moves closer to the telescope, resulting in a smaller coordinate).
 const float CTE = 1.5e-2;
 #endif
 // Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
@@ -574,6 +578,21 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   unsigned long t_status; // time variable used in generating memory point flashing
   byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
   byte locked[N_REGS]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
+#ifdef TEST_SWITCH
+// Number of tests to perform:
+#define TEST_N_MAX 10
+  float speed_test;
+  short test_flag;
+  float test_sum;
+  float test_sum2;
+  short test_N;
+  float test_pos0;
+  float delta_min;
+  float delta_max;
+  float test_dev;
+  float test_avr;
+  float test_std;
+#endif  
 };
 
 struct global g;

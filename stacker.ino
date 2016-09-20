@@ -65,9 +65,6 @@ void setup() {
   return;
 #endif
 
-  // Changing the frequency of PWM signal driving backlighting (trying to address the LCD instability at lower brightness levels):
-  //  TCCR1B = TCCR1B & 0b11111000 | 0x01;
-
   // Setting pins for BigEasyDriver to OUTPUT:
 #ifndef DISABLE_MOTOR
   pinMode(PIN_DIR, OUTPUT);
@@ -134,6 +131,9 @@ void setup() {
 void loop()
 {
 #ifndef DUMP_REGS
+#ifdef TEST_SWITCH
+  test_switch();
+#endif
 
   // Performing backlash compensation after bad direction moves:
   backlash();

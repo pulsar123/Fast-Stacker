@@ -5,6 +5,9 @@ void calibration()
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.
 */
 {
+#ifdef TEST_SWITCH
+  return;
+#endif
 
   // This module only works when not moving:
   if (g.calibrate == 0 || g.moving == 1 || g.breaking == 1 || g.backlashing == 1 || g.error > 0)

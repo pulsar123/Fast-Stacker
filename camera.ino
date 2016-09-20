@@ -4,6 +4,9 @@ void camera()
 */
 {
   float speed;
+#ifdef TEST_SWITCH
+  return;
+#endif
 
   if (g.error > 0)
     return;

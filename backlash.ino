@@ -1,5 +1,5 @@
 /* Backlash compensation routines.
- */
+*/
 
 void backlash()
 /*  Monitors the value of the backlash counter BL_counter (updated in motor_control). When it detects that
@@ -8,8 +8,11 @@ void backlash()
     This routine should work in concert with go_to() function, where all moves ending in the bad (negative) direction
     should always travel g.backlash further back. The backlash() picks up where go_to() left, after the rail stops, and rewinds
     the rail back in the good direction, to completely compensate the backlash.
- */
+*/
 {
+#ifdef TEST_SWITCH
+  return;
+#endif
 
   // Should not be moving or breaking, and should need >0 backlash compensation:
   // Don't do anything while calibrating.

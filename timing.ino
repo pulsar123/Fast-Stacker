@@ -88,7 +88,7 @@ void write_regs()
   eeAddress = ADDR_REG1_TEL;
   for (byte i = 0; i < N_REGS; i++)
   {
-//    Serial.println(i);
+    //    Serial.println(i);
     for (byte j = 0; j < 4; j++)
     {
       do
@@ -111,6 +111,62 @@ void write_regs()
     eeAddress = eeAddress + SIZE_REG;
   }
 
+}
+#endif
+
+
+#ifdef TEST_SWITCH
+void test_switch()
+{
+  float breaking_distance;
+
+  if (g.moving || g.started_moving || g.error)
+    return;
+
+  switch (g.test_flag)
+  {
+    case 0:
+      //      clear_calibrate_state();
+      breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
+      // Initial positioning:
+        go_to(g.pos + 4.0 * breaking_distance, g.speed_limit);
+//      go_to(g.pos + 3000.0, g.speed_limit);
+      g.test_flag = 1;
+      break;
+
+    case 2:
+      // Moving toward foreground switch with current speed:
+      change_speed(-g.speed_test, 0, 2);
+      g.test_flag = 3;
+      break;
+
+    case 4:
+      // We just made a test switch triggering and stopped; the trigger position is stored in g.limit_tmp
+      if (g.test_N == 0)
+        g.test_pos0 = g.limit_tmp;
+      g.test_N++;
+      // Coordinates relative to the first triggered position, to minimize roundoff errors:
+      float delta = g.limit_tmp - g.test_pos0;
+      g.test_sum = g.test_sum + delta;
+      g.test_sum2 = g.test_sum2 + delta * delta;
+      if (delta > g.delta_max)
+        g.delta_max = delta;
+      if (delta < g.delta_min)
+        g.delta_min = delta;
+      if (g.test_N > 1)
+      {
+        g.test_avr = g.test_sum / (float)g.test_N;
+        g.test_std = sqrt(g.test_sum2 / (float)g.test_N - g.test_avr * g.test_avr);
+        g.test_dev = (g.delta_max - g.delta_min) / 2.0;
+      }
+      //      display_current_position();
+      if (g.test_N > TEST_N_MAX)
+        g.test_flag = 10;
+      else
+        g.test_flag = 0;
+      break;
+  }
+  return;
 }
 #endif
 

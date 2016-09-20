@@ -25,7 +25,7 @@ char *ftoa(char *a, float f, int precision)
 
   char *ret = a;
   long heiltal = (long)f;
-//  itoa(heiltal, a, 10);
+  //  itoa(heiltal, a, 10);
   sprintf(a, "%d", heiltal);
   while (*a != '\0') a++;
   *a++ = '.';
@@ -33,7 +33,7 @@ char *ftoa(char *a, float f, int precision)
   // Filling up with leading zeros if needed:
   for (byte i = snprintf(0, 0, "%+d", desimal) - 1; i < precision; i++)
     *a++ = '0';
-//  itoa(desimal, a, 10);
+  //  itoa(desimal, a, 10);
   sprintf(a, "%d", desimal);
   return ret;
 }
@@ -345,7 +345,12 @@ void stop_now()
 #ifdef EXTENDED_REWIND
   g.no_extended_rewind = 0;
 #endif
-
+#ifdef TEST_SWITCH
+  if (g.test_flag == 1)
+    g.test_flag = 2;
+  if (g.test_flag == 3)
+    g.test_flag = 4;
+#endif
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -390,6 +395,9 @@ void coordinate_recalibration()
   Should only be run when g.moving=0, after a calibration is done.
 */
 {
+#ifdef TEST_SWITCH
+  return;
+#endif
   if (g.moving)
     return;
 

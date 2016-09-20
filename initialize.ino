@@ -158,7 +158,7 @@ void initialize(byte factory_reset)
       EEPROM.get( ADDR_CALIBRATE, g.calibrate );
       EEPROM.get( ADDR_LIMIT1, g.limit1);
       EEPROM.get( ADDR_LIMIT2, g.limit2);
-    }    
+    }
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     // Reading the default memory register:
     EEPROM.get(g.addr_reg[0], g.reg);
@@ -237,7 +237,7 @@ void initialize(byte factory_reset)
   g.no_extended_rewind = 0;
 #endif
 
-//  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
 
   // Default lcd layout:
@@ -278,6 +278,21 @@ void initialize(byte factory_reset)
   AF_status(0);
   g.reg.i_first_delay = 4;
   g.reg.i_second_delay = 3;
+#endif
+
+#ifdef TEST_SWITCH
+  clear_calibrate_state();
+  //  g.error = 0;
+  g.test_flag = 0;
+  g.reg.backlash_on = 0;
+  update_backlash();
+  g.speed_test = g.speed_limit;
+  g.test_sum = 0.0;
+  g.test_sum2 = 0.0;
+  g.test_N = 0;
+  g.delta_min = 1e6;
+  g.delta_max = -1e6;
+  g.test_dev = 0.0;
 #endif
 
   return;
