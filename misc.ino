@@ -493,7 +493,7 @@ COORD_TYPE frame_coordinate()
 
 void read_params(byte n)
 /*
-   Read register n (1...N_REGS) from EEPROM
+   Read register n (1...g.n_regs) from EEPROM
 */
 {
   byte straight_old = g.reg.straight;
@@ -517,7 +517,7 @@ void read_params(byte n)
     g.Nframes = Nframes();
   }
   display_all();
-  sprintf(g.buffer, "Read from Reg%1d", n);
+  sprintf(g.buffer, "Loading Reg %2d", n);
   display_comment_line(g.buffer);
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:

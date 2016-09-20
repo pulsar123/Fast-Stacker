@@ -304,40 +304,46 @@ void process_keypad()
           rail_reverse(1);
           break;
 
-        case '2': // *2: Save parameters to third memory bank
+        case '2': // *2: Save parameters to third memory bank (read from reg 7 in telescope mode)
           if (g.telescope)
-            break;
-          save_params(3);
+            read_params(7);
+          else
+            save_params(3);
           break;
 
-        case '3': // *3: Read parameters from third memory bank
+        case '3': // *3: Read parameters from third memory bank (read from reg 10 in telescope mode)
           if (g.telescope)
-            break;
-          read_params(3);
+            read_params(10);
+          else
+            read_params(3);
           break;
 
-        case '5': // *5: Save parameters to fourth memory bank
+        case '5': // *5: Save parameters to fourth memory bank (read from reg 8 in telescope mode)
           if (g.telescope)
-            break;
-          save_params(4);
+            read_params(8);
+          else
+            save_params(4);
           break;
 
-        case '6': // *6: Read parameters from fourth memory bank
+        case '6': // *6: Read parameters from fourth memory bank (read from reg 11 in telescope mode)
           if (g.telescope)
-            break;
-          read_params(4);
+            read_params(11);
+          else
+            read_params(4);
           break;
 
-        case '8': // *8: Save parameters to fifth memory bank
+        case '8': // *8: Save parameters to fifth memory bank (read from reg 9 in telescope mode)
           if (g.telescope)
-            break;
-          save_params(5);
+            read_params(9);
+          else
+            save_params(5);
           break;
 
-        case '9': // *9: Read parameters from fifth memory bank
+        case '9': // *9: Read parameters from fifth memory bank (read from reg 12 in telescope mode)
           if (g.telescope)
-            break;
-          read_params(5);
+            read_params(12);
+          else
+            read_params(5);
           break;
 
         case 'A': // *A: Change accel_factor

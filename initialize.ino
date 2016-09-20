@@ -42,6 +42,7 @@ void initialize(byte factory_reset)
 
   if (g.telescope)
   {
+    g.n_regs = N_REGS_TEL;
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
     lcd.clear();
@@ -53,13 +54,14 @@ void initialize(byte factory_reset)
   }
   else
   {
+    g.n_regs = N_REGS;
     g.ireg = 0;
     g.accel_limit = ACCEL_LIMIT;
     g.mm_per_microstep = MM_PER_MICROSTEP;
     address = ADDR_REG1;
   }
   // EEPROM addresses for memory registers (different for macro and telescope modes), including the 0th (default) register:
-  for (unsigned char jj = 0; jj <= N_REGS; jj++)
+  for (unsigned char jj = 0; jj <= g.n_regs; jj++)
   {
     g.addr_reg[jj] = address + jj * SIZE_REG;
   }
@@ -114,7 +116,7 @@ void initialize(byte factory_reset)
       for (i = 0; i < 4; i++)
         g.reg.raw_T[i] = 512;
       // Initially registers are no locked:
-      for (i = 0; i < N_REGS; i++)
+      for (i = 0; i < g.n_regs; i++)
       {
         g.locked[i] = 0;
         EEPROM.put( ADDR_LOCK + i, g.locked[i] );
@@ -136,7 +138,7 @@ void initialize(byte factory_reset)
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
     // Initializing all EEPROM registers (including the default one):
-    for (unsigned char jj = 0; jj <= N_REGS; jj++)
+    for (unsigned char jj = 0; jj <= g.n_regs; jj++)
     {
       EEPROM.put(g.addr_reg[jj], g.reg);
     }
@@ -148,7 +150,7 @@ void initialize(byte factory_reset)
     // Reading the values from EEPROM:
     if (g.telescope)
     {
-      for (byte i = 0; i < N_REGS; i++)
+      for (byte i = 0; i < g.n_regs; i++)
       {
         EEPROM.get( ADDR_LOCK + i, g.locked[i] );
       }

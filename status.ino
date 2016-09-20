@@ -66,8 +66,6 @@ void display_all()
       sprintf(g.buffer, "         s%s", VERSION);
 #endif // TEMPERATURE
 #endif  // EEPROM
-      //!!!
-      //    sprintf(g.buffer, "%4d %4sC", g.raw_T, ftoa(g.buf6, g.Temp, 1));
       lcd.print(g.buffer);
     }
 
@@ -487,7 +485,7 @@ void display_one_point_params()
       sprintf(g.tmp_char, "L");
     else
       sprintf(g.tmp_char, " ");
-    sprintf(g.buffer, " Register %1d%1s  ", g.ireg, g.tmp_char);
+    sprintf(g.buffer, " Register %2d%1s ", g.ireg, g.tmp_char);
   }
   else
   {

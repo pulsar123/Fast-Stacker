@@ -74,8 +74,8 @@ const long DELAY_STEP = 50000;
 // Show only short error messages instead of detailed ones (saves space):
 #define SHORT_ERRORS 
 // Show bitmaps (takes more space):
-#define BATTERY_BITMAPS
-#define REWIND_BITMAPS
+//#define BATTERY_BITMAPS
+//#define REWIND_BITMAPS
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -245,8 +245,10 @@ const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for re
 
 
 //////// INPUT PARAMETERS: ////////
-// Number of custom memory registers (largest between macro and telescope mode; we have 5 for macro and 6 for telescope):
-const unsigned char N_REGS = 6;
+// Number of custom memory registers; macro:
+const unsigned char N_REGS = 5;
+// telescope:
+const unsigned char N_REGS_TEL = 12;
 // Number of backlight levels:
 #define N_BACKLIGHT 4
 // Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
@@ -286,18 +288,30 @@ const short DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 
 
 //////////////////////  Telescope stuff //////////////////////
 // Names for different focusing points.
-char const Name[N_REGS][15] = {
-  // Reg1 (#2/3):
+char const Name[N_REGS_TEL][15] = {
+  // Reg1 (#2):
   "20  10  5  2.3",
-  // Reg2 (#5/6):
+  // Reg2 (#5):
   "T  TB  TF  TFB",
-  // Reg3 (*2/3):
+  // Reg3 (#8):
   "Cr Ca CaB Ca20",
-  // Reg4 (*5/6):
+  // Reg4 (#3):
   "              ",
-  // Reg5 (*8/9):
+  // Reg5 (#6):
   "              ",
-  // Reg6:
+  // Reg6 (#9):
+  "              ",
+  // Reg7 (*2):
+  "              ",
+  // Reg8 (*5):
+  "              ",
+  // Reg9 (*8):
+  "              ",
+  // Reg10 (*3):
+  "              ",
+  // Reg11 (*6):
+  "              ",
+  // Reg12 (*9):
   "              "
 };
 // Temperature related parameters
@@ -442,8 +456,8 @@ const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limite
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
-const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG; // Lock flags for N_REGS telescope registers
-const int ADDR_IREG = ADDR_LOCK + N_REGS; // The register currently in use
+const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS_TEL+1)*SIZE_REG; // Lock flags for N_REGS telescope registers
+const int ADDR_IREG = ADDR_LOCK + N_REGS_TEL; // The register currently in use
 #ifdef SHOW_EEPROM
 const int ADDR_END = ADDR_IREG + 2;  // End of used EEPROM
 #endif
@@ -469,7 +483,7 @@ const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 struct global
 {
   struct regist reg; // Custom parameters register
-  unsigned int addr_reg[N_REGS+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
+  unsigned int addr_reg[N_REGS_TEL+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
@@ -578,7 +592,8 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
   unsigned long t_status; // time variable used in generating memory point flashing
   byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
-  byte locked[N_REGS]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
+  byte locked[N_REGS_TEL]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
+  unsigned char n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
 // Number of tests to perform:
 #define TEST_N_MAX 10
