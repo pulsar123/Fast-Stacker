@@ -42,8 +42,6 @@ void initialize(byte factory_reset)
 
   if (g.telescope)
   {
-    // Initially not displaying register #:
-    g.displayed_register = 0;
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
     lcd.clear();
@@ -55,6 +53,7 @@ void initialize(byte factory_reset)
   }
   else
   {
+    g.ireg = 0;
     g.accel_limit = ACCEL_LIMIT;
     g.mm_per_microstep = MM_PER_MICROSTEP;
     address = ADDR_REG1;
@@ -120,6 +119,8 @@ void initialize(byte factory_reset)
         g.locked[i] = 0;
         EEPROM.put( ADDR_LOCK + i, g.locked[i] );
       }
+      g.ireg = 1;
+      EEPROM.put( ADDR_IREG, g.ireg );
     }
     else
     {
@@ -151,6 +152,7 @@ void initialize(byte factory_reset)
       {
         EEPROM.get( ADDR_LOCK + i, g.locked[i] );
       }
+      EEPROM.get( ADDR_IREG, g.ireg );
     }
     else
     {

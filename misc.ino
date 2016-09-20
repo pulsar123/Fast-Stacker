@@ -492,16 +492,16 @@ COORD_TYPE frame_coordinate()
 
 
 void read_params(byte n)
+/*
+   Read register n (1...N_REGS) from EEPROM
+*/
 {
   byte straight_old = g.reg.straight;
   EEPROM.get( g.addr_reg[n], g.reg);
-  // Memorizing as default environment:
-  EEPROM.put( g.addr_reg[0], g.reg);
-  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-  g.Nframes = Nframes();
   if (g.telescope)
   {
-    g.displayed_register = n;
+    g.ireg = n;
+    EEPROM.put( ADDR_IREG, g.ireg );
 #ifdef TEMPERATURE
     for (byte i = 0; i < 4; i++)
       g.Temp0[i] = compute_temperature(g.reg.raw_T[i]);
@@ -509,12 +509,16 @@ void read_params(byte n)
     measure_temperature();
 #endif
   }
+  else
+  {
+    // Memorizing as default environment:
+    EEPROM.put( g.addr_reg[0], g.reg);
+    //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+    g.Nframes = Nframes();
+  }
   display_all();
-  //  display_comment_line("Read from Reg");
-  //  lcd.print(n);
   sprintf(g.buffer, "Read from Reg%1d", n);
   display_comment_line(g.buffer);
-  //  lcd.clearRestOfLine();
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
   {
@@ -530,15 +534,8 @@ void read_params(byte n)
 
 
 void save_params(byte n)
+// Now only used in macro mode
 {
-  if (g.telescope)
-  {
-    // Exit if the lock is set:
-    if (g.locked[n - 1])
-      return;
-    g.displayed_register = n;
-    display_all();
-  }
   EEPROM.put( g.addr_reg[n], g.reg);
   sprintf(g.buffer, "Saved to Reg%1d", n);
   display_comment_line(g.buffer);
@@ -670,10 +667,10 @@ void set_memory_point(char n)
 {
   if (g.paused || g.moving)
     return;
-  if (g.telescope)
+  if (g.locked[g.ireg - 1])
   {
-    // Removing the Register # line at the top:
-    g.displayed_register = 0;
+    display_comment_line("    Locked    ");
+    return;
   }
   g.current_point = n - 1;
   g.reg.point[g.current_point] = g.pos_short_old;
@@ -688,8 +685,8 @@ void set_memory_point(char n)
     g.delta_pos_curr = 0;
   }
 #endif
-  EEPROM.put( g.addr_reg[0], g.reg);
-  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  // Saving the changed register as default one (macro mode) or as the current (ireg) one:
+  EEPROM.put( g.addr_reg[g.ireg], g.reg);
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "  P%1d was set  ", n);

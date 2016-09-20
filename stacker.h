@@ -33,9 +33,9 @@
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-//#define MOTOR_DEBUG
+#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-//#define DISABLE_MOTOR
+#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -443,8 +443,9 @@ const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
 const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS+1)*SIZE_REG; // Lock flags for N_REGS telescope registers
+const int ADDR_IREG = ADDR_LOCK + N_REGS; // The register currently in use
 #ifdef SHOW_EEPROM
-const int ADDR_END = ADDR_LOCK + N_REGS;  // End of used EEPROM
+const int ADDR_END = ADDR_IREG + 2;  // End of used EEPROM
 #endif
 
 #ifdef BATTERY_BITMAPS
@@ -566,7 +567,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
 #endif
   unsigned char telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
-  unsigned char displayed_register; // The register number to display on the top line in telescope mode (0 means nothing to display).
+  unsigned char ireg; // The register number to display on the top line in telescope mode (0 means nothing to display).
   unsigned int raw_T;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
 #ifdef TEMPERATURE
   float Temp; // Current temperature in Celsius; only in telescope mode

@@ -115,39 +115,51 @@ void process_keypad()
         }
 #ifdef TEST_SWITCH
         g.test_flag = 10;
-#endif        
+#endif
         break;
 
-      case '2': // #2: Save parameters to first memory bank
+      case '2': // #2: Save parameters to first memory bank (read from reg 1 in telescope mode)
         if (g.paused)
           break;
-        save_params(1);
+        if (g.telescope)
+          read_params(1);
+        else
+          save_params(1);
         break;
 
-      case '3': // #3: Read parameters from first memory bank
+      case '3': // #3: Read parameters from first memory bank (read from reg 4 in telescope mode)
         if (g.paused)
           break;
-        read_params(1);
+        if (g.telescope)
+          read_params(4);
+        else
+          read_params(1);
         break;
 
-      case '5': // #5: Save parameters to second memory bank
+      case '5': // #5: Save parameters to second memory bank (read from reg 2 in telescope mode)
         if (g.paused)
           break;
-        save_params(2);
+        if (g.telescope)
+          read_params(2);
+        else
+          save_params(2);
         break;
 
-      case '6': // #6: Read parameters from second memory bank
+      case '6': // #6: Read parameters from second memory bank (read from reg 5 in telescope mode)
         if (g.paused)
           break;
-        read_params(2);
+        if (g.telescope)
+          read_params(5);
+        else
+          read_params(2);
         break;
 
-      case '8': // #8: Cycle through the table for FIRST_DELAY parameter (macro mode), or save parameters to memory bank #6 (telescope mode)
+      case '8': // #8: Cycle through the table for FIRST_DELAY parameter (read from reg 3 in telescope mode)
         if (g.paused)
           break;
         if (g.telescope)
         {
-          save_params(6);
+          read_params(3);
         }
         else
         {
@@ -162,7 +174,7 @@ void process_keypad()
         }
         break;
 
-      case '9': // #9: Cycle through the table for SECOND_DELAY parameter (macro mode), or read parameters from memory bank #6 (telescope mode)
+      case '9': // #9: Cycle through the table for SECOND_DELAY parameter (read from reg 6 in telescope mode)
         if (g.paused)
           break;
         if (g.telescope)
@@ -293,26 +305,38 @@ void process_keypad()
           break;
 
         case '2': // *2: Save parameters to third memory bank
+          if (g.telescope)
+            break;
           save_params(3);
           break;
 
         case '3': // *3: Read parameters from third memory bank
+          if (g.telescope)
+            break;
           read_params(3);
           break;
 
         case '5': // *5: Save parameters to fourth memory bank
+          if (g.telescope)
+            break;
           save_params(4);
           break;
 
         case '6': // *6: Read parameters from fourth memory bank
+          if (g.telescope)
+            break;
           read_params(4);
           break;
 
         case '8': // *8: Save parameters to fifth memory bank
+          if (g.telescope)
+            break;
           save_params(5);
           break;
 
         case '9': // *9: Read parameters from fifth memory bank
+          if (g.telescope)
+            break;
           read_params(5);
           break;
 
@@ -357,12 +381,9 @@ void process_keypad()
         case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
           if (g.telescope)
           {
-            // No locking if no register currently loaded:
-            if (g.displayed_register == 0)
-              break;
-            // Toggling the value of the bit # g.displayed_register in the byte variable g.locked:
-            g.locked[g.displayed_register - 1] = 1 - g.locked[g.displayed_register - 1];
-            EEPROM.put( ADDR_LOCK + g.displayed_register - 1, g.locked[g.displayed_register - 1] );
+            // Toggling the value g.locked flag:
+            g.locked[g.ireg - 1] = 1 - g.locked[g.ireg - 1];
+            EEPROM.put( ADDR_LOCK + g.ireg - 1, g.locked[g.ireg - 1] );
           }
           else
           {

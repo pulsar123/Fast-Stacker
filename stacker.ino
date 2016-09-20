@@ -17,7 +17,8 @@
     New in h1.1: extra 10k resistor.
     New in h1.2: extra SIP-1A05 relay, 1N4004 diode, 0.1 uF capacitor, 33 Ohm and 47 k resistors.
     New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil). Added telescope focuser module (second identical stepper motor
-       plus a voltage divider consisting of a thermistor and regular resistor with a similar resistance - both 10k in my case).
+       plus a voltage divider consisting of a thermistor and regular resistor with a similar resistance - both 10k in my case). Added 10uF capacitor for LCD backlighting (to fix the
+       LCD instability due to PWM ripples in backlighting control).
 
    I am using the following libraries:
 

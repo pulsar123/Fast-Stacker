@@ -30,13 +30,7 @@ void display_all()
 
       // Line 2:
       if (g.telescope)
-      {
-        if (g.displayed_register > 0)
-          sprintf(g.tmp_char, "%1d", g.locked[g.displayed_register - 1]);
-        else
-          sprintf(g.tmp_char, " ");
-        sprintf(g.buffer, "Lock=%1s    BL=%1d", g.tmp_char, g.reg.backlash_on);
-      }
+        sprintf(g.buffer, "Lock=%1d    BL=%1d", g.locked[g.ireg - 1], g.reg.backlash_on);
       else
         sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
       lcd.print(g.buffer);
@@ -489,19 +483,11 @@ void display_one_point_params()
 
   if (g.telescope)
   {
-    if (g.displayed_register == 0)
-    {
-      lcd.clearRestOfLine();
-      return;
-    }
+    if (g.locked[g.ireg - 1])
+      sprintf(g.tmp_char, "L");
     else
-    {
-      if (g.locked[g.displayed_register - 1])
-        sprintf(g.tmp_char, "L");
-      else
-        sprintf(g.tmp_char, " ");
-      sprintf(g.buffer, " Register %1d%1s  ", g.displayed_register, g.tmp_char);
-    }
+      sprintf(g.tmp_char, " ");
+    sprintf(g.buffer, " Register %1d%1s  ", g.ireg, g.tmp_char);
   }
   else
   {
@@ -545,13 +531,7 @@ void display_two_point_params()
 
   if (g.telescope)
   {
-    if (g.displayed_register == 0)
-    {
-      lcd.clearRestOfLine();
-      return;
-    }
-    else
-      sprintf(g.buffer, "%s", Name[g.displayed_register - 1]);
+    sprintf(g.buffer, "%s", Name[g.ireg - 1]);
   }
   else
   {
@@ -627,8 +607,8 @@ void display_current_position()
 #endif
 #ifdef TEST_SWITCH
   lcd.setCursor(0, 4);
-  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7,g.test_dev,2), ftoa(g.buf6,g.test_std,2));
-//  sprintf(g.buffer, "%2d %5d %5d", g.test_N, g.limit1, g.limit_tmp);
+  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7, g.test_dev, 2), ftoa(g.buf6, g.test_std, 2));
+  //  sprintf(g.buffer, "%2d %5d %5d", g.test_N, g.limit1, g.limit_tmp);
   lcd.print(g.buffer);
   return;
 #endif
