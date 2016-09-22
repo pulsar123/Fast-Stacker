@@ -6,7 +6,7 @@ void limiters()
   COORD_TYPE dx, dx_break;
   unsigned char limit_on;
 
-  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0 || g.disable_limiters == 1)
+  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0)
     return;
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:

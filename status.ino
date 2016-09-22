@@ -48,7 +48,7 @@ void display_all()
       lcd.setCursor(9, 2);
       lcd.print(g.buffer);
       // Line 4:
-      sprintf(g.buffer, "Save=%1d   Deb=%1d", g.reg.save_energy, g.disable_limiters);
+      sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
       lcd.print(g.buffer);
       // Line 5:
       //    lcd.print("              ");

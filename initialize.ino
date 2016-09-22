@@ -238,7 +238,6 @@ void initialize(byte factory_reset)
   g.noncont_flag = 0;
   g.alt_flag = 0;
   g.alt_kind = 1;
-  g.disable_limiters = 0;
 #ifdef EXTENDED_REWIND
   g.no_extended_rewind = 0;
 #endif

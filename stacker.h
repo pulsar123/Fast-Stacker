@@ -74,7 +74,7 @@ const long DELAY_STEP = 50000;
 // Show only short error messages instead of detailed ones (saves space):
 #define SHORT_ERRORS 
 // Show bitmaps (takes more space):
-//#define BATTERY_BITMAPS
+#define BATTERY_BITMAPS
 //#define REWIND_BITMAPS
 
 //////// Camera related parameters: ////////
@@ -544,10 +544,8 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
-//  char rev_char[2]; // "R" if rail revered, " " otherwise
   char tmp_char[2];
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
-  byte disable_limiters; // 1: to temporarily disable limiters (not saved to EEPROM)
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
   short timelapse_counter; // Counter for the time lapse feature

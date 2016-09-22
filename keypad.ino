@@ -379,10 +379,10 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
+/*
         case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
-          g.disable_limiters = 1 - g.disable_limiters;
-          display_all();
           break;
+*/          
 
         case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
           if (g.telescope)
@@ -465,7 +465,7 @@ void process_keypad()
                 initialize(1);
                 break;
               }
-              else if (g.pos_short_old <= g.limit1 && g.disable_limiters == 0 || g.paused > 1)
+              else if (g.pos_short_old <= g.limit1 || g.paused > 1)
                 break;
               if (g.paused)
               {
@@ -492,7 +492,7 @@ void process_keypad()
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
-              if (g.pos_short_old >= g.limit2 && g.disable_limiters == 0 || g.paused > 1)
+              if (g.pos_short_old >= g.limit2 || g.paused > 1)
                 break;
               if (g.paused)
               {
