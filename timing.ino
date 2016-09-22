@@ -126,11 +126,14 @@ void test_switch()
   switch (g.test_flag)
   {
     case 0:
-      //      clear_calibrate_state();
+      // Alternatively testing maximum speed, and slow speed:
+//      if (g.test_N % 2 == 0)
+//        g.speed_test = g.speed_limit;
+//      else
+        g.speed_test = g.speed_limit / 5.0;
       breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
       // Initial positioning:
-        go_to(g.pos + 4.0 * breaking_distance, g.speed_limit);
-//      go_to(g.pos + 3000.0, g.speed_limit);
+      go_to(g.pos + 4.0 * breaking_distance, g.speed_limit);
       g.test_flag = 1;
       break;
 

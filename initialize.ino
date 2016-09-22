@@ -42,6 +42,7 @@ void initialize(byte factory_reset)
 
   if (g.telescope)
   {
+    g.speed_limit = SPEED_LIMIT_TEL;
     g.n_regs = N_REGS_TEL;
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
@@ -54,6 +55,7 @@ void initialize(byte factory_reset)
   }
   else
   {
+    g.speed_limit = SPEED_LIMIT;
     g.n_regs = N_REGS;
     g.ireg = 0;
     g.accel_limit = ACCEL_LIMIT;
@@ -290,7 +292,6 @@ void initialize(byte factory_reset)
   g.test_flag = 0;
   g.reg.backlash_on = 0;
   update_backlash();
-  g.speed_test = g.speed_limit;
   g.test_sum = 0.0;
   g.test_sum2 = 0.0;
   g.test_N = 0;

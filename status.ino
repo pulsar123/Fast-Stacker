@@ -348,18 +348,6 @@ void battery_status()
   // Slow operation (100 us), so should be done infrequently
   float V = (float)analogRead(PIN_BATTERY) * VOLTAGE_SCALER;
 
-  // This is done only once, when the decice is powerd up:
-  if (g.setup_flag == 1)
-  {
-    // Deciding which speed limit to use: using the larger value if powered from AC, smaller value if powered from batteries:
-    if (g.telescope)
-      g.speed_limit = SPEED_LIMIT_TEL;
-    else if (V > SPEED_VOLTAGE)
-      g.speed_limit = SPEED_LIMIT;
-    else
-      g.speed_limit = SPEED_LIMIT2;
-  }
-
   if (g.error)
     return;
 

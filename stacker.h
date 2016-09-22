@@ -33,9 +33,9 @@
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
-#define DISABLE_MOTOR
+//#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, do camera debugging:
@@ -148,13 +148,6 @@ const float VOLTAGE_SCALER = 2.7273 * 5.0 / 1024.0 / 8.0;
 const float V_LOW = 1; 
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
-// The speed related critical voltage value; if the power voltage is above this value, we assume that we are
-// running from AC power, and will be using the larger speed limit SPEED_LIMIT_MM_S; if it is below this value,
-// we assume that we are using the battery power and will be using SPEED_LIMIT2_MM_S speed limit.
-// The acceleration limit is always computed from SPEED_LIMIT_MM_S.
-// This test is only done once, when you power up the device.
-// We are dividing the value by 8 as that's how we compute the voltage in battery_status() (per AA battery)
-const float SPEED_VOLTAGE = 11.5 / 8.0;
 
 
 //////// Keypad stuff: ////////
@@ -208,10 +201,8 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // 5 mm/s seems to be a reasonable compromize, for my motor and rail.
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
-// This speed limits is normally used only with AC power (which provides more torque).
+// Macro rail speed limit:
 const float SPEED_LIMIT_MM_S = 2.5;
-// The second (smaller) speed limit (used only with a battery power, which provides less torque):
-const float SPEED_LIMIT2_MM_S = 2.5;
 // The limit for TELESCOPE mode:
 const float SPEED_LIMIT_TEL_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
@@ -383,7 +374,6 @@ const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); /
 const float SPEED_SCALE_TEL = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION_TEL); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
-const float SPEED_LIMIT2 = SPEED_SCALE * SPEED_LIMIT2_MM_S;
 // TELESCOPE value:
 const float SPEED_LIMIT_TEL = SPEED_SCALE_TEL * SPEED_LIMIT_TEL_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
@@ -550,7 +540,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   unsigned long t_old;
-  float speed_limit = SPEED_LIMIT;  // Current speed limit, in internal units. Determined once, when the device is powered up
+  float speed_limit;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
