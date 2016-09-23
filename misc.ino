@@ -266,14 +266,16 @@ void stop_now()
   g.bad_timing_counter = (short)0;
 #endif
 
-  if (g.telescope == 0)
-    if (g.error == 1)
-    {
-      unsigned char limit_on = digitalRead(PIN_LIMITERS);
-      // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
-      if (limit_on == LOW)
-        g.error = 0;
-    }
+  /*
+    if (g.telescope == 0)
+      if (g.error == 1)
+      {
+        unsigned char limit_on = digitalRead(PIN_LIMITERS);
+        // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
+        if (limit_on == LOW)
+          g.error = 0;
+      }
+  */
 
   if (g.reg.save_energy)
   {
@@ -293,13 +295,14 @@ void stop_now()
     g.calibrate_flag = 0;
     g.calibrate_init = 0;
 
-    EEPROM.put( ADDR_CALIBRATE, 0 );
+    if (!g.telescope)
+      EEPROM.put( ADDR_CALIBRATE, 0 );
   }
 
   if (g.calibrate_flag == 4)
     g.calibrate_flag = 5;
 
-  if ((g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
+  if (!g.telescope && (g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
     g.error = 4;
 
   // In the initial calibration, disable the warning flag after the first leg:
@@ -405,15 +408,17 @@ void coordinate_recalibration()
   g.pos_short_old = g.pos_short_old + g.coords_change;
   g.t0 = g.t;
   g.pos0 = g.pos;
-  // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
-  g.limit2 = g.limit2 + g.coords_change;
-  EEPROM.put( ADDR_LIMIT2, g.limit2);
   // In new coordinates, g.limit1 is always zero:
   g.limit1 = g.limit1 + g.coords_change;
-  EEPROM.put( ADDR_LIMIT1, g.limit1);
-  // Saving the current position to EEPROM:
   if (!g.telescope)
+  {
+    // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
+    g.limit2 = g.limit2 + g.coords_change;
+    EEPROM.put( ADDR_LIMIT2, g.limit2);
+    EEPROM.put( ADDR_LIMIT1, g.limit1);
+    // Saving the current position to EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
+  }
   display_all();
 
   return;
@@ -717,4 +722,14 @@ void goto_memory_point(char n)
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void start_breaking()
+// Initiating breaking at the highest deceleration allowed
+{
+  change_speed(0.0, 0, 2);
+  g.breaking = 1;
+  letter_status("B");
+  return;
+}
 

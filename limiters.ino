@@ -11,8 +11,9 @@ void limiters()
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
-  if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
-    return;
+  if (!g.telescope)
+    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
+      return;
 
   // Read the input from the limiting switches:
 #ifdef MOTOR_DEBUG
@@ -33,21 +34,17 @@ void limiters()
 #ifdef TEST_SWITCH
     if (g.test_flag != 3)
       return;
-#endif      
+#endif
     if (g.calibrate_flag == 2)
       return;
 
     // Emergency breaking (cannot be interrupted):
-    // The breaking flag should be read in change_speed
-    change_speed(0.0, 0, 2);
-    // This should be after change_speed(0.0):
-    g.breaking = 1;
-    letter_status("B");
+    start_breaking();
 #ifndef TEST_SWITCH
     display_comment_line("Hit a limiter ");
-#endif    
+#endif
 
-#ifndef TEST_SWITCH  
+#ifndef TEST_SWITCH
     if (g.calibrate_flag == 0)
     {
       g.calibrate_flag = 1;
@@ -81,7 +78,7 @@ void limiters()
   else
 
     ////// Soft limits ///////
-#ifndef TEST_SWITCH    
+#ifndef TEST_SWITCH
   {
     // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
     if (g.calibrate_flag == 2)
@@ -90,6 +87,16 @@ void limiters()
       // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
       g.calibrate_flag = 3;
     }
+
+#ifdef TELE_SWITCH
+    // In initial telescope calibration, start breaking once we are past the switch area and achieved maximum speed (accel=0):
+    if (g.calibrate == 5 && g.calibrate_flag == 3 && g.accel == 0)
+    {
+      g.calibrate_flag = 1;
+      g.calibrate = 1;
+      start_breaking();
+    }
+#endif
 
     // No soft limits enforced when doing calibration:
     if (g.calibrate == 0)
@@ -126,11 +133,7 @@ void limiters()
         // Accurate test (for the current speed):
         if (dx <= dx_break)
           // Emergency breaking, to avoid hitting the limiting switch
-        {
-          change_speed(0.0, 0, 2);
-          g.breaking = 1;
-          letter_status("B");
-        }
+          start_breaking();
       }
     }
   }

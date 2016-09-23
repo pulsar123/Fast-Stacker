@@ -128,9 +128,9 @@ void test_switch()
     case 0:
       // Alternatively testing maximum speed, and slow speed:
 //      if (g.test_N % 2 == 0)
-//        g.speed_test = g.speed_limit;
+        g.speed_test = g.speed_limit;
 //      else
-        g.speed_test = g.speed_limit / 5.0;
+//        g.speed_test = g.speed_limit / 5.0;
       breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
       // Initial positioning:
       go_to(g.pos + 4.0 * breaking_distance, g.speed_limit);

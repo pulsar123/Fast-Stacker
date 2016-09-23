@@ -2,10 +2,8 @@ void initialize(byte factory_reset)
 /* Initializing all the variables, with the optional factory reset (resetting all the EEPROM data).
 */
 {
-  unsigned char limit_on;
   int address;
 
-  g.error = 0;
   for (byte i = 0; i < 4; i++)
   {
     g.delta_pos[i] = 0;
@@ -28,17 +26,6 @@ void initialize(byte factory_reset)
   keypad.setHoldTime(65000);
   keypad.setDebounceTime(50);
   g.key_old = '=';
-
-#ifndef MOTOR_DEBUG
-  // Limiting switches should not be on when powering up:
-  limit_on = digitalRead(PIN_LIMITERS);
-  if (limit_on == HIGH)
-  {
-    g.error = 1;
-    // If cable is disconnected, by default using macro rail mode:
-    g.telescope = 0;
-  }
-#endif
 
   if (g.telescope)
   {
@@ -263,19 +250,27 @@ void initialize(byte factory_reset)
   clear_calibrate_state();
 #endif
   if (g.telescope)
-    // Disabling calibration when operating telescope
   {
-    clear_calibrate_state();
     // No rail reverse in telescope mode:
     g.reg.straight = 1;
     g.pos = 0.0;
     g.pos_short_old = 0;
     g.pos0 = 0.0;
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
+    g.limit2 = (COORD_TYPE)TEL_LENGTH;
+#ifdef TELE_SWITCH
+    // Special calibrate mode for initial telescope calibration stage:
+    g.calibrate = 5;
+    // Ignoring switch initially if it's on:
+    g.calibrate_flag = 2;
+    // Regardl,es of whether the switch is on initially, we start by moving forward (away from the telescope):
+    change_speed(g.speed_limit, 0, 2);
+#else // TELE_SWITCH
+    clear_calibrate_state();
     g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
     // the second limit is equal to the TEL_LENGTH parameter:
-    g.limit2 = (COORD_TYPE)TEL_LENGTH;
-    go_to((COORD_TYPE)TEL_INIT, g.speed_limit);
+    go_to(TEL_INIT, g.speed_limit);
+#endif // TELE_SWITCH
   }
 
 #ifdef CAMERA_DEBUG

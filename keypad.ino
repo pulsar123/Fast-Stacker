@@ -107,10 +107,7 @@ void process_keypad()
         else
           // Emergency breaking:
         {
-          change_speed(0.0, 0, 2);
-          // This should be done after change_speed(0.0):
-          g.breaking = 1;
-          letter_status("B");
+          start_breaking();
           clear_calibrate_state();
         }
 #ifdef TEST_SWITCH

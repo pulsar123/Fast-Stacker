@@ -17,7 +17,7 @@ void display_stuff()
   }
 
 #ifdef TEST_SWITCH
-  if (g.t - g.t_display > DISPLAY_REFRESH_TIME)
+  if (g.t - g.t_display > DISPLAY_REFRESH_TIME && g.moving == 0)
   {
     g.t_display = g.t;
     display_current_position();

@@ -56,10 +56,10 @@ void setup() {
   Serial.setTimeout(5000);
   // Dumping the old reg values from EEPROM to serial monitor:
   dump_regs();
-//  Serial.println("Dump is done. Send new regs data if needed.");
+  //  Serial.println("Dump is done. Send new regs data if needed.");
   // Optionally reading the new values from the serial monitor and updating EEPROM:
   write_regs();
-//  Serial.println("New regs values in EEPROM:");
+  //  Serial.println("New regs values in EEPROM:");
   // Sending the new EEPROM values to serial monitor:
   dump_regs();
   Serial.end();
@@ -75,13 +75,28 @@ void setup() {
   digitalWrite(PIN_ENABLE, HIGH);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
-  // Temporarily borrowing the AF pin to check if we are connected to the telescope or macro rail.
+  g.error = 0;
+
+  // Temporarily borrowing the AF pin to check if we are connected to the telescope, macro rail, or nothing
   pinMode(PIN_AF, INPUT_PULLUP);
   // Dynamically detecting whether we are connected to the macro rail
   int raw = analogRead(PIN_AF);
-  // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
-  // if it's high, we are grounded via thermistor (~10k or higher) -> telescope mode:
-  g.telescope = (raw > 100);
+  if (raw < 100)
+    // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
+    g.telescope = 0;
+  else if (raw < 1000)
+    // if it's higher (but not close to infinity), we are grounded via thermistor (~10k or higher) -> telescope mode:
+    g.telescope = 1;
+#ifndef MOTOR_DEBUG
+  else
+    // if the resistance is very high, assuming that no cable is connected
+  {
+    g.error = 1;
+    // If cable is disconnected, by default using macro rail mode:
+    g.telescope = 0;
+  }
+#endif
+
 
   // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider with thermistor
   // (to measure temperature)

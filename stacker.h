@@ -20,6 +20,12 @@
 
 // Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
 #define TEMPERATURE
+// Use one (foreground) microswitch in telescope mode. If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
+// If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
+// next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged, and the zero point will be memorized.
+// Finally, it will move away from the telescope until the switch is off again + some safety margin. This procedure ensures that regardless of the initial focuser position it will
+// always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
+#define TELE_SWITCH
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -198,7 +204,6 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
-// 5 mm/s seems to be a reasonable compromize, for my motor and rail.
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 // Macro rail speed limit:
@@ -232,7 +237,7 @@ const float TEL_LENGTH_MM = 45;
 const unsigned long COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const unsigned long T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const unsigned long T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
-const unsigned long DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
+const unsigned long DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
 
 
 //////// INPUT PARAMETERS: ////////
