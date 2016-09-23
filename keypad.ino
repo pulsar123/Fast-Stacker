@@ -376,10 +376,10 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-/*
-        case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
-          break;
-*/          
+        /*
+                case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
+                  break;
+        */
 
         case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
           if (g.telescope)

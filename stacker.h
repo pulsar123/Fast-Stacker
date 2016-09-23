@@ -11,21 +11,16 @@
 // Requires hardware version h1.3
 #define VERSION "1.17"
 
-// New mode, telescope, to use the controller to drive another stepper motor (e.g., for telescope focuser). Only the motor part is used in this mode, camera shutter and AF and microswitches are not used.
-// Telescope mode has its own set of 5 memory registers, and a separate "last used environment" register. Meaning one can maintain independent 5 memory registers in both macro and tele modes, 
-// and the last used environment is stored separately for the two nodes.
-// In telescope mode, one has to always rotate the focuser manually to the closest position before turning the controller on; this establishes the zero point and enables absolute calibration
-// of the focuser (focusing positions memorized in memory registers should be still valid next time you use the telescope). Meaning you should only find the focusing positions for all your eyepieces
-// and cameras once.
-
 // Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
 #define TEMPERATURE
-// Use one (foreground) microswitch in telescope mode. If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
-// If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
-// next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged, and the zero point will be memorized.
-// Finally, it will move away from the telescope until the switch is off again + some safety margin. This procedure ensures that regardless of the initial focuser position it will
-// always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
-#define TELE_SWITCH
+/* Use one (foreground) microswitch in telescope mode. 
+   If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
+   If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
+   next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged, and the zero point will be memorized.
+   Finally, it will move away from the telescope until the switch is off again + some safety margin. This procedure ensures that regardless of the initial focuser position it will
+   always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
+*/
+//#define TELE_SWITCH
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,

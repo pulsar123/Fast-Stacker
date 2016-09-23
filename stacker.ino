@@ -23,7 +23,7 @@
    I am using the following libraries:
 
     - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
-    - Keypad library: http://playground.arduino.cc/Code/KeypadT
+    - Keypad library: http://playground.arduino.cc/Code/KeypadTdu
 
    Since s0.10, I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
 

@@ -57,7 +57,7 @@ void dump_regs()
   */
   // Telescope regs:
   eeAddress = ADDR_REG1_TEL;
-  for (byte i = 0; i < g.n_regs; i++)
+  for (byte i = 0; i < N_REGS_TEL; i++)
   {
     EEPROM.get(eeAddress, g.reg);
     for (byte j = 0; j < 4; j++)
@@ -86,7 +86,7 @@ void write_regs()
 
   // Telescope regs:
   eeAddress = ADDR_REG1_TEL;
-  for (byte i = 0; i < g.n_regs; i++)
+  for (byte i = 0; i < N_REGS_TEL; i++)
   {
     //    Serial.println(i);
     for (byte j = 0; j < 4; j++)
