@@ -68,8 +68,7 @@ const long DELAY_STEP = 50000;
 // Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
-//#define TEST_SWITCH
-#define TEST_N_MAX 20
+#define TEST_SWITCH
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
@@ -584,18 +583,21 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   unsigned char n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
 // Number of tests to perform:
-#define TEST_N_MAX 10
+#define TEST_N_MAX 20
   float speed_test;
   short test_flag;
-  float test_sum;
-  float test_sum2;
+  float test_sum[2];
+  float test_sum2[2];
   short test_N;
-  float test_pos0;
-  float delta_min;
-  float delta_max;
-  float test_dev;
-  float test_avr;
-  float test_std;
+  float test_pos0[2];
+  float delta_min[2];
+  float delta_max[2];
+  float test_dev[2];
+  float test_avr[2];
+  float test_std[2];
+  int count[2];
+  byte limit_on[2];
+  float limit_tmp2;
 #endif  
 };
 

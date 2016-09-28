@@ -283,15 +283,22 @@ void initialize(byte factory_reset)
 #ifdef TEST_SWITCH
   clear_calibrate_state();
   //  g.error = 0;
+  g.calibrate = 1;
   g.test_flag = 0;
   g.reg.backlash_on = 0;
   update_backlash();
-  g.test_sum = 0.0;
-  g.test_sum2 = 0.0;
   g.test_N = 0;
-  g.delta_min = 1e6;
-  g.delta_max = -1e6;
-  g.test_dev = 0.0;
+  for (byte i = 0; i < 2; i++)
+  {
+    g.test_sum[i] = 0.0;
+    g.test_sum2[i] = 0.0;
+    g.delta_min[i] = 1e6;
+    g.delta_max[i] = -1e6;
+    g.test_dev[i] = 0.0;
+    g.test_avr[i] = 0.0;
+    g.test_std[i] = 0.0;
+    g.count[i] = 0;
+  }
 #endif
 
   return;

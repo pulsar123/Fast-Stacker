@@ -6,7 +6,11 @@ void limiters()
   COORD_TYPE dx, dx_break;
   unsigned char limit_on;
 
+#ifdef TEST_SWITCH
+  if (g.moving == 0 || g.calibrate_flag == 5 || g.error > 0)
+#else
   if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0)
+#endif
     return;
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
@@ -32,7 +36,21 @@ void limiters()
     // The flag=2 regime (moving in the opposite direction after hitting a limiter followed by emergency breaking): ignoring the limit_on-HIGH state:
     // Same in flag=5 mode (rewinding into safe zone after hitting the second limiter)
 #ifdef TEST_SWITCH
-    if (g.test_flag != 3)
+    if (g.test_flag != 3 && g.test_flag != 5)
+      return;
+    else
+    {
+      if (g.limit_on[0] == 0)
+      {
+        g.count[0]++;
+        g.limit_on[0] = 1;
+      }
+      if (g.limit_on[1] == 1)
+      {
+        g.limit_on[1] = 0;
+      }
+    }
+    if (g.breaking)
       return;
 #endif
     if (g.calibrate_flag == 2)
@@ -78,7 +96,25 @@ void limiters()
   else
 
     ////// Soft limits ///////
-#ifndef TEST_SWITCH
+#ifdef TEST_SWITCH
+  {
+    if (g.test_N > 0 && g.test_flag == 1)
+    {
+      g.limit_tmp2 = g.pos_short_old;
+      g.test_flag = 5;
+    }
+
+    if (g.test_flag == 3 && g.limit_on[0] == 1)
+    {
+      g.limit_on[0] = 0;
+    }
+    if (g.test_flag == 5 && g.limit_on[1] == 0)
+    {
+      g.limit_on[1] = 1;
+      g.count[1]++;
+    }
+  }
+#else
   {
     // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
     if (g.calibrate_flag == 2)

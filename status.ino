@@ -16,6 +16,37 @@ void display_all()
   lcd.clear();
   lcd.setCursor(0, 0);
 
+#ifdef TEST_SWITCH
+  byte i;
+  float xcount;
+  // The switch on section
+  i = 0;
+  lcd.setCursor(0, 0);
+  xcount = ((float)g.count[i]) / ((float)g.test_N);
+  // Averge number of triggers, average coordinate of the first trigger:
+  sprintf(g.buffer, "%5s %5s", ftoa(g.buf7, xcount, 2), ftoa(g.buf7, g.test_avr[i], 2));
+  lcd.print(g.buffer);
+  lcd.setCursor(0, 1);
+  // Number of tests, half of total deviation and std for the first trigger:
+  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7, g.test_dev[i], 2), ftoa(g.buf6, g.test_std[i], 2));
+  lcd.print(g.buffer);
+  // The switch off section
+  i = 1;
+  lcd.setCursor(0, 2);
+  if (g.test_N > 0)
+    xcount = ((float)g.count[i]) / ((float)g.test_N - 1);
+  else
+    xcount = 0.0;
+  sprintf(g.buffer, "%5s %5s", ftoa(g.buf7, xcount, 2), ftoa(g.buf7, g.test_avr[i], 2));
+  lcd.print(g.buffer);
+  lcd.setCursor(0, 3);
+  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7, g.test_dev[i], 2), ftoa(g.buf6, g.test_std[i], 2));
+  lcd.print(g.buffer);
+  display_status_line();
+  return;
+#endif
+
+
   if (g.alt_flag)
   {
     if (g.alt_kind == 1)
@@ -554,6 +585,10 @@ void display_two_points()
   if (g.error || g.alt_flag || g.telescope)
     return;
 
+#ifdef TEST_SWITCH
+  return;
+#endif
+
 #ifdef SHOW_RAW
   sprintf(g.buffer, "F%5d", g.reg.point[0]);
 #else
@@ -590,13 +625,6 @@ void display_current_position()
   float p;
 #ifdef CAMERA_DEBUG
   //  return;
-#endif
-#ifdef TEST_SWITCH
-  lcd.setCursor(0, 4);
-  sprintf(g.buffer, "%2d %5s %5s", g.test_N, ftoa(g.buf7, g.test_dev, 2), ftoa(g.buf6, g.test_std, 2));
-  //  sprintf(g.buffer, "%2d %5d %5d", g.test_N, g.limit1, g.limit_tmp);
-  lcd.print(g.buffer);
-  return;
 #endif
 
 #ifdef TIMING

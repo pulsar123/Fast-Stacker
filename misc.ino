@@ -349,7 +349,7 @@ void stop_now()
   g.no_extended_rewind = 0;
 #endif
 #ifdef TEST_SWITCH
-  if (g.test_flag == 1)
+  if (g.test_flag == 1 || g.test_flag == 5)
     g.test_flag = 2;
   if (g.test_flag == 3)
     g.test_flag = 4;

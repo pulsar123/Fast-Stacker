@@ -118,7 +118,8 @@ void write_regs()
 #ifdef TEST_SWITCH
 void test_switch()
 {
-  float breaking_distance;
+  float breaking_distance, delta;
+  byte i;
 
   if (g.moving || g.started_moving || g.error)
     return;
@@ -126,47 +127,72 @@ void test_switch()
   switch (g.test_flag)
   {
     case 0:
-      // Alternatively testing maximum speed, and slow speed:
-//      if (g.test_N % 2 == 0)
-        g.speed_test = g.speed_limit;
-//      else
-//        g.speed_test = g.speed_limit / 5.0;
+      g.speed_test = g.speed_limit;
       breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
       // Initial positioning:
-      go_to(g.pos + 4.0 * breaking_distance, g.speed_limit);
+      go_to(g.limit1 + 8.0 * breaking_distance, g.speed_limit);
       g.test_flag = 1;
+//      g.count[1] = 0;
+      g.limit_on[1] = 0;
       break;
 
     case 2:
+      // Computing the switch off stats, starting from test_N=1
+      i = 1;
+      if (g.test_N == 1)
+        g.test_pos0[i] = g.limit_tmp2;
+      if (g.test_N > 1)
+      {
+        // Coordinates relative to the first triggered position, to minimize roundoff errors:
+        delta = g.limit_tmp2 - g.test_pos0[i];
+        g.test_sum[i] = g.test_sum[i] + delta;
+        g.test_sum2[i] = g.test_sum2[i] + delta * delta;
+        if (delta > g.delta_max[i])
+          g.delta_max[i] = delta;
+        if (delta < g.delta_min[i])
+          g.delta_min[i] = delta;
+      }
+      if (g.test_N > 2)
+      {
+        g.test_avr[i] = g.test_sum[i] / (float)(g.test_N - 1);
+        g.test_std[i] = sqrt(g.test_sum2[i] / (float)(g.test_N - 1) - g.test_avr[i] * g.test_avr[i]);
+        g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
+      }
+      display_all();
+
       // Moving toward foreground switch with current speed:
       change_speed(-g.speed_test, 0, 2);
       g.test_flag = 3;
+//      g.count[0] = 0;
+      g.limit_on[0] = 0;
       break;
 
     case 4:
       // We just made a test switch triggering and stopped; the trigger position is stored in g.limit_tmp
+      i = 0;
       if (g.test_N == 0)
-        g.test_pos0 = g.limit_tmp;
+        g.test_pos0[i] = g.limit_tmp;
       g.test_N++;
       // Coordinates relative to the first triggered position, to minimize roundoff errors:
-      float delta = g.limit_tmp - g.test_pos0;
-      g.test_sum = g.test_sum + delta;
-      g.test_sum2 = g.test_sum2 + delta * delta;
-      if (delta > g.delta_max)
-        g.delta_max = delta;
-      if (delta < g.delta_min)
-        g.delta_min = delta;
+      delta = g.limit_tmp - g.test_pos0[i];
+      g.test_sum[i] = g.test_sum[i] + delta;
+      g.test_sum2[i] = g.test_sum2[i] + delta * delta;
+      if (delta > g.delta_max[i])
+        g.delta_max[i] = delta;
+      if (delta < g.delta_min[i])
+        g.delta_min[i] = delta;
       if (g.test_N > 1)
       {
-        g.test_avr = g.test_sum / (float)g.test_N;
-        g.test_std = sqrt(g.test_sum2 / (float)g.test_N - g.test_avr * g.test_avr);
-        g.test_dev = (g.delta_max - g.delta_min) / 2.0;
+        g.test_avr[i] = g.test_sum[i] / (float)g.test_N;
+        g.test_std[i] = sqrt(g.test_sum2[i] / (float)g.test_N - g.test_avr[i] * g.test_avr[i]);
+        g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
       }
       //      display_current_position();
       if (g.test_N > TEST_N_MAX)
         g.test_flag = 10;
       else
         g.test_flag = 0;
+      display_all();
       break;
   }
   return;
