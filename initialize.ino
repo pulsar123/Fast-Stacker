@@ -299,6 +299,11 @@ void initialize(byte factory_reset)
     g.test_std[i] = 0.0;
     g.count[i] = 0;
   }
+  g.reg.straight = 1;
+// This will help to park the rail properly (at the next full step position) at the end:
+  g.pos = 0.0;
+  g.pos_short_old = 0;
+  g.pos0 = 0.0;
 #endif
 
   return;

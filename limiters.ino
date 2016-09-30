@@ -6,18 +6,18 @@ void limiters()
   COORD_TYPE dx, dx_break;
   unsigned char limit_on;
 
-#ifdef TEST_SWITCH
-  if (g.moving == 0 || g.calibrate_flag == 5 || g.error > 0)
-#else
+  //#ifdef TEST_SWITCH
+  //  if (g.moving == 0 || g.calibrate_flag == 5 || g.error > 0)
+  //#else
   if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0)
-#endif
-    return;
+    //#endif
+    //    return;
 
-  // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
-  // This ensures that we don't accidently measure the original limiter as the second one.
-  if (!g.telescope)
-    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
-      return;
+    // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
+    // This ensures that we don't accidently measure the original limiter as the second one.
+    if (!g.telescope)
+      if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
+        return;
 
   // Read the input from the limiting switches:
 #ifdef MOTOR_DEBUG
@@ -42,27 +42,25 @@ void limiters()
     {
       if (g.limit_on[0] == 0)
       {
+        g.pos_tmp = g.pos;
         g.count[0]++;
         g.limit_on[0] = 1;
+        change_speed(0.0, 0, 2);
       }
       if (g.limit_on[1] == 1)
       {
         g.limit_on[1] = 0;
       }
     }
-    if (g.breaking)
-      return;
+    return;
 #endif
     if (g.calibrate_flag == 2)
       return;
 
     // Emergency breaking (cannot be interrupted):
     start_breaking();
-#ifndef TEST_SWITCH
     display_comment_line("Hit a limiter ");
-#endif
 
-#ifndef TEST_SWITCH
     if (g.calibrate_flag == 0)
     {
       g.calibrate_flag = 1;
@@ -89,7 +87,6 @@ void limiters()
     {
       g.calibrate_flag = 4;
     }
-#endif // TEST_SWITCH    
     // Memorizing the new limit for the current switch; this should be stored in EEPROM later, when moving=0
     g.limit_tmp = g.pos_short_old;
   }
@@ -100,7 +97,7 @@ void limiters()
   {
     if (g.test_N > 0 && g.test_flag == 1)
     {
-      g.limit_tmp2 = g.pos_short_old;
+      g.pos_tmp2 = g.pos;
       g.test_flag = 5;
     }
 

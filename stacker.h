@@ -13,7 +13,7 @@
 
 // Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
 #define TEMPERATURE
-/* Use one (foreground) microswitch in telescope mode. 
+/* Use one (foreground) microswitch in telescope mode.
    If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
    If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
    next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged, and the zero point will be memorized.
@@ -72,7 +72,7 @@ const long DELAY_STEP = 50000;
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
-#define SHORT_ERRORS 
+#define SHORT_ERRORS
 // Show bitmaps (takes more space):
 #define BATTERY_BITMAPS
 //#define REWIND_BITMAPS
@@ -145,7 +145,7 @@ const byte PIN_LCD_RST = 100;
 const float VOLTAGE_SCALER = 2.7273 * 5.0 / 1024.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = 1; 
+const float V_LOW = 1;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
 
@@ -307,14 +307,14 @@ char const Name[N_REGS_TEL][15] = {
 // Temperature related parameters
 #ifdef TEMPERATURE
 // Number of times temperature is measured in a loop (for better accuracy):
-const unsigned char N_TEMP=10;
+const unsigned char N_TEMP = 10;
 // Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_RAW mode,
 // and pressing the * key: this will show the raw read value at PIN_AF, raw_T (bottom line, on the left). Now R_pullup can be computed from the voltage
 // divider equation:
 //    R_pullup = R0 * (1024/raw_T - 1)
 // Use R0 ~ R_pullup for the best measurement accuracy.
 // For now, as I only have a 10k thermistor, my hack is to use an external pullup resistor, and use PIN_SHUTTER to deliver the +5V to the voltage divider on the telescope:
-const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor; 
+const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor;
 // The three thermistor coefficients in Steinhart–Hart equation (https://en.wikipedia.org/wiki/Thermistor). Should be computed by solving a set of three linear
 // equations (three instances of Steinhart–Hart equation written for three different temperatures), with a,b,c being the unknowns. One can use online solvers,
 // e.g. this one: http://octave-online.net . One has to enter two lines there. The first one contains the three measured resistances of the thermistor (k), at
@@ -323,10 +323,10 @@ const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor;
 // The second line solves the system of three Steinhart–Hart equations, and prints the solutions - coefficients a, b, c:
 // > A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3)]; x=A\b
 /*  Or one can use least squares method fore more accurate results (needs >3 measurements). E.g. for four measurements:
-octave:22> R1=9.03; R2=11.94; R3=32.04; R4=9.99; T1=27.2; T2=21.3; T3=-1.05; T4=25.3;
-octave:23> A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3;1,log(R4),(log(R4))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3);1/(T0+T4)];
-octave:24> ols(b,A)
- */
+  octave:22> R1=9.03; R2=11.94; R3=32.04; R4=9.99; T1=27.2; T2=21.3; T3=-1.05; T4=25.3;
+  octave:23> A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3;1,log(R4),(log(R4))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3);1/(T0+T4)];
+  octave:24> ols(b,A)
+*/
 const float SH_a = 2.777994e-03;
 const float SH_b = 2.403028e-04;
 const float SH_c = 1.551810e-06;
@@ -421,7 +421,7 @@ struct regist
   byte i_fps; // counter for fps parameter;
   byte i_first_delay; // counter for FIRST_DELAY parameter
   byte i_second_delay; // counter for SECOND_DELAY parameter
-  byte i_accel_factor; // Index for accel_factor  
+  byte i_accel_factor; // Index for accel_factor
   byte i_n_timelapse; // counter for N_TIMELAPSE parameter
   byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
@@ -431,7 +431,7 @@ struct regist
   COORD_TYPE point[4];  // four memory points (only 0th - foreground, and 3rd - background, are used in macro mode; all four are used in telescope mode)
   unsigned int raw_T[4]; // temperatures corresponding to the four memory points (only used in telescope mode), in raw units (so effectively resistance of the thermistor in relative units)
 };
-  // Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
+// Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
 
 const short dA = sizeof(COORD_TYPE);
@@ -444,8 +444,8 @@ const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limi
 const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limiter (2 bytes)
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
-const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS+1)*SIZE_REG;  // Start of default + N_REGS custom memory registers for telescope mode
-const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS_TEL+1)*SIZE_REG; // Lock flags for N_REGS telescope registers
+const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS + 1) * SIZE_REG; // Start of default + N_REGS custom memory registers for telescope mode
+const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS_TEL + 1) * SIZE_REG; // Lock flags for N_REGS telescope registers
 const int ADDR_IREG = ADDR_LOCK + N_REGS_TEL; // The register currently in use
 #ifdef SHOW_EEPROM
 const int ADDR_END = ADDR_IREG + 2;  // End of used EEPROM
@@ -472,13 +472,13 @@ const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 struct global
 {
   struct regist reg; // Custom parameters register
-  unsigned int addr_reg[N_REGS_TEL+1];  // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
+  unsigned int addr_reg[N_REGS_TEL + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
   unsigned long t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float speed1; // Target speed, in microsteps per microsecond
   float speed;  // Current speed (negative, 0 or positive)
-  char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL  
+  char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
   float pos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
@@ -527,7 +527,7 @@ struct global
   byte comment_flag; // flag used to trigger the comment line briefly
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level;
-long coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
+  long coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
   unsigned long t_shot; // the time shot was initiated
@@ -550,7 +550,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   short timelapse_counter; // Counter for the time lapse feature
   unsigned long t_mil; // millisecond accuracy timer; used to set up timelapse stacks
   unsigned long t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
-  byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)  
+  byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_UTYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   float mm_per_microstep; // Rail specific setting
@@ -582,7 +582,7 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   byte locked[N_REGS_TEL]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
   unsigned char n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
-// Number of tests to perform:
+  // Number of tests to perform:
 #define TEST_N_MAX 20
   float speed_test;
   short test_flag;
@@ -597,8 +597,11 @@ long coords_change; // if >0, coordinates have to change (because we hit limit1,
   float test_std[2];
   int count[2];
   byte limit_on[2];
-  float limit_tmp2;
-#endif  
+  float pos_tmp;
+  float pos_tmp2;
+  float test_limit;
+  char buf9[10];
+#endif
 };
 
 struct global g;

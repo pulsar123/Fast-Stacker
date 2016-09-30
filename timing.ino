@@ -118,7 +118,7 @@ void write_regs()
 #ifdef TEST_SWITCH
 void test_switch()
 {
-  float breaking_distance, delta;
+  float breaking_distance, delta, x;
   byte i;
 
   if (g.moving || g.started_moving || g.error)
@@ -129,22 +129,20 @@ void test_switch()
     case 0:
       g.speed_test = g.speed_limit;
       breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
-      // Initial positioning:
-      go_to(g.limit1 + 8.0 * breaking_distance, g.speed_limit);
+      // Initial positioning; padding extra 5mm to make sure the switch lever is touched while moving at the maximum speed
+      x = g.pos + 2 * breaking_distance + 5.0 / MM_PER_MICROSTEP;
+      go_to(x, g.speed_limit);
       g.test_flag = 1;
-//      g.count[1] = 0;
       g.limit_on[1] = 0;
       break;
 
     case 2:
       // Computing the switch off stats, starting from test_N=1
       i = 1;
-      if (g.test_N == 1)
-        g.test_pos0[i] = g.limit_tmp2;
       if (g.test_N > 1)
       {
         // Coordinates relative to the first triggered position, to minimize roundoff errors:
-        delta = g.limit_tmp2 - g.test_pos0[i];
+        delta = g.pos_tmp2 - g.test_limit;
         g.test_sum[i] = g.test_sum[i] + delta;
         g.test_sum2[i] = g.test_sum2[i] + delta * delta;
         if (delta > g.delta_max[i])
@@ -163,7 +161,6 @@ void test_switch()
       // Moving toward foreground switch with current speed:
       change_speed(-g.speed_test, 0, 2);
       g.test_flag = 3;
-//      g.count[0] = 0;
       g.limit_on[0] = 0;
       break;
 
@@ -171,10 +168,10 @@ void test_switch()
       // We just made a test switch triggering and stopped; the trigger position is stored in g.limit_tmp
       i = 0;
       if (g.test_N == 0)
-        g.test_pos0[i] = g.limit_tmp;
+        g.test_limit = g.pos_tmp;
       g.test_N++;
       // Coordinates relative to the first triggered position, to minimize roundoff errors:
-      delta = g.limit_tmp - g.test_pos0[i];
+      delta = g.pos_tmp - g.test_limit;
       g.test_sum[i] = g.test_sum[i] + delta;
       g.test_sum2[i] = g.test_sum2[i] + delta * delta;
       if (delta > g.delta_max[i])
@@ -189,8 +186,20 @@ void test_switch()
       }
       //      display_current_position();
       if (g.test_N > TEST_N_MAX)
+        // Stuff to do after the test is done
+      {
         g.test_flag = 10;
+        // Using the fact that at boot time we set g.pos_short_old = 0
+        if (g.pos_short_old % N_MICROSTEPS > 0)
+        {
+          // The next full step coordinate:
+          float next_step = N_MICROSTEPS * (g.pos_short_old / N_MICROSTEPS + 1) + 0.5;
+          // Parking macro rail at the next full step position after the test:
+          go_to(next_step, g.speed_limit);
+        }
+      }
       else
+      // Next test:
         g.test_flag = 0;
       display_all();
       break;
