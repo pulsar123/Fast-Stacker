@@ -20,7 +20,7 @@
    Finally, it will move away from the telescope until the switch is off again + some safety margin. This procedure ensures that regardless of the initial focuser position it will
    always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
 */
-//#define TELE_SWITCH
+#define TELE_SWITCH
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -68,7 +68,7 @@ const long DELAY_STEP = 50000;
 // Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
-#define TEST_SWITCH
+//#define TEST_SWITCH
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
@@ -497,8 +497,17 @@ struct global
   unsigned long int t_display; // time since the last display refresh (only when not moving)
   unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
   unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
-  unsigned char calibrate_flag; // a flag for each leg of calibration: 0: no calibration; 1: breaking after hitting a limiter; 2: moving in the opposite direction (limiter still on);
-  // 3: still moving, limiter off; 4: hit the second limiter; 5: rewinding to a safe area
+  /* a flag for each leg of calibration: 
+    0: no calibration; 
+    1: breaking after hitting a limiter; 
+    2: moving in the opposite direction (limiter still on);
+    3: still moving, limiter off; 
+    4: hit the second limiter, breaking; 
+    5: stopped;
+    6: rewinding to a safe area;
+    7: first instance of limiter off (this point is used for limit1 calibration), still moving to safe area;
+   */
+  unsigned char calibrate_flag; 
   COORD_TYPE limit1; // pos_short for the foreground limiter
   COORD_TYPE limit2; // pos_short for the background limiter
   COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter

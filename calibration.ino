@@ -70,12 +70,16 @@ void calibration()
     }
     else if (g.calibrate == 1)
     {
+      /*
       // Difference between new and old coordinates (to be applied after calibration is done):
       g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
       // Current foreground limit in old coordinates:
       g.limit1 = g.limit_tmp + LIMITER_PAD;
       // Travelling back into safe area:
       go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE) + 0.5, g.speed_limit);
+      */
+      go_to(g.pos + 2 * BREAKING_DISTANCE, g.speed_limit);
+      g.calibrate_flag = 6;
     }
     g.calibrate = 0;
     letter_status(" ");

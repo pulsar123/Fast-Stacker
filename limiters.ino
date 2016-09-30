@@ -6,18 +6,14 @@ void limiters()
   COORD_TYPE dx, dx_break;
   unsigned char limit_on;
 
-  //#ifdef TEST_SWITCH
-  //  if (g.moving == 0 || g.calibrate_flag == 5 || g.error > 0)
-  //#else
-  if (g.moving == 0 || g.breaking == 1 || g.calibrate_flag == 5 || g.error > 0)
-    //#endif
-    //    return;
+  if (g.moving == 0 || g.breaking == 1 || g.error > 0 || g.calibrate_flag == 7)
+    return;
 
-    // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
-    // This ensures that we don't accidently measure the original limiter as the second one.
-    if (!g.telescope)
-      if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
-        return;
+  // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
+  // This ensures that we don't accidently measure the original limiter as the second one.
+  if (!g.telescope)
+    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
+      return;
 
   // Read the input from the limiting switches:
 #ifdef MOTOR_DEBUG
@@ -54,7 +50,7 @@ void limiters()
     }
     return;
 #endif
-    if (g.calibrate_flag == 2)
+    if (g.calibrate_flag == 2 || g.calibrate_flag == 6)
       return;
 
     // Emergency breaking (cannot be interrupted):
@@ -119,6 +115,19 @@ void limiters()
       g.pos_limiter_off = g.pos_short_old;
       // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
       g.calibrate_flag = 3;
+    }
+
+    if (g.calibrate_flag == 6)
+    // We are here when at the end of calibrating limit1 we are moving to the safe zone after triggering the foreground switch, and the switch just turned off for the first time
+    {
+      // We are using the first instance of the limit1 switch turning off as the absolute calibration point:
+      g.limit_tmp = g.pos_short_old;
+      // Difference between new and old coordinates (to be applied after calibration is done):
+      g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+      // Current foreground limit in old coordinates:
+      g.limit1 = g.limit_tmp + LIMITER_PAD;
+      // This ensures that limits (hard and soft) will be ignored until we stop:
+      g.calibrate_flag = 7;      
     }
 
 #ifdef TELE_SWITCH

@@ -289,7 +289,7 @@ void stop_now()
   if (!g.telescope)
     EEPROM.put( ADDR_POS, g.pos );
 
-  if (g.calibrate_flag == 5)
+  if (g.calibrate_flag == 7)
     // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
   {
     g.calibrate_flag = 0;
