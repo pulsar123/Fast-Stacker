@@ -364,25 +364,6 @@ void set_backlight()
 // Setting the LCD backlight. Up to 32 levels.
 {
   unsigned char level;
-  //  level = g.backlight * (255 / (N_BACKLIGHT - 1));
-  /*
-    switch (g.backlight)
-    {
-    case 0:
-      level = 0;
-      break;
-    case 1:
-      // Very low value for complete darkness:
-      // Values lower than 255 make LCD unstable for some reason - disabled for now.
-
-      level = 5;
-      break;
-    case 2:
-
-      level = 255;
-    }
-    analogWrite(PIN_LCD_LED, level);
-  */
 
   analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
 
@@ -410,13 +391,14 @@ void coordinate_recalibration()
   g.t0 = g.t;
   g.pos0 = g.pos;
   // In new coordinates, g.limit1 is always zero:
-  g.limit1 = g.limit1 + g.coords_change;
+//  g.limit1 = g.limit1 + g.coords_change;
+//  g.limit1 = 0;
   if (!g.telescope)
   {
     // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
     g.limit2 = g.limit2 + g.coords_change;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
-    EEPROM.put( ADDR_LIMIT1, g.limit1);
+//    EEPROM.put( ADDR_LIMIT1, g.limit1);
     // Saving the current position to EEPROM:
     EEPROM.put( ADDR_POS, g.pos );
   }
@@ -456,7 +438,7 @@ void rail_reverse(byte fix_points)
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
-  d_pos = g.limit1 + g.limit2 + g.backlash;
+  d_pos = g.limit2 + g.backlash;
   if (g.reg.backlash_on)
   {
     d_pos = d_pos - BACKLASH_2;
@@ -641,7 +623,7 @@ void make_step(COORD_TYPE * pos_target, short * frame_counter0)
 {
   // This 100 steps padding is just a hack, to fix the occasional bug when a combination of single frame steps and rewind can
   // move the rail beyond g.limit1
-  if (*pos_target < g.limit1 + 100 || *pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
+  if (*pos_target < 100 || *pos_target > g.limit2 - 100 || g.paused && (g.frame_counter < 0 || g.frame_counter >= g.Nframes))
   {
     // Recovering the original frame counter if aborting:
     g.frame_counter = *frame_counter0;

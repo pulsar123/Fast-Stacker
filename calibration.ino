@@ -48,9 +48,9 @@ void calibration()
     // Calibration triggered by hitting the foreground limiter
     // Difference between new and old coordinates (to be applied after calibration is done):
     // (We need this because all rail coordinates are counted from g.limit1)
-    g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+    g.coords_change = -g.limit_tmp;
     // Current foreground limit in old coordinates:
-    g.limit1 = g.limit_tmp + LIMITER_PAD;
+//    g.limit1 = g.limit_tmp;
     // Moving towards switch 2 for its calibration:
     change_speed(g.speed_limit, 0, 2);
     // This ensures that any other speed changes requests will be ignored until the calibration leg is over:
@@ -67,22 +67,25 @@ void calibration()
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       // Travelling back into safe area:
       go_to((float)(g.limit2 - DELTA_LIMITER) + 0.5, g.speed_limit);
+      g.calibrate = 0;
+      letter_status(" ");
     }
     else if (g.calibrate == 1)
     {
       /*
-      // Difference between new and old coordinates (to be applied after calibration is done):
-      g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
-      // Current foreground limit in old coordinates:
-      g.limit1 = g.limit_tmp + LIMITER_PAD;
-      // Travelling back into safe area:
-      go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE) + 0.5, g.speed_limit);
+        // Difference between new and old coordinates (to be applied after calibration is done):
+        g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+        // Current foreground limit in old coordinates:
+        g.limit1 = g.limit_tmp + LIMITER_PAD;
+        // Travelling back into safe area:
+        go_to((float)(g.limit1 + 2 * BREAKING_DISTANCE) + 0.5, g.speed_limit);
       */
       go_to(g.pos + 2 * BREAKING_DISTANCE, g.speed_limit);
       g.calibrate_flag = 6;
     }
-    g.calibrate = 0;
-    letter_status(" ");
+    // !!!
+    //    g.calibrate = 0;
+    //    letter_status(" ");
   }
 
   return;

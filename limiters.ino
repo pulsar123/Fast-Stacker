@@ -10,7 +10,7 @@ void limiters()
     return;
 
 #ifdef TEST_SWITCH
-  if (g.test_flag==1 && g.test_N==0)
+  if (g.test_flag == 1 && g.test_N == 0)
     return;
 #endif
 
@@ -93,7 +93,8 @@ void limiters()
   }
   else
 
-    ////// Soft limits ///////
+
+    /////////////////////////////////////////////// Soft limits ///////////////////////////////////////////////////////////////////
 #ifdef TEST_SWITCH
   {
     if (g.test_N > 0 && g.test_flag == 1)
@@ -123,16 +124,18 @@ void limiters()
     }
 
     if (g.calibrate_flag == 6)
-    // We are here when at the end of calibrating limit1 we are moving to the safe zone after triggering the foreground switch, and the switch just turned off for the first time
+      // We are here when at the end of calibrating limit1 we are moving to the safe zone after triggering the foreground switch, and the switch just turned off for the first time
     {
       // We are using the first instance of the limit1 switch turning off as the absolute calibration point:
       g.limit_tmp = g.pos_short_old;
       // Difference between new and old coordinates (to be applied after calibration is done):
-      g.coords_change = g.limit1 - (g.limit_tmp + LIMITER_PAD);
+      //      g.coords_change = g.limit1 - g.limit_tmp;
+      // Assuming limit1 is always set at 0:
+      g.coords_change = -g.limit_tmp;
       // Current foreground limit in old coordinates:
-      g.limit1 = g.limit_tmp + LIMITER_PAD;
+//      g.limit1 = g.limit_tmp;
       // This ensures that limits (hard and soft) will be ignored until we stop:
-      g.calibrate_flag = 7;      
+      g.calibrate_flag = 7;
     }
 
 #ifdef TELE_SWITCH
@@ -153,7 +156,7 @@ void limiters()
       if (g.speed < -SPEED_TINY || g.speed > SPEED_TINY)
       {
         if (g.speed < 0.0)
-          dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+          dx = g.pos_short_old - LIMITER_PAD2;
         else
           dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
       }
@@ -161,7 +164,7 @@ void limiters()
         // Otherwise, we use the target direction sign, speed1:
       {
         if (g.speed1 < -SPEED_TINY)
-          dx = g.pos_short_old - g.limit1 - LIMITER_PAD2;
+          dx = g.pos_short_old - LIMITER_PAD2;
         else if (g.speed1 > SPEED_TINY)
           dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
         else

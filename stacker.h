@@ -16,8 +16,8 @@
 /* Use one (foreground) microswitch in telescope mode.
    If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
    If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
-   next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged, and the zero point will be memorized.
-   Finally, it will move away from the telescope until the switch is off again + some safety margin. This procedure ensures that regardless of the initial focuser position it will
+   next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged.
+   Finally, it will move away from the telescope until the switch is off again (which sets 0 for the coordinate) + some safety margin. This procedure ensures that regardless of the initial focuser position it will
    always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
 */
 #define TELE_SWITCH
@@ -69,8 +69,10 @@ const long DELAY_STEP = 50000;
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
 //#define TEST_SWITCH
+// If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
+//#define SERIAL_SWITCH
 // Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
-#define TEST_HALL
+//#define TEST_HALL
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
@@ -510,7 +512,7 @@ struct global
     7: first instance of limiter off (this point is used for limit1 calibration), still moving to safe area;
    */
   unsigned char calibrate_flag; 
-  COORD_TYPE limit1; // pos_short for the foreground limiter
+//  COORD_TYPE limit1; // pos_short for the foreground limiter
   COORD_TYPE limit2; // pos_short for the background limiter
   COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter
   unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad

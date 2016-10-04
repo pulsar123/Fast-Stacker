@@ -67,7 +67,9 @@ void setup() {
 #endif
 
 #ifdef TEST_SWITCH
-//  Serial.begin(9600);
+#ifdef SERIAL_SWITCH
+  Serial.begin(9600);
+#endif
 #endif
 
   // Setting pins for BigEasyDriver to OUTPUT:
@@ -154,7 +156,7 @@ void loop()
 #ifdef TEST_HALL
   Testing_Hall();
   return;
-#endif  
+#endif
 #ifdef TEST_SWITCH
   test_switch();
 #endif

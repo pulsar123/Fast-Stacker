@@ -253,7 +253,7 @@ void process_keypad()
         if (g.paused || g.telescope)
           break;
         // Checking the correctness of point1/2
-        if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
+        if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= 0 && g.reg.point[3] <= g.limit2)
         {
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
@@ -462,7 +462,7 @@ void process_keypad()
                 initialize(1);
                 break;
               }
-              else if (g.pos_short_old <= g.limit1 || g.paused > 1)
+              else if (g.pos_short_old <= 0 || g.paused > 1)
                 break;
               if (g.paused)
               {
@@ -536,7 +536,7 @@ void process_keypad()
               }
               else
               {
-                if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= g.limit1 && g.reg.point[3] <= g.limit2)
+                if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= 0 && g.reg.point[3] <= g.limit2)
                 {
                   if (g.paused == 1)
                     // Resuming 2-point stacking from a paused state

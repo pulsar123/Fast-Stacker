@@ -74,6 +74,7 @@ void initialize(byte factory_reset)
   g.comment_flag = 0;
   g.status_flag = 0;
   g.current_point = -1;
+//  g.limit1 = 0;
 
   if (factory_reset)
   {
@@ -96,7 +97,7 @@ void initialize(byte factory_reset)
     {
       g.reg.point[i] = 2000;
     }
-    g.limit1 = 1000;
+//    g.limit1 = 0;
     g.limit2 = 32000;
     g.pos = 2000;
     g.backlight = 0;
@@ -124,7 +125,7 @@ void initialize(byte factory_reset)
 #endif
       g.reg.i_mm_per_frame = 5;
       EEPROM.put( ADDR_CALIBRATE, g.calibrate );
-      EEPROM.put( ADDR_LIMIT1, g.limit1);
+//      EEPROM.put( ADDR_LIMIT1, g.limit1);
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       EEPROM.put( ADDR_POS, g.pos );
     }
@@ -153,7 +154,7 @@ void initialize(byte factory_reset)
     {
       EEPROM.get( ADDR_POS, g.pos );
       EEPROM.get( ADDR_CALIBRATE, g.calibrate );
-      EEPROM.get( ADDR_LIMIT1, g.limit1);
+//      EEPROM.get( ADDR_LIMIT1, g.limit1);
       EEPROM.get( ADDR_LIMIT2, g.limit2);
     }
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
@@ -272,7 +273,7 @@ void initialize(byte factory_reset)
     change_speed(g.speed_limit, 0, 2);
 #else // TELE_SWITCH
     clear_calibrate_state();
-    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
+//    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
     // the second limit is equal to the TEL_LENGTH parameter:
     go_to(TEL_INIT, g.speed_limit);
 #endif // TELE_SWITCH

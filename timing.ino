@@ -141,8 +141,10 @@ void test_switch()
       i = 1;
       if (g.test_N > 0)
       {
-        //        Serial.print("1 ");
-        //        Serial.println(g.pos_tmp2);
+#ifdef SERIAL_SWITCH
+        Serial.print("1 ");
+        Serial.println(g.pos_tmp2);
+#endif
         delay(250);
       }
       if (g.test_N > 1)
@@ -172,8 +174,10 @@ void test_switch()
 
     case 4:
       // We just made a test switch triggering and stopped; the trigger position is stored in g.pos_tmp
-      //      Serial.print("0 ");
-      //      Serial.println(g.pos_tmp);
+#ifdef SERIAL_SWITCH
+      Serial.print("0 ");
+      Serial.println(g.pos_tmp);
+#endif
       delay(250);
       i = 0;
       if (g.test_N == 0)
@@ -225,7 +229,7 @@ void Testing_Hall()
   if (g.hall_on == 0 && limiter_on == 1)
   {
     g.hall_on = 1;
-    g.backlight = N_BACKLIGHT-1;
+    g.backlight = N_BACKLIGHT - 1;
     set_backlight();
   }
   if (g.hall_on == 1 && limiter_on == 0)
