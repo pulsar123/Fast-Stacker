@@ -66,6 +66,10 @@ void setup() {
   return;
 #endif
 
+#ifdef TEST_SWITCH
+//  Serial.begin(9600);
+#endif
+
   // Setting pins for BigEasyDriver to OUTPUT:
 #ifndef DISABLE_MOTOR
   pinMode(PIN_DIR, OUTPUT);
@@ -89,7 +93,7 @@ void setup() {
     g.telescope = 1;
 #ifndef MOTOR_DEBUG
   else
-    // if the resistance is very high, assuming that no cable is connected
+    // if the resistance is very high, assuming that no cable is connectedn_limiters
   {
     g.error = 1;
     // If cable is disconnected, by default using macro rail mode:
@@ -147,6 +151,10 @@ void setup() {
 void loop()
 {
 #ifndef DUMP_REGS
+#ifdef TEST_HALL
+  Testing_Hall();
+  return;
+#endif  
 #ifdef TEST_SWITCH
   test_switch();
 #endif

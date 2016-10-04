@@ -139,6 +139,12 @@ void test_switch()
     case 2:
       // Computing the switch off stats, starting from test_N=1
       i = 1;
+      if (g.test_N > 0)
+      {
+        //        Serial.print("1 ");
+        //        Serial.println(g.pos_tmp2);
+        delay(250);
+      }
       if (g.test_N > 1)
       {
         // Coordinates relative to the first triggered position, to minimize roundoff errors:
@@ -165,7 +171,10 @@ void test_switch()
       break;
 
     case 4:
-      // We just made a test switch triggering and stopped; the trigger position is stored in g.limit_tmp
+      // We just made a test switch triggering and stopped; the trigger position is stored in g.pos_tmp
+      //      Serial.print("0 ");
+      //      Serial.println(g.pos_tmp);
+      delay(250);
       i = 0;
       if (g.test_N == 0)
         g.test_limit = g.pos_tmp;
@@ -189,20 +198,41 @@ void test_switch()
         // Stuff to do after the test is done
       {
         g.test_flag = 10;
-        // Using the fact that at boot time we set g.pos_short_old = 0
-        if (g.pos_short_old % N_MICROSTEPS > 0)
+        COORD_TYPE d = g.pos_short_old - g.pos0_test;
+        if (d % N_MICROSTEPS > 0)
         {
           // The next full step coordinate:
-          float next_step = N_MICROSTEPS * (g.pos_short_old / N_MICROSTEPS + 1) + 0.5;
+          float next_step = g.pos_short_old + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
           // Parking macro rail at the next full step position after the test:
           go_to(next_step, g.speed_limit);
         }
       }
       else
-      // Next test:
+        // Next test:
         g.test_flag = 0;
       display_all();
       break;
+  }
+  return;
+}
+#endif
+
+
+#ifdef TEST_HALL
+void Testing_Hall()
+{
+  byte limiter_on = digitalRead(PIN_LIMITERS);
+  if (g.hall_on == 0 && limiter_on == 1)
+  {
+    g.hall_on = 1;
+    g.backlight = N_BACKLIGHT-1;
+    set_backlight();
+  }
+  if (g.hall_on == 1 && limiter_on == 0)
+  {
+    g.hall_on = 0;
+    g.backlight = 0;
+    set_backlight();
   }
   return;
 }

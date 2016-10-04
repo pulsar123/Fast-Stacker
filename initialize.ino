@@ -20,6 +20,10 @@ void initialize(byte factory_reset)
 #endif
     digitalWrite(PIN_AF, LOW);
   }
+#if defined(TEST_SWITCH) || defined(TEST_HALL)
+  // Providing +5V for Hall sensor:
+  digitalWrite(PIN_SHUTTER, HIGH);
+#endif
 
   // Keypad stuff:
   // No locking for keys:
@@ -301,10 +305,14 @@ void initialize(byte factory_reset)
     g.count[i] = 0;
   }
   g.reg.straight = 1;
-// This will help to park the rail properly (at the next full step position) at the end:
-  g.pos = 0.0;
-  g.pos_short_old = 0;
-  g.pos0 = 0.0;
+  // This will help to park the rail properly (at the next full step position) at the end:
+  g.pos0_test = g.pos_short_old;
+#endif
+
+#ifdef TEST_HALL
+  lcd.clear();
+  g.backlight = 0;
+  set_backlight();
 #endif
 
   return;

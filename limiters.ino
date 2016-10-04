@@ -9,6 +9,11 @@ void limiters()
   if (g.moving == 0 || g.breaking == 1 || g.error > 0 || g.calibrate_flag == 7)
     return;
 
+#ifdef TEST_SWITCH
+  if (g.test_flag==1 && g.test_N==0)
+    return;
+#endif
+
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
   if (!g.telescope)

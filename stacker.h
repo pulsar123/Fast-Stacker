@@ -69,6 +69,8 @@ const long DELAY_STEP = 50000;
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
 //#define TEST_SWITCH
+// Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
+#define TEST_HALL
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
@@ -592,7 +594,7 @@ struct global
   unsigned char n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
   // Number of tests to perform:
-#define TEST_N_MAX 20
+#define TEST_N_MAX 10
   float speed_test;
   short test_flag;
   float test_sum[2];
@@ -610,6 +612,10 @@ struct global
   float pos_tmp2;
   float test_limit;
   char buf9[10];
+  COORD_TYPE pos0_test;
+#endif
+#ifdef TEST_HALL
+  byte hall_on = 0;
 #endif
 };
 
