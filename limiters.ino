@@ -69,7 +69,7 @@ void limiters()
       {
         g.calibrate_flag = 1;
         // Temporary value for limit1 coordinate:
-        g.limit1 = g.pos_short_old;        
+        g.limit1 = g.pos_short_old;
         g.accident = 1;
       }
       else
@@ -77,7 +77,7 @@ void limiters()
       g.error = 4;
     }
 
-    if (g.calibrate_flag == 1)
+    if (g.calibrate_flag == 1 && !g.accident)
       // We just triggered limit2 switch (turned it on for the first time), so immediately updating limit2 (will update EEPROM
       // when stopped after the calibration is done)
     {
@@ -147,6 +147,9 @@ void limiters()
   }
 #else
   {
+    if (g.accident && g.calibrate_flag == 1)
+      g.accident = 0;
+      
     if (g.calibrate_flag == 4)
       // The switch limit1 just went off for the first time when calibrating limit1; will be used to for absolute calibration
     {

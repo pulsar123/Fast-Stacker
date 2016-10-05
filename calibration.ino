@@ -27,7 +27,6 @@ void calibration()
 
     case 2: // Triggered limit2 and stopped, will now move towards limit1
       change_speed(-g.speed_limit, 0, 2);
-      g.accident = 0;
       g.calibrate_flag = 3;
       break;
 
@@ -52,6 +51,7 @@ void calibration()
       }
       display_all();
       g.calibrate_flag = 0;
+      g.accident = 0;
       break;
   }
 
