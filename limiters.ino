@@ -15,10 +15,10 @@ void limiters()
 
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
-  if (!g.telescope)
-    //    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
-    if (g.calibrate_flag == 3 && g.pos_short_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_short_old < g.limit1 + DELTA_LIMITER )
-      return;
+  //  if (!g.telescope)
+  //    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
+  if (g.calibrate_flag == 3 && g.pos_short_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_short_old < g.limit1 + DELTA_LIMITER )
+    return;
 
   // Read the input from the limiting switches:
 #ifdef MOTOR_DEBUG
@@ -85,7 +85,7 @@ void limiters()
       g.limit2 = g.pos_short_old;
     }
     // Moving forward right before calibrating limit1, switch is still on
-    if (g.calibrate_flag == 4)
+    if (g.calibrate_flag == 4 || g.calibrate_flag == 10)
       return;
 
     // Emergency breaking (cannot be interrupted):
@@ -149,7 +149,7 @@ void limiters()
   {
     if (g.accident && g.calibrate_flag == 1)
       g.accident = 0;
-      
+
     if (g.calibrate_flag == 4)
       // The switch limit1 just went off for the first time when calibrating limit1; will be used to for absolute calibration
     {
@@ -158,6 +158,12 @@ void limiters()
       g.uninterrupted = 1;
       // At the end of calibration new coordinates will be derived from old by adding this parameter to the old ones:
       g.coords_change = -g.pos_short_old;
+    }
+
+    if (g.calibrate_flag == 10)
+    {
+      g.calibrate_flag = 11;
+      start_breaking();
     }
 
     /*

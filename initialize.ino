@@ -257,12 +257,10 @@ void initialize(byte factory_reset)
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
 #ifdef TELE_SWITCH
-    // Special calibrate mode for initial telescope calibration stage:
-    //    g.calibrate = 5;
-    // Ignoring switch initially if it's on:
-    g.calibrate_flag = 2;
-    // Regardless of whether the switch is on initially, we start by moving forward (away from the telescope):
-    change_speed(g.speed_limit, 0, 2);
+    if (g.limit_on)
+      g.calibrate_flag = 10;
+    else
+      g.calibrate_flag = 2;
 #else // TELE_SWITCH
     g.calibrate_flag = 0;
     g.error = 0;

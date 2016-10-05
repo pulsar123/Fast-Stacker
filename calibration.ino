@@ -53,6 +53,15 @@ void calibration()
       g.calibrate_flag = 0;
       g.accident = 0;
       break;
+
+    // Telescope specific modes:
+    case 10: // Initiating calibration from a limit_on=1 state; moving forward until the switch goes off
+      change_speed(g.speed_limit, 0, 2);
+      break;
+
+    case 11:
+      g.calibrate_flag = 2;
+      break;
   }
 
 
