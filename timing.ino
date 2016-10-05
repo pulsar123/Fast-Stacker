@@ -133,7 +133,7 @@ void test_switch()
       x = g.pos + 2 * breaking_distance + 5.0 / MM_PER_MICROSTEP;
       go_to(x, g.speed_limit);
       g.test_flag = 1;
-      g.limit_on[1] = 0;
+      g.test_limit_on[1] = 0;
       break;
 
     case 2:
@@ -169,7 +169,7 @@ void test_switch()
       // Moving toward foreground switch with current speed:
       change_speed(-g.speed_test, 0, 2);
       g.test_flag = 3;
-      g.limit_on[0] = 0;
+      g.test_limit_on[0] = 0;
       break;
 
     case 4:

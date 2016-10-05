@@ -150,81 +150,77 @@ void display_all()
 
   else
   {
-    if (g.error == 0)
+    // Error code displaying:
+    switch (g.error)
     {
-      display_u_per_f();  display_fps();
-      display_one_point_params();
-      display_two_point_params();
-      display_two_points();
-      display_current_position();
-      display_status_line();
-    }
+      case 0:  // No error
+        display_u_per_f();  display_fps();
+        display_one_point_params();
+        display_two_point_params();
+        display_two_points();
+        display_current_position();
+        display_status_line();
+        break;
 
-    else
-      // Error code displaying:
-    {
-      switch (g.error)
-      {
-        case 1:
+      case 1:
 #ifdef SHORT_ERRORS
-          lcd.print("No cable");
+        lcd.print("No cable");
 #else
-          lcd.print("Cable discon- nected, or    limiter is on!");
-          lcd.print("Only if cable is connected, rewind");
-          /*
-                    lcd.print("Cable discon- ");
-                    lcd.print("nected, or    ");
-                    lcd.print("limiter is on!");
-                    lcd.print("Only if cable ");
-                    lcd.print("is connected, ");
-                    lcd.print("rewind."); lcd.clearRestOfLine();
-          */
+        lcd.print("Cable discon- nected, or    limiter is on!");
+        lcd.print("Only if cable is connected, rewind");
+        /*
+                  lcd.print("Cable discon- ");
+                  lcd.print("nected, or    ");
+                  lcd.print("limiter is on!");
+                  lcd.print("Only if cable ");
+                  lcd.print("is connected, ");
+                  lcd.print("rewind."); lcd.clearRestOfLine();
+        */
 #endif
-          break;
+        break;
 
-        case 2: // Critically low battery level; not used when debugging
+      case 2: // Critically low battery level; not used when debugging
 #ifdef SHORT_ERRORS
-          lcd.print("Low battery");
+        lcd.print("Low battery");
 #else
-          //          lcd.print("Critically lowbattery level!\n");
-          //          lcd.print("Replace the   batteries");
+        //          lcd.print("Critically lowbattery level!\n");
+        //          lcd.print("Replace the   batteries");
 
-          lcd.print("Critically low");
-          lcd.print("battery level!");
-          //          lcd.print("              ");
-          //            lcd.clearRestOfLine();
-          //            lcd.print("Replace the   ");
-          //            lcd.print("batteries."); lcd.clearRestOfLine();
-          //            lcd.clearRestOfLine();
-          //          lcd.print("              ");
+        lcd.print("Critically low");
+        lcd.print("battery level!");
+        //          lcd.print("              ");
+        //            lcd.clearRestOfLine();
+        //            lcd.print("Replace the   ");
+        //            lcd.print("batteries."); lcd.clearRestOfLine();
+        //            lcd.clearRestOfLine();
+        //          lcd.print("              ");
 #endif
-          break;
+        break;
 
-        case 3:  // Factory reset initiated
-          lcd.print("Factory reset?");
-          break;
+      case 3:  // Factory reset initiated
+        lcd.print("Factory reset?");
+        break;
 
-        case 4:  // Calibration initiated
+      case 4:  // Calibration initiated
 #ifdef SHORT_ERRORS
-          lcd.print("Calibration");
+        lcd.print("Calibration");
 #else
-          lcd.print("  Calibration\n  required!\n");
-          lcd.print("\nPress any key\nto start\n");
-          lcd.print("calibration");
-          /*
-            lcd.print("  Calibration ");
-            lcd.print("  required!"); lcd.clearRestOfLine();
-            //        lcd.print("              ");
-            lcd.clearRestOfLine();
-            lcd.print("Press any key ");
-            lcd.print("to start"); lcd.clearRestOfLine();
-            lcd.print("calibration.  ");
-          */
+        lcd.print("  Calibration\n  required!\n");
+        lcd.print("\nPress any key\nto start\n");
+        lcd.print("calibration");
+        /*
+          lcd.print("  Calibration ");
+          lcd.print("  required!"); lcd.clearRestOfLine();
+          //        lcd.print("              ");
+          lcd.clearRestOfLine();
+          lcd.print("Press any key ");
+          lcd.print("to start"); lcd.clearRestOfLine();
+          lcd.print("calibration.  ");
+        */
 #endif
-          break;
+        break;
 
-      } // case
-    }
+    } // case
   }  // if alt_flag
   return;
 }

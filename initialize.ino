@@ -74,11 +74,13 @@ void initialize(byte factory_reset)
   g.comment_flag = 0;
   g.status_flag = 0;
   g.current_point = -1;
-//  g.limit1 = 0;
+  g.limit1 = 0;
+  g.accident = 0;
 
   if (factory_reset)
   {
-    clear_calibrate_state();
+    g.calibrate_flag = 1;
+    g.error = 4;
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;
     g.reg.i_fps = 16;
@@ -97,7 +99,6 @@ void initialize(byte factory_reset)
     {
       g.reg.point[i] = 2000;
     }
-//    g.limit1 = 0;
     g.limit2 = 32000;
     g.pos = 2000;
     g.backlight = 0;
@@ -120,12 +121,7 @@ void initialize(byte factory_reset)
     }
     else
     {
-#ifndef MOTOR_DEBUG
-      g.calibrate = 3;
-#endif
       g.reg.i_mm_per_frame = 5;
-      EEPROM.put( ADDR_CALIBRATE, g.calibrate );
-//      EEPROM.put( ADDR_LIMIT1, g.limit1);
       EEPROM.put( ADDR_LIMIT2, g.limit2);
       EEPROM.put( ADDR_POS, g.pos );
     }
@@ -141,6 +137,8 @@ void initialize(byte factory_reset)
   // Regular initialization (not a factory reset):
   else
   {
+    g.calibrate_flag = 0;
+    g.error = 0;
     // Reading the values from EEPROM:
     if (g.telescope)
     {
@@ -153,8 +151,6 @@ void initialize(byte factory_reset)
     else
     {
       EEPROM.get( ADDR_POS, g.pos );
-      EEPROM.get( ADDR_CALIBRATE, g.calibrate );
-//      EEPROM.get( ADDR_LIMIT1, g.limit1);
       EEPROM.get( ADDR_LIMIT2, g.limit2);
     }
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
@@ -179,11 +175,6 @@ void initialize(byte factory_reset)
 
   set_backlight();
 
-  g.calibrate_flag = 0;
-  if (g.calibrate == 3)
-    g.error = 4;
-  // Memorizing the initial value of g.calibrate:
-  g.calibrate_init = g.calibrate;
   g.pos0 = g.pos;
   g.pos_old = g.pos;
   g.pos_short_old = floorMy(g.pos);
@@ -200,7 +191,7 @@ void initialize(byte factory_reset)
   g.t_mil = millis();
 
   g.N_repeats = 0;
-  g.breaking = 0;
+  g.uninterrupted = 0;
   g.backlashing = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
@@ -252,7 +243,7 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef MOTOR_DEBUG
-  clear_calibrate_state();
+  g.calibrate_flag = 0;
 #endif
 
   if (g.telescope)
@@ -262,18 +253,20 @@ void initialize(byte factory_reset)
     g.pos = 0.0;
     g.pos_short_old = 0;
     g.pos0 = 0.0;
+    g.pos_old = g.pos;
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
 #ifdef TELE_SWITCH
     // Special calibrate mode for initial telescope calibration stage:
-    g.calibrate = 5;
+    //    g.calibrate = 5;
     // Ignoring switch initially if it's on:
     g.calibrate_flag = 2;
     // Regardless of whether the switch is on initially, we start by moving forward (away from the telescope):
     change_speed(g.speed_limit, 0, 2);
 #else // TELE_SWITCH
-    clear_calibrate_state();
-//    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
+    g.calibrate_flag = 0;
+    g.error = 0;
+    //    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
     // the second limit is equal to the TEL_LENGTH parameter:
     go_to(TEL_INIT, g.speed_limit);
 #endif // TELE_SWITCH
@@ -287,9 +280,7 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef TEST_SWITCH
-  clear_calibrate_state();
-  //  g.error = 0;
-  g.calibrate = 1;
+  g.calibrate_flag = 1;
   g.test_flag = 0;
   g.reg.backlash_on = 0;
   update_backlash();

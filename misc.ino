@@ -79,7 +79,9 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
   char new_accel;
 
   // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
-  if (g.breaking || g.calibrate_flag == 2)
+  //!!!
+  //  if (g.uninterrupted || g.calibrate_flag == 2)
+  if (g.uninterrupted)
     return;
 
   g.moving_mode = moving_mode1;
@@ -141,7 +143,7 @@ void go_to(float pos1, float speed)
   float speed1_loc, dx_stop;
   byte speed_changes;
 
-  if (g.breaking || g.backlashing)
+  if (g.uninterrupted || g.backlashing)
     return;
 
   // Ultimate physical coordinate to achieve:
@@ -289,6 +291,7 @@ void stop_now()
   if (!g.telescope)
     EEPROM.put( ADDR_POS, g.pos );
 
+/*
   if (g.calibrate_flag == 7)
     // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
   {
@@ -312,6 +315,7 @@ void stop_now()
     // To clear garbage in the status line:
     display_status_line();
   }
+*/
 
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
   {
@@ -320,7 +324,7 @@ void stop_now()
   }
 
   // We can lower the breaking flag now, as we already stopped:
-  g.breaking = 0;
+  g.uninterrupted = 0;
   g.backlashing = 0;
   g.speed = 0.0;
   // Refresh the whole display:
@@ -331,12 +335,14 @@ void stop_now()
   }
   g.t_display = g.t;
 
+/*
   if (g.calibrate_flag == 0 && g.coords_change != 0)
     // We apply the coordinate change after doing calibration:
   {
     coordinate_recalibration();
     g.coords_change = 0;
   }
+*/
 
   // Used in continuous_mode=0; we are here right after the travel to the next frame position
   if (g.noncont_flag == 4)
@@ -386,23 +392,6 @@ void coordinate_recalibration()
   if (g.moving)
     return;
 
-  g.pos = g.pos + (float)g.coords_change;
-  g.pos_short_old = g.pos_short_old + g.coords_change;
-  g.t0 = g.t;
-  g.pos0 = g.pos;
-  // In new coordinates, g.limit1 is always zero:
-//  g.limit1 = g.limit1 + g.coords_change;
-//  g.limit1 = 0;
-  if (!g.telescope)
-  {
-    // Updating g.limit2 (g.limit1-limit1_old is the difference between the new and old coordinates):
-    g.limit2 = g.limit2 + g.coords_change;
-    EEPROM.put( ADDR_LIMIT2, g.limit2);
-//    EEPROM.put( ADDR_LIMIT1, g.limit1);
-    // Saving the current position to EEPROM:
-    EEPROM.put( ADDR_POS, g.pos );
-  }
-  display_all();
 
   return;
 }
@@ -636,19 +625,6 @@ void make_step(COORD_TYPE * pos_target, short * frame_counter0)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-
-void clear_calibrate_state()
-// Clear calibrate state
-{
-  g.calibrate = 0;
-  g.calibrate_flag = 0;
-  g.error = 0;
-  g.calibrate_init = g.calibrate;
-  return;
-}
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
 void set_memory_point(char n)
 // Setting one of the two (macro mode) or four (telescope mode) memory points - current coordinate and (telescope mode only)
 // current raw temperature. n=1...4
@@ -711,7 +687,7 @@ void start_breaking()
 // Initiating breaking at the highest deceleration allowed
 {
   change_speed(0.0, 0, 2);
-  g.breaking = 1;
+  g.uninterrupted = 1;
   letter_status("B");
   return;
 }

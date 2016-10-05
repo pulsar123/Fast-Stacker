@@ -9,8 +9,7 @@ void process_keypad()
 
 
   // Ignore keypad during emergency breaking
-  //  if (g.breaking == 1 || g.error > 1)
-  if (g.breaking == 1)
+  if (g.uninterrupted == 1)
     return;
 
   // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
@@ -81,12 +80,10 @@ void process_keypad()
     {
       case 'C': // #C: Initiate a full calibration
         // Ignore if moving:
-        if (g.moving == 1 || g.paused || g.telescope)
+        if (g.moving == 1 || g.paused || g.telescope || g.limit_on)
           break;
-        g.calibrate = 3;
-        g.calibrate_flag = 0;
+        g.calibrate_flag = 1;
         g.error = 4;
-        g.calibrate_init = g.calibrate;
         // Displaying the calibrate warning:
         display_all();
         break;
@@ -108,7 +105,7 @@ void process_keypad()
           // Emergency breaking:
         {
           start_breaking();
-          clear_calibrate_state();
+          g.calibrate_flag = 0;
         }
 #ifdef TEST_SWITCH
         g.test_flag = 10;
@@ -200,7 +197,7 @@ void process_keypad()
         break;
 
       case '*': // #*: Factory reset
-        if (g.paused)
+        if (g.paused || g.limit_on)
           break;
         g.error = 3;
         display_all();

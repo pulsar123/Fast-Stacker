@@ -20,7 +20,7 @@
    Finally, it will move away from the telescope until the switch is off again (which sets 0 for the coordinate) + some safety margin. This procedure ensures that regardless of the initial focuser position it will
    always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
 */
-#define TELE_SWITCH
+//#define TELE_SWITCH
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -494,13 +494,10 @@ struct global
   float speed_old; // speed at the previous step
   float pos_stop; // Current stop position if breaked
   float pos_stop_old; // Previously computed stop position if breaked
-  COORD_TYPE pos_limiter_off; // Position when after hitting a limiter, breaking, and moving in the opposite direction the limiter goes off
   unsigned long t_key_pressed; // Last time when a key was pressed
   unsigned long int t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   unsigned int N_repeats; // Counter of key repeats
   unsigned long int t_display; // time since the last display refresh (only when not moving)
-  unsigned char calibrate; // =3 when both limiters calibration is required (only the very first use); =1/2 when only the fore/background limiter (limit1/2) should be calibrated
-  unsigned char calibrate_init; // Initial value of g.calibrate (matters only for the first calibration, calibrate=3)
   /* a flag for each leg of calibration: 
     0: no calibration; 
     1: breaking after hitting a limiter; 
@@ -512,10 +509,11 @@ struct global
     7: first instance of limiter off (this point is used for limit1 calibration), still moving to safe area;
    */
   unsigned char calibrate_flag; 
-//  COORD_TYPE limit1; // pos_short for the foreground limiter
+  COORD_TYPE limit1; // pos_short for the foreground limiter (temporary value, only used when accidently triggering foreground switch)
   COORD_TYPE limit2; // pos_short for the background limiter
-  COORD_TYPE limit_tmp; // temporary value of a new limit when rail hits a limiter
-  unsigned char breaking;  // =1 when doing emergency breaking (e.g. to avoid hitting the limiting switch); disables the keypad
+  byte accident;  // =1 if we accidently triggered limit1; 0 otherwise
+  byte limit_on; //  The last recorded state of the limiter switches
+  unsigned char uninterrupted;  // =1 disables checking for limits (hard and soft); used for emergency breaking and during calibration
   unsigned char travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
   byte moving_mode; // =0 when using speed_change, =1 when using go_to
@@ -609,7 +607,7 @@ struct global
   float test_avr[2];
   float test_std[2];
   int count[2];
-  byte limit_on[2];
+  byte test_limit_on[2];
   float pos_tmp;
   float pos_tmp2;
   float test_limit;
