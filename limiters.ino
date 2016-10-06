@@ -20,12 +20,8 @@ void limiters()
   if (g.calibrate_flag == 3 && g.pos_short_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_short_old < g.limit1 + DELTA_LIMITER )
     return;
 
-  // Read the input from the limiting switches:
-#ifdef MOTOR_DEBUG
-  g.limit_on = 0;
-#else
-  g.limit_on = digitalRead(PIN_LIMITERS);
-#endif
+  // Assigning the limiters' state to g.limit_on:
+  Read_limiters();
 
   //////// Hard limits //////
   // If a limiter is on:
@@ -58,8 +54,11 @@ void limiters()
 
     if (g.calibrate_flag == 0)
     {
+      // Hitting telescope limiter by accident initiates calibration:
+      if (g.telescope)
+        g.calibrate_flag = 10;
       // Calibration initiated by hitting limit2 switch by accident:
-      if (g.speed > SPEED_TINY)
+      else if (g.speed > SPEED_TINY)
       {
         g.calibrate_flag = 2;
         g.limit2 = g.pos_short_old;
@@ -85,7 +84,7 @@ void limiters()
       g.limit2 = g.pos_short_old;
     }
     // Moving forward right before calibrating limit1, switch is still on
-    if (g.calibrate_flag == 4 || g.calibrate_flag == 10)
+    if (g.calibrate_flag == 4 || !g.error && g.calibrate_flag == 10)
       return;
 
     // Emergency breaking (cannot be interrupted):
@@ -160,9 +159,13 @@ void limiters()
       g.coords_change = -g.pos_short_old;
     }
 
-    if (g.calibrate_flag == 10)
+    // While calibration telescope, during the first move (away from the telescope) switch is off and we reached the maximum speed, so we start breaking
+    if (g.calibrate_flag == 10 && g.accel == 0)
     {
-      g.calibrate_flag = 11;
+      // Initiating limit1 calibration loop:
+      g.calibrate_flag = 2;
+      // Preliminary value for limit2, just in case:
+      g.limit2 = g.pos_short_old + (COORD_TYPE)TEL_LENGTH;
       start_breaking();
     }
 

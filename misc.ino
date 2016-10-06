@@ -291,31 +291,31 @@ void stop_now()
   if (!g.telescope)
     EEPROM.put( ADDR_POS, g.pos );
 
-/*
-  if (g.calibrate_flag == 7)
-    // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
-  {
-    g.calibrate_flag = 0;
-    g.calibrate_init = 0;
+  /*
+    if (g.calibrate_flag == 7)
+      // At this point any calibration should be done (we are in a safe zone, after calibrating both limiters):
+    {
+      g.calibrate_flag = 0;
+      g.calibrate_init = 0;
 
-    if (!g.telescope)
-      EEPROM.put( ADDR_CALIBRATE, 0 );
-  }
+      if (!g.telescope)
+        EEPROM.put( ADDR_CALIBRATE, 0 );
+    }
 
-  if (g.calibrate_flag == 4)
-    g.calibrate_flag = 5;
+    if (g.calibrate_flag == 4)
+      g.calibrate_flag = 5;
 
-  if (!g.telescope && (g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
-    g.error = 4;
+    if (!g.telescope && (g.calibrate == 1 || g.calibrate == 2) && g.calibrate_flag == 1)
+      g.error = 4;
 
-  // In the initial calibration, disable the warning flag after the first leg:
-  if (g.calibrate_init == 3 && g.error == 4)
-  {
-    g.error = 0;
-    // To clear garbage in the status line:
-    display_status_line();
-  }
-*/
+    // In the initial calibration, disable the warning flag after the first leg:
+    if (g.calibrate_init == 3 && g.error == 4)
+    {
+      g.error = 0;
+      // To clear garbage in the status line:
+      display_status_line();
+    }
+  */
 
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
   {
@@ -335,14 +335,14 @@ void stop_now()
   }
   g.t_display = g.t;
 
-/*
-  if (g.calibrate_flag == 0 && g.coords_change != 0)
-    // We apply the coordinate change after doing calibration:
-  {
-    coordinate_recalibration();
-    g.coords_change = 0;
-  }
-*/
+  /*
+    if (g.calibrate_flag == 0 && g.coords_change != 0)
+      // We apply the coordinate change after doing calibration:
+    {
+      coordinate_recalibration();
+      g.coords_change = 0;
+    }
+  */
 
   // Used in continuous_mode=0; we are here right after the travel to the next frame position
   if (g.noncont_flag == 4)
@@ -689,6 +689,24 @@ void start_breaking()
   change_speed(0.0, 0, 2);
   g.uninterrupted = 1;
   letter_status("B");
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void Read_limiters()
+/* Read the input from the limiting switches:
+   Sets g.limit_on to HIGH/1 if any limiter is enabled; sets it to LOW/0 otherwise.
+*/
+{
+#ifdef MOTOR_DEBUG
+  g.limit_on = 0;
+#else
+  g.limit_on = digitalRead(PIN_LIMITERS);
+#ifdef HALL_SENSOR
+  g.limit_on = g.telescope - g.limit_on;
+#endif
+#endif
   return;
 }
 

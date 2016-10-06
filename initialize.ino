@@ -23,7 +23,11 @@ void initialize(byte factory_reset)
 #if defined(TEST_SWITCH) || defined(TEST_HALL)
   // Providing +5V for Hall sensor:
   digitalWrite(PIN_SHUTTER, HIGH);
+  delay(10);
 #endif
+
+  // Assigning the limiters' state to g.limit_on:
+  Read_limiters();
 
   // Keypad stuff:
   // No locking for keys:
@@ -257,10 +261,8 @@ void initialize(byte factory_reset)
     // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
 #ifdef TELE_SWITCH
-    if (g.limit_on)
-      g.calibrate_flag = 10;
-    else
-      g.calibrate_flag = 2;
+// Initiating telescope calibration:
+    g.calibrate_flag = 10;
 #else // TELE_SWITCH
     g.calibrate_flag = 0;
     g.error = 0;

@@ -21,6 +21,8 @@
    always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
 */
 //#define TELE_SWITCH
+// If defined, inverts the limiter switch logic (HIGH when triggered; LOW otherwise). Needed only in telescope mode if you use Hall effect sensor as the limiting switch
+//#define HALL_SENSOR
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -500,13 +502,12 @@ struct global
   unsigned long int t_display; // time since the last display refresh (only when not moving)
   /* a flag for each leg of calibration: 
     0: no calibration; 
-    1: breaking after hitting a limiter; 
-    2: moving in the opposite direction (limiter still on);
-    3: still moving, limiter off; 
-    4: hit the second limiter, breaking; 
-    5: stopped;
-    6: rewinding to a safe area;
-    7: first instance of limiter off (this point is used for limit1 calibration), still moving to safe area;
+    1: initiating full calibration: moving towards switch 2 for its calibration, with maximum speed and acceleration;
+    2: triggered limit2 and stopped, initiating move towards switch 1
+    3: triggered limit1 and stopped, initiating move forward to calibrate limit1 on the first switch-off position
+    4: moving forward to calibrate limit1 on the first switch-off position;
+    5: end of calibration; updating coordinates;
+    10: initiating telescope calibration: moving forward until the switch goes off and the maximum speed is reached (accel=0)
    */
   unsigned char calibrate_flag; 
   COORD_TYPE limit1; // pos_short for the foreground limiter (temporary value, only used when accidently triggering foreground switch)

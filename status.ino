@@ -203,7 +203,7 @@ void display_all()
 
       case 4:  // Calibration initiated
 #ifdef SHORT_ERRORS
-        lcd.print("Calibration");
+        lcd.print("Calibrate?");
 #else
         lcd.print("  Calibration\n  required!\n");
         lcd.print("\nPress any key\nto start\n");

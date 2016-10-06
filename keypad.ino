@@ -80,12 +80,17 @@ void process_keypad()
     {
       case 'C': // #C: Initiate a full calibration
         // Ignore if moving:
-        if (g.moving == 1 || g.paused || g.telescope || g.limit_on)
+        if (g.moving == 1 || g.paused || g.limit_on)
           break;
-        g.calibrate_flag = 1;
-        g.error = 4;
-        // Displaying the calibrate warning:
-        display_all();
+        if (g.telescope)
+          g.calibrate_flag = 10;
+        else
+        {
+          g.calibrate_flag = 1;
+          g.error = 4;
+          // Displaying the calibrate warning:
+          display_all();
+        }
         break;
 
       case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
