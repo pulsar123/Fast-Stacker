@@ -70,9 +70,9 @@ const long DELAY_STEP = 50000;
 // Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
-//#define TEST_SWITCH
+#define TEST_SWITCH
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
-//#define SERIAL_SWITCH
+#define SERIAL_SWITCH
 // Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
 //#define TEST_HALL
 
@@ -595,9 +595,10 @@ struct global
   unsigned char n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
   // Number of tests to perform:
-#define TEST_N_MAX 10
+#define TEST_N_MAX 50
   float speed_test;
   short test_flag;
+  short on_init;
   float test_sum[2];
   float test_sum2[2];
   short test_N;

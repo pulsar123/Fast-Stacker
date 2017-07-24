@@ -157,10 +157,10 @@ void test_switch()
           g.delta_max[i] = delta;
         if (delta < g.delta_min[i])
           g.delta_min[i] = delta;
+        g.test_avr[i] = g.test_sum[i] / (float)(g.test_N - 1);
       }
       if (g.test_N > 2)
       {
-        g.test_avr[i] = g.test_sum[i] / (float)(g.test_N - 1);
         g.test_std[i] = sqrt(g.test_sum2[i] / (float)(g.test_N - 1) - g.test_avr[i] * g.test_avr[i]);
         g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
       }
@@ -170,6 +170,7 @@ void test_switch()
       change_speed(-g.speed_test, 0, 2);
       g.test_flag = 3;
       g.test_limit_on[0] = 0;
+      g.on_init = 0;
       break;
 
     case 4:
@@ -191,13 +192,12 @@ void test_switch()
         g.delta_max[i] = delta;
       if (delta < g.delta_min[i])
         g.delta_min[i] = delta;
+      g.test_avr[i] = g.test_sum[i] / (float)g.test_N;
       if (g.test_N > 1)
       {
-        g.test_avr[i] = g.test_sum[i] / (float)g.test_N;
         g.test_std[i] = sqrt(g.test_sum2[i] / (float)g.test_N - g.test_avr[i] * g.test_avr[i]);
         g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
       }
-      //      display_current_position();
       if (g.test_N > TEST_N_MAX)
         // Stuff to do after the test is done
       {

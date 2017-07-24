@@ -253,21 +253,19 @@ void initialize(byte factory_reset)
   if (g.telescope)
   {
     // No rail reverse in telescope mode:
-    g.reg.straight = 1;
+    g.reg.straight = 0;
     g.pos = 0.0;
     g.pos_short_old = 0;
     g.pos0 = 0.0;
     g.pos_old = g.pos;
-    // Setting two soft limits assuming that initilly the focuser is at its closest position;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
 #ifdef TELE_SWITCH
-// Initiating telescope calibration:
+    // Initiating telescope calibration:
     g.calibrate_flag = 10;
 #else // TELE_SWITCH
     g.calibrate_flag = 0;
     g.error = 0;
-    //    g.limit1 = (COORD_TYPE)TEL_INIT - (COORD_TYPE)BACKLASH_TEL - 100;
-    // the second limit is equal to the TEL_LENGTH parameter:
+    // Moving focuser into safe area:
     go_to(TEL_INIT, g.speed_limit);
 #endif // TELE_SWITCH
   }
@@ -280,13 +278,14 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef TEST_SWITCH
-  g.calibrate_flag = 1;
+  g.calibrate_flag = 11;
   g.test_flag = 0;
   g.reg.backlash_on = 0;
   update_backlash();
   g.test_N = 0;
   for (byte i = 0; i < 2; i++)
   {
+    g.test_limit_on[i] = 0;
     g.test_sum[i] = 0.0;
     g.test_sum2[i] = 0.0;
     g.delta_min[i] = 1e6;

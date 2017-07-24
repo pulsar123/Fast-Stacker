@@ -11,19 +11,17 @@ void limiters()
 #ifdef TEST_SWITCH
   if (g.test_flag == 1 && g.test_N == 0)
     return;
-#endif
-
+#else
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
-  //  if (!g.telescope)
-  //    if (g.calibrate_flag == 3 && ((g.calibrate == 1 && g.pos_short_old > g.pos_limiter_off - DELTA_LIMITER) || (g.calibrate == 2 && g.pos_short_old < g.pos_limiter_off + DELTA_LIMITER)))
   if (g.calibrate_flag == 3 && g.pos_short_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_short_old < g.limit1 + DELTA_LIMITER )
     return;
+#endif
 
   // Assigning the limiters' state to g.limit_on:
   Read_limiters();
 
-  //////// Hard limits //////
+  /////////////////////////////////////////////// Hard limits ///////////////////////////////////////////////////////////////////
   // If a limiter is on:
   if (g.limit_on == HIGH)
     // Triggering the limiter is an exceptional event, should rarely happen, and will
@@ -37,14 +35,19 @@ void limiters()
       return;
     else
     {
-      if (g.test_limit_on[0] == 0)
-      { p
-        g.pos_tmp = g.pos;
+      if (g.test_flag == 3 && g.test_limit_on[0] == 0)
+      {
         g.count[0]++;
         g.test_limit_on[0] = 1;
-        change_speed(0.0, 0, 2);
+        if (g.on_init == 0)
+        {
+          // Memoryzing the very first switch-on position:
+          g.pos_tmp = g.pos;
+          change_speed(0.0, 0, 2);
+          g.on_init = 1;
+        }
       }
-      if (g.test_limit_on[1] == 1)
+      if (g.test_flag == 5 && g.test_limit_on[1] == 1)
       {
         g.test_limit_on[1] = 0;
       }
@@ -52,6 +55,7 @@ void limiters()
     return;
 #endif
 
+    // Accidental limiter triggering module:
     if (g.calibrate_flag == 0)
     {
       // Hitting telescope limiter by accident initiates calibration:
@@ -83,6 +87,7 @@ void limiters()
       g.calibrate_flag = 2;
       g.limit2 = g.pos_short_old;
     }
+
     // Moving forward right before calibrating limit1, switch is still on
     if (g.calibrate_flag == 4 || !g.error && g.calibrate_flag == 10)
       return;
@@ -90,37 +95,6 @@ void limiters()
     // Emergency breaking (cannot be interrupted):
     start_breaking();
     display_comment_line("Hit a limiter ");
-
-
-    /*
-        if (g.calibrate_flag == 0)
-        {
-          g.calibrate_flag = 1;
-          if (g.calibrate == 0)
-          {
-            if (g.speed < 0.0)
-              // We hit the foreground switch, so only the background one remains to be calibrated:
-              g.calibrate = 2;
-            else
-              // We hit the background switch, so only the foreground one remains to be calibrated:
-              g.calibrate = 1;
-          }
-          else
-            //  g.calibrate=3
-          {
-            g.calibrate = 1;
-          }
-
-          // No more stacking if we hit a limiter:
-          g.stacker_mode = 0;
-        }
-        else
-          // If calibrate_flag = 3
-        {
-          g.calibrate_flag = 4;
-        }
-    */
-
   }
   else
 
@@ -169,46 +143,15 @@ void limiters()
       start_breaking();
     }
 
-    /*
-        // If we are rewinding in the opposite direction after hitting a limiter and breaking, and limiter went off, we record the position:
-        if (g.calibrate_flag == 2)
-        {
-          g.pos_limiter_off = g.pos_short_old;
-          // The third leg of the calibration process: starting to send for limiters again, to calibrate the other side
-          g.calibrate_flag = 3;
-        }
-
-        if (g.calibrate_flag == 6)
-          // We are here when at the end of calibrating limit1 we are moving to the safe zone after triggering the foreground switch, and the switch just turned off for the first time
-        {
-          // We are using the first instance of the limit1 switch turning off as the absolute calibration point:
-          g.limit_tmp = g.pos_short_old;
-          // Difference between new and old coordinates (to be applied after calibration is done):
-          //      g.coords_change = g.limit1 - g.limit_tmp;
-          // Assuming limit1 is always set at 0:
-          g.coords_change = -g.limit_tmp;
-          // Current foreground limit in old coordinates:
-          //      g.limit1 = g.limit_tmp;
-          // This ensures that limits (hard and soft) will be ignored until we stop:
-          g.calibrate_flag = 7;
-        }
-    */
-
-#ifdef TELE_SWITCH
-    // In initial telescope calibration, start breaking once we are past the switch area and achieved maximum speed (accel=0):
-    if (g.calibrate == 5 && g.calibrate_flag == 3 && g.accel == 0)
-    {
-      g.calibrate_flag = 1;
-      g.calibrate = 1;
-      start_breaking();
-    }
-#endif
-
     // No soft limits enforced when doing calibration:
+    // Because limit1 is calibrated when moving in good (backlash-compensated direction) at the moment switch goes off
+    // for the first time, when approaching limit1 (moving in the bad direction), backlash playes a positive role - as an extra
+    // safety margin. (If switch has zero internal hysteresis, backlash causes the soft limit to be reached g.backlash microsteps
+    // further from the switch.)
     if (g.calibrate_flag == 0)
     {
       // Checking how far we are from a limiter in the direction we are moving
-      // If current speed is non-zero, we use its sign to determine the direction we are moving to
+      // If current speed is non-zero, we use its sign to determine the direction we are moving to      
       if (g.speed < -SPEED_TINY || g.speed > SPEED_TINY)
       {
         if (g.speed < 0.0)

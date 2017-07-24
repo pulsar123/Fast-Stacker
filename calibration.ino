@@ -3,6 +3,8 @@ void calibration()
    limits (triggering the limiting switches) normally doesn't occur.
 
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.
+
+   In telescope mode (if TELE_SWITCH is defined), this routine is executed every time at boot time, for absolute calibration of the single switch.
 */
 {
 #ifdef TEST_SWITCH

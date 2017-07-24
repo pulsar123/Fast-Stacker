@@ -28,7 +28,7 @@ void display_all()
   //  sprintf(g.buffer, "%5d", g.limit1);
   lcd.print(g.buffer);
   lcd.setCursor(0, 1);
-  // Number of tests, half of total deviation and std for the first trigger:
+  // Half of total deviation and std for the first trigger:
   sprintf(g.buffer, "%6s %6s", ftoa(g.buf7, g.test_dev[i], 2), ftoa(g.buf6, g.test_std[i], 2));
   lcd.print(g.buffer);
   // The switch off section
