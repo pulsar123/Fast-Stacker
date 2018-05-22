@@ -109,17 +109,19 @@ void setup() {
   // (to measure temperature)
   pinMode(PIN_SHUTTER, OUTPUT);
 
-#ifdef TEMPERATURE
   if (g.telescope)
   {
+#ifdef TEMPERATURE
     // In telescope mode, PIN_AF will be used to measure the temperature on the telescope
     //    pinMode(PIN_AF, INPUT_PULLUP);
     // Without pullup, as for now I am using an external pullup resistor:
     pinMode(PIN_AF, INPUT);
-  }
-#else
-  pinMode(PIN_AF, OUTPUT);
 #endif
+  }
+  else
+  {
+    pinMode(PIN_AF, OUTPUT);
+  }
 
   pinMode(PIN_LCD_LED, OUTPUT);
 

@@ -70,9 +70,9 @@ const long DELAY_STEP = 50000;
 // Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
 //#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
-#define TEST_SWITCH
+//#define TEST_SWITCH
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
-#define SERIAL_SWITCH
+//#define SERIAL_SWITCH
 // Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
 //#define TEST_HALL
 
@@ -130,9 +130,9 @@ const byte PIN_LCD_SCL = 13;  // Via 10 kOhm resistor
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
 const byte PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
-const byte PIN_SHUTTER = 3;
+const byte PIN_SHUTTER = 3;  // 3
 // Hardware h1.2: pin 6 was reassigned from RST LCD to operate the AF relay:
-#define PIN_AF A1
+#define PIN_AF A1  // A1
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
