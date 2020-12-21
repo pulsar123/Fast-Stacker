@@ -111,8 +111,8 @@ long SHUTTER_OFF_DELAY2 = 100000;
 // The camera exposure also should be long enough (at least 0.25s for Canon 50D) to capture the flash.
 // FRSP should only be used with non-continuous stacking, with DELAY1+DELAY2 long enough for multiple silent pictures to be taken successfully.
 // (For Canon 50D at least 5.5s: DELAY1=4s, DELAY2=1.5s)
-const unsigned long SHUTTER_ON_DELAY2 = 1100000;
-const unsigned long SHUTTER_OFF_DELAY2 = 100000;
+const unsigned long SHUTTER_ON_DELAY2 = 500000; // !!! 1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
+const unsigned long SHUTTER_OFF_DELAY2 = 100000; // 100000
 #endif
 
 //////// Pin assignment ////////
@@ -132,7 +132,7 @@ const byte PIN_LIMITERS = 8;
 // Pin to trigger camera shutter:
 const byte PIN_SHUTTER = 3;  // 3
 // Hardware h1.2: pin 6 was reassigned from RST LCD to operate the AF relay:
-#define PIN_AF A1  // A1
+const byte PIN_AF = A1;  // A1
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
 // Hardware h1.1: the chip select LCD pin (SCE, CE) is now soldered to ground via 10k pulldown resistor, to save one Arduino pin; here assigning a bogus value
