@@ -57,6 +57,7 @@ void calibration()
         EEPROM.put( ADDR_LIMIT2, g.limit2);
         // Saving the current position to EEPROM:
         EEPROM.put( ADDR_POS, g.pos );
+        EEPROM.commit();
       }
       g.calibrate_flag = 0;
       g.accident = 0;

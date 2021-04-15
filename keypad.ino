@@ -71,6 +71,14 @@ void process_keypad()
     state0_changed = keypad.key[0].stateChanged;
   }
 
+//!!!
+//  if (state0 == PRESSED || state1==PRESSED)
+  {
+Serial.print(state0);
+Serial.print(state1);
+Serial.print(keypad.key[0].kchar);
+Serial.println(keypad.key[1].kchar);
+  }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Two-key #X commands (no fake key events allowed)
@@ -443,6 +451,7 @@ void process_keypad()
           {
             g.error = 0;
             display_all();
+            EEPROM.commit();
             return;
           }
         }
@@ -453,7 +462,10 @@ void process_keypad()
         {
           // When error 1 (limiter on initially), the only commands accepted are rewind and fast forward:
           if (g.error == 1 && key0 != '1' && key0 != 'A')
+          {
+            EEPROM.commit();
             return;
+          }
 
           switch (key0)
           {
@@ -678,7 +690,8 @@ void process_keypad()
                 if (g.backlash < 1)
                   g.backlash = 1;
 #endif // BL_DEBUG
-                display_all();
+//                display_all();
+                display_one_point_params();
               }
               break;
 
@@ -716,7 +729,8 @@ void process_keypad()
                 if (g.backlash > 10000)
                   g.backlash = 10000;
 #endif // BL_DEBUG
-                display_all();
+//                display_all();
+                display_one_point_params();
               }
               break;
 
@@ -738,7 +752,9 @@ void process_keypad()
                 g.Nframes = Nframes();
                 break;
               }
-              display_all();
+//              display_all();
+              display_u_per_f();
+              display_two_point_params();
               EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
@@ -763,7 +779,9 @@ void process_keypad()
               //              g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
               g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
-              display_all();
+//              display_all();
+              display_u_per_f();
+              display_two_point_params();
               break;
 
             case '8':  // 8: Decrease parameter fps, or go to memory point #2 (telescope mode)
@@ -778,7 +796,10 @@ void process_keypad()
                 else
                   break;
                 EEPROM.put( g.addr_reg[0], g.reg);
-                display_all();
+//                display_all();
+                display_fps();
+                display_two_point_params();
+                display_one_point_params();
               }
               break;
 
@@ -804,7 +825,10 @@ void process_keypad()
                 else
                   break;
                 EEPROM.put( g.addr_reg[0], g.reg);
-                display_all();
+//                display_all();
+                display_fps();
+                display_two_point_params();
+                display_one_point_params();
               }
               break;
 
@@ -904,7 +928,7 @@ void process_keypad()
     }  // End of if(keyStateChanged)
   } // End of two-key / one-key if
 
-
+  EEPROM.commit();
   return;
 }
 

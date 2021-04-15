@@ -13,39 +13,39 @@ void display_all()
   return;
 #endif
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
+  tft.fillScreen(TFT_BLACK);
+  my_setCursor(0, 0, 1);
 
 #ifdef TEST_SWITCH
   byte i;
   float xcount;
   // The switch on section
   i = 0;
-  lcd.setCursor(0, 0);
+  my_setCursor(0, 0, 1);
   xcount = ((float)g.count[i]) / ((float)g.test_N);
   // Averge number of triggers, average coordinate of the first trigger:
   sprintf(g.buffer, "%4s %9s", ftoa(g.buf6, xcount, 2), ftoa(g.buf9, g.test_avr[i], 2));
   //  sprintf(g.buffer, "%5d", g.limit1);
-  lcd.print(g.buffer);
-  lcd.setCursor(0, 1);
+  tft.print(g.buffer);
+  my_setCursor(0, 1, 1);
   // Half of total deviation and std for the first trigger:
   sprintf(g.buffer, "%6s %6s", ftoa(g.buf7, g.test_dev[i], 2), ftoa(g.buf6, g.test_std[i], 2));
-  lcd.print(g.buffer);
+  tft.print(g.buffer);
   // The switch off section
   i = 1;
-  lcd.setCursor(0, 2);
+  my_setCursor(0, 2, 1);
   if (g.test_N > 0)
     xcount = ((float)g.count[i]) / ((float)g.test_N - 1);
   else
     xcount = 0.0;
   sprintf(g.buffer, "%4s %9s", ftoa(g.buf6, xcount, 2), ftoa(g.buf9, g.test_avr[i], 2));
-  lcd.print(g.buffer);
-  lcd.setCursor(0, 3);
+  tft.print(g.buffer);
+  my_setCursor(0, 3, 1);
   sprintf(g.buffer, "%6s %6s", ftoa(g.buf7, g.test_dev[i], 2), ftoa(g.buf6, g.test_std[i], 2));
-  lcd.print(g.buffer);
-  lcd.setCursor(0, 4);
+  tft.print(g.buffer);
+  my_setCursor(0, 4, 1);
   sprintf(g.buffer, "%2d %9s", g.test_N, ftoa(g.buf9, g.test_limit, 2));
-  lcd.print(g.buffer);
+  tft.print(g.buffer);
   display_status_line();
   return;
 #endif
@@ -57,37 +57,49 @@ void display_all()
       // Screen "*"
     {
       // Line 1:
-      if (g.telescope)
-        sprintf(g.buffer, "         Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
-      else
-        sprintf(g.buffer, "Rev=%1d    Acc=%1d", 1 - g.reg.straight, ACCEL_FACTOR[g.reg.i_accel_factor]);
-      lcd.print(g.buffer);
+      my_setCursor(7, 0, 1);
+      sprintf(g.buffer, "Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
+      tft.print(g.buffer);
+      if (!g.telescope)
+      {
+        sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
+        my_setCursor(0, 0, 1);
+        tft.print(g.buf6);
+      }
 
       // Line 2:
       if (g.telescope)
         sprintf(g.buffer, "Lock=%1d    BL=%1d", g.locked[g.ireg - 1], g.reg.backlash_on);
       else
-        sprintf(g.buffer, "N=%-3d     BL=%1d", N_TIMELAPSE[g.reg.i_n_timelapse], g.reg.backlash_on);
-      lcd.print(g.buffer);
+      {
+        sprintf(g.buffer, "N=%-3d", N_TIMELAPSE[g.reg.i_n_timelapse]);
+        my_setCursor(0, 1, 1);
+        tft.print(g.buffer);
+        sprintf(g.buffer, "BL=%1d", g.reg.backlash_on);
+        my_setCursor(7, 1, 1);
+        tft.print(g.buffer);
+      }
       // Line 3:
+      my_setCursor(0, 2, 1);
       if (!g.telescope)
       {
         sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
-        lcd.print(g.buf6);
+        tft.print(g.buf6);
       }
       if (g.telescope)
         sprintf(g.buf6, "TC");
       else
         sprintf(g.buf6, "Mir");
       sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
-      lcd.setCursor(9, 2);
-      lcd.print(g.buffer);
+      my_setCursor(7, 2, 1);
+      tft.print(g.buffer);
       // Line 4:
       sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
-      lcd.print(g.buffer);
+      my_setCursor(0, 3, 1);
+      tft.print(g.buffer);
       // Line 5:
-      //    lcd.print("              ");
-      lcd.setCursor(0, 5);
+      //    tft.print("              ");
+      my_setCursor(0, 5, 1);
       // Line 6:
 #ifdef SHOW_EEPROM
       //  Showing amount of EEPROM used:
@@ -101,7 +113,7 @@ void display_all()
       sprintf(g.buffer, "         s%s", VERSION);
 #endif // TEMPERATURE
 #endif  // EEPROM
-      lcd.print(g.buffer);
+      tft.print(g.buffer);
     }
 
     else
@@ -114,10 +126,10 @@ void display_all()
           if (i == g.current_point)
             // Marking the current point section of the screen with a "*":
           {
-            lcd.setCursor(col, row);
-            lcd.print("*");
+            my_setCursor(col, row, 1);
+            tft.print("*");
           }
-          lcd.setCursor(col + 1, row);
+          my_setCursor(col + 1, row, 1);
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%1d)%4d", i + 1, g.delta_pos[i]);
 #else
@@ -125,8 +137,8 @@ void display_all()
           // Showing delta_pos in microns:
           sprintf(g.buffer, "%1d)%4d", i + 1, p_int);
 #endif
-          lcd.print(g.buffer);
-          lcd.setCursor(col + 1, row + 1);
+          tft.print(g.buffer);
+          my_setCursor(col + 1, row + 1, 1);
 #ifdef TEMPERATURE
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%5d", g.reg.raw_T[i]);
@@ -134,15 +146,15 @@ void display_all()
           sprintf(g.buffer, "%5sC", ftoa(g.buf6, g.Temp0[i], 1));
 #endif
 #endif
-          lcd.print(g.buffer);
-          lcd.setCursor(col + 1, row + 2);
+          tft.print(g.buffer);
+          my_setCursor(col + 1, row + 2, 1);
 #ifdef SHOW_RAW
           sprintf(g.buffer, "%6d", g.reg.point[i]);
 #else
           p = g.mm_per_microstep * (float)(g.reg.point[i]);
           sprintf(g.buffer, "%6s", ftoa(g.buf7, p, 3));
 #endif
-          lcd.print(g.buffer);
+          tft.print(g.buffer);
           i++;
         }
     }  // if alt_kind
@@ -163,61 +175,67 @@ void display_all()
         break;
 
       case 1:
+        tft.setTextColor(TFT_RED, TFT_BLACK);
 #ifdef SHORT_ERRORS
-        lcd.print("No cable");
+        tft.print("No cable");
 #else
-        lcd.print("Cable discon- nected, or    limiter is on!");
-        lcd.print("Only if cable is connected, rewind");
+        tft.print("Cable disconnected, or limiter is on!");
+        tft.print("Only if cable is connected, rewind");
         /*
-                  lcd.print("Cable discon- ");
-                  lcd.print("nected, or    ");
-                  lcd.print("limiter is on!");
-                  lcd.print("Only if cable ");
-                  lcd.print("is connected, ");
-                  lcd.print("rewind."); lcd.clearRestOfLine();
+                  tft.print("Cable discon- ");
+                  tft.print("nected, or    ");
+                  tft.print("limiter is on!");
+                  tft.print("Only if cable ");
+                  tft.print("is connected, ");
+                  tft.print("rewind."); lcd.clearRestOfLine();
         */
 #endif
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
       case 2: // Critically low battery level; not used when debugging
+        tft.setTextColor(TFT_RED, TFT_BLACK);
 #ifdef SHORT_ERRORS
-        lcd.print("Low battery");
+        tft.print("Low battery");
 #else
-        //          lcd.print("Critically lowbattery level!\n");
-        //          lcd.print("Replace the   batteries");
+        //          tft.print("Critically lowbattery level!\n");
+        //          tft.print("Replace the   batteries");
 
-        lcd.print("Critically low");
-        lcd.print("battery level!");
-        //          lcd.print("              ");
+        tft.print("Critically low battery\n level!");
+        //          tft.print("              ");
         //            lcd.clearRestOfLine();
-        //            lcd.print("Replace the   ");
-        //            lcd.print("batteries."); lcd.clearRestOfLine();
+        //            tft.print("Replace the   ");
+        //            tft.print("batteries."); lcd.clearRestOfLine();
         //            lcd.clearRestOfLine();
-        //          lcd.print("              ");
+        //          tft.print("              ");
 #endif
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
       case 3:  // Factory reset initiated
-        lcd.print("Factory reset?");
+        tft.setTextColor(TFT_RED, TFT_BLACK);
+        tft.print("Factory reset?\nPress \"1\" to start");
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
       case 4:  // Calibration initiated
+        tft.setTextColor(TFT_ORANGE, TFT_BLACK);
 #ifdef SHORT_ERRORS
-        lcd.print("Calibrate?");
+        tft.print("Calibrate?");
 #else
-        lcd.print("  Calibration\n  required!\n");
-        lcd.print("\nPress any key\nto start\n");
-        lcd.print("calibration");
+        tft.print("  Calibration\n   required!\n");
+        tft.print("\n Press any key\n to start calibration");
         /*
-          lcd.print("  Calibration ");
-          lcd.print("  required!"); lcd.clearRestOfLine();
-          //        lcd.print("              ");
+          tft.print("  Calibration ");
+          tft.print("  required!"); lcd.clearRestOfLine();
+          //        tft.print("              ");
           lcd.clearRestOfLine();
-          lcd.print("Press any key ");
-          lcd.print("to start"); lcd.clearRestOfLine();
-          lcd.print("calibration.  ");
+          tft.print("Press any key ");
+          tft.print("to start"); lcd.clearRestOfLine();
+          tft.print("calibration.  ");
         */
 #endif
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
     } // case
@@ -233,13 +251,13 @@ void letter_status(char const * l)
 {
   if (g.error || g.alt_flag)
     return;
-  lcd.setCursor(0, 5);
+  my_setCursor(0, 5, 1);
   if (g.paused)
-    lcd.print("P");
+    tft.print("P");
   else if (g.timelapse_mode)
-    lcd.print("T");
+    tft.print("T");
   else
-    lcd.print(*l);
+    tft.print(*l);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -251,38 +269,29 @@ void motion_status()
 {
   if (g.error || g.alt_flag)
     return;
-#ifdef REWIND_BITMAPS
   uint8_t i;
-#endif
-  lcd.setCursor(2, 5);
+
+  my_setCursor(2, 5, 1);
 
   if (g.moving == 0 && g.started_moving == 0)
-    lcd.print("   ");
+  {
+    tft.print("   ");
+  }
   else
   {
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
-#ifdef REWIND_BITMAPS
-        for (i = 0; i < 12; i++)
-          lcd.data(rewind_char[i]);
-#else
-        lcd.print("<- ");
-#endif
+        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, rewind_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
       else
-        lcd.print("<  ");
+        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, reverse_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
     }
     else
     {
       if (g.stacker_mode < 2)
-#ifdef REWIND_BITMAPS
-        for (i = 0; i < 12; i++)
-          lcd.data(forward_char[i]);
-#else
-        lcd.print("-> ");
-#endif
+        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, forward_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
       else
-        lcd.print(" > ");
+        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, straight_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
     }
   }
 
@@ -303,8 +312,10 @@ void display_frame_counter()
     sprintf (g.buffer, "   0 ");
   else
     sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
-  lcd.setCursor(5, 5);
-  lcd.print (g.buffer);
+  my_setCursor(5, 5, 1);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.print (g.buffer);
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
 
   return;
 }
@@ -320,7 +331,7 @@ void points_status()
   if (g.error || g.alt_flag)
     return;
 
-  lcd.setCursor(10, 5);
+  my_setCursor(10, 5, 1);
 
   if (g.status_flag == 2 && g.t > g.t_status + FLASHING_DELAY)
   {
@@ -342,7 +353,7 @@ void points_status()
         g.t_status = g.t;
       }
     }
-    lcd.print("  ");
+    tft.print("  ");
     return;
   }
   else
@@ -351,14 +362,14 @@ void points_status()
   if (g.telescope)
   {
     sprintf (g.buffer, "%1d ", g.current_point + 1);
-    lcd.print (g.buffer);
+    tft.print (g.buffer);
   }
   else
   {
     if (g.current_point == 0)
-      lcd.print("F ");
+      tft.print("F ");
     else
-      lcd.print("B ");
+      tft.print("B ");
   }
 
   return;
@@ -384,34 +395,20 @@ void battery_status()
 
 #ifdef BATTERY_DEBUG
   // Printing actual voltage per AA battery (times 100)
-  lcd.setCursor(11, 5);
-  int Vint = (int)(100.0 * V);
-  sprintf(g.buffer, "%3d", Vint);
-  lcd.print(g.buffer);
+  my_setCursor(11, 5, 1);
+  sprintf(g.buffer, "%3d", analogRead(PIN_BATTERY));
+  tft.print(g.buffer);
 #else
-  lcd.setCursor(12, 5);
+  my_setCursor(12, 5, 1);  // 12
 
-#ifdef BATTERY_BITMAPS
-  // A 4-level bitmap indication (between V_LOW and V_HIGH):
-  byte level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 4.0);
+  // A 5-level bitmap indication (between V_LOW and V_HIGH):
+  short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
   if (level < 0)
     level = 0;
-  if (level > 3)
-    level = 3;
-  uint8_t i;
-  for (i = 0; i < 12; i++)
-    lcd.data(battery_char[level][i]);
-#else
-  if (V > 1.25)
-    // >50% charge:
-    lcd.print("##");
-  else if (V > V_LOW)
-    // Less than 50% charge:
-    lcd.print("#.");
-  else
-    // Critically low charge:
-    lcd.print("..");
-#endif
+  if (level > 4)
+    level = 4;
+  tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, battery_char[level], 2*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+//tft.print(V);
 
 #endif // BATTERY_DEBUG
 
@@ -459,8 +456,8 @@ void display_u_per_f()
   else
     sprintf(g.buffer, "%4suf ", ftoa(g.buf7, um_per_frame + 0.05, 1));
 
-  lcd.setCursor(0, 2);
-  lcd.print(g.buffer);
+  my_setCursor(0, 2, 1);
+  tft.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -474,12 +471,12 @@ void display_fps()
   if (g.error || g.alt_flag || g.telescope)
     return;
   if (FPS[g.reg.i_fps] >= 1.0)
-    sprintf(g.buffer, " %3sfps", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
+    sprintf(g.buffer, " %3sfps ", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
   else
-    sprintf(g.buffer, "%4sfps", ftoa(g.buf7, FPS[g.reg.i_fps], 2));
+    sprintf(g.buffer, "%4sfps ", ftoa(g.buf7, FPS[g.reg.i_fps], 2));
 
-  lcd.setCursor(7, 2);
-  lcd.print(g.buffer);
+  my_setCursor(7, 2, 1);
+  tft.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -496,7 +493,7 @@ void display_one_point_params()
   if (g.error || g.alt_flag)
     return;
 
-  lcd.setCursor(0, 0);
+  my_setCursor(0, 0, 1);
 
   if (g.telescope)
   {
@@ -523,10 +520,10 @@ void display_one_point_params()
     else
       sprintf(g.buf7, "****");
 
-    sprintf(g.buffer, "%4d %4s %4s", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
+    sprintf(g.buffer, "%4d %4s    %4s   ", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
   }
 
-  lcd.print(g.buffer);
+  tft.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -544,7 +541,7 @@ void display_two_point_params()
   if (g.error || g.alt_flag)
     return;
 
-  lcd.setCursor(0, 1);
+  my_setCursor(0, 1, 1);
 
   if (g.telescope)
   {
@@ -564,11 +561,11 @@ void display_two_point_params()
       sprintf(g.buf6, "****");
 
     if (g.reg.point[3] >= g.reg.point[0])
-      sprintf(g.buffer, "%4d %4s %4s", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
+      sprintf(g.buffer, "%4d %4s   %4s   ", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
     else
-      sprintf(g.buffer, "**** **** ****");
+      sprintf(g.buffer, "**** ****   ****");
   }
-  lcd.print(g.buffer);
+  tft.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -598,8 +595,8 @@ void display_two_points()
   else
     sprintf(g.buffer, "F*****");
 #endif
-  lcd.setCursor(0, 3);
-  lcd.print(g.buffer);
+  my_setCursor(0, 3, 1);
+  tft.print(g.buffer);
 
 #ifdef SHOW_RAW
   sprintf(g.buffer, "B%5d", g.reg.point[3]);
@@ -610,8 +607,8 @@ void display_two_points()
   else
     sprintf(g.buffer, "B*****");
 #endif
-  lcd.setCursor(8, 3);
-  lcd.print(g.buffer);
+  my_setCursor(8, 3, 1);
+  tft.print(g.buffer);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -637,16 +634,16 @@ void display_current_position()
   short max1 = (short)(100.0 * (float)(g.dt_max) * SPEED_LIMIT);
   short min1 = (short)(100.0 * (float)(g.dt_min) * SPEED_LIMIT);
   sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
-  lcd.setCursor(0, 4);
-  lcd.print(g.buffer);
+  my_setCursor(0, 4, 1);
+  tft.print(g.buffer);
   // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
   sprintf(g.buffer, "%4d %6ld   ", g.bad_timing_counter, g.i_timing);
-  lcd.setCursor(0, 5);
-  lcd.print(g.buffer);
+  my_setCursor(0, 5, 1);
+  tft.print(g.buffer);
 #ifdef MOTOR_DEBUG
   //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
-  //  lcd.setCursor(0, 3);
-  //  lcd.print(g.buffer);
+  //  my_setCursor(0, 3);
+  //  tft.print(g.buffer);
 #endif
   return;
 #endif
@@ -685,8 +682,8 @@ void display_current_position()
   sprintf(g.buffer, "%1s %6smm %3s", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
 #endif
 
-  lcd.setCursor(0, 4);
-  lcd.print(g.buffer);
+  my_setCursor(0, 4, 1);
+  tft.print(g.buffer);
 
   return;
 }
@@ -706,8 +703,8 @@ void display_comment_line(char const * l)
 #endif
   if (g.error)
     return;
-  lcd.setCursor(0, 4);
-  lcd.print(l);
+  my_setCursor(0, 4, 1);
+  tft.print(l);
   g.t_comment = g.t;
   g.comment_flag = 1;
   return;
@@ -738,14 +735,14 @@ void delay_buffer()
 #ifdef CAMERA_DEBUG
 void AF_status(short s)
 {
-  lcd.setCursor(12, 4);
-  lcd.print(s);
+  my_setCursor(12, 4, 1);
+  tft.print(s);
   return;
 }
 void shutter_status(short s)
 {
-  lcd.setCursor(13, 4);
-  lcd.print(s);
+  my_setCursor(13, 4, 1);
+  tft.print(s);
   return;
 }
 #endif

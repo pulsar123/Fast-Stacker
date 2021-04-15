@@ -12,17 +12,17 @@ void initialize(byte factory_reset)
 
   if (g.telescope)
     // Providing constant +5V to the temperature probe on telescope:
-    digitalWrite(PIN_SHUTTER, HIGH);
+    iochip.digitalWrite(EPIN_SHUTTER, HIGH);
   else
   {
 #ifndef DISABLE_SHUTTER
-    digitalWrite(PIN_SHUTTER, LOW);
+    iochip.digitalWrite(EPIN_SHUTTER, LOW);
 #endif
-    digitalWrite(PIN_AF, LOW);
+    iochip.digitalWrite(EPIN_AF, LOW);
   }
 #if defined(TEST_SWITCH) || defined(TEST_HALL)
   // Providing +5V for Hall sensor:
-  digitalWrite(PIN_SHUTTER, HIGH);
+  iochip.digitalWrite(EPIN_SHUTTER, HIGH);
   delay(10);
 #endif
 
@@ -37,16 +37,18 @@ void initialize(byte factory_reset)
 
   if (g.telescope)
   {
+    /* !!!
     g.speed_limit = SPEED_LIMIT_TEL;
     g.n_regs = N_REGS_TEL;
     g.accel_limit = ACCEL_LIMIT_TEL;
     g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("TELESCOPE");
+    tft.fillScreen(TFT_BLACK);
+    my_setCursor(0, 0);
+    tft.print("TELESCOPE");
     delay(500);
     // Setting the pointer to the telescope memory registers in EEPROM:
     address = ADDR_REG1_TEL;
+    */
   }
   else
   {
@@ -132,7 +134,7 @@ void initialize(byte factory_reset)
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
     // Initializing all EEPROM registers (including the default one):
-    for (unsigned char jj = 0; jj <= g.n_regs; jj++)
+    for (byte jj = 0; jj <= g.n_regs; jj++)
     {
       EEPROM.put(g.addr_reg[jj], g.reg);
     }
@@ -301,11 +303,13 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef TEST_HALL
-  lcd.clear();
+  tft.fillScreen(TFT_BLACK);
   g.backlight = 0;
   set_backlight();
 #endif
 
+  EEPROM.commit();
+  
   return;
 }
 

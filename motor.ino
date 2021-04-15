@@ -5,7 +5,7 @@ void motor_control()
    Important: g.moving can be set to zero only here (by calling stop_now())! Also, it should be set to 1 only outside of this function.
 */
 {
-  unsigned long dt, dt_a;
+  COORD_ULONG dt, dt_a;
   float dV;
   char new_accel;
   byte instant_stop, i_case;
@@ -118,7 +118,7 @@ void motor_control()
 #ifndef DISABLE_MOTOR
     digitalWrite(PIN_STEP, LOW);
 #endif
-    // For Easydriver, the delay should be at least 1.0 us:
+    // Minimum delay required by the driver:
     delayMicroseconds(STEP_LOW_DT);
 #ifndef DISABLE_MOTOR
     digitalWrite(PIN_STEP, HIGH);

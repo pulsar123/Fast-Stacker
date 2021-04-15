@@ -30,6 +30,10 @@
 ||
 */
 #include "Keypad.h"
+#define PIN_MCP_CS D3
+
+
+MCP iochip(0, PIN_MCP_CS);
 
 // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
 Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols) {
@@ -40,8 +44,8 @@ Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCol
 
   begin(userKeymap);
 
-  setDebounceTime(10);
-  setHoldTime(500);
+  setDebounceTime(10); //10
+  setHoldTime(500); // 500
   keypadEventListener = 0;
 
   startTime = 0;
@@ -85,9 +89,10 @@ void Keypad::scanKeys() {
   //stacker: Initializing the row pins only once, as we are not sharing them, and it helps to save time:
   if (Keypad::init == 1)
   {
-    for (byte r = 0; r < sizeKpd.rows; r++) {
-      pin_mode(rowPins[r], INPUT_PULLUP);
-    }
+//stacker 2.0: input mode is set in the main code
+//    for (byte r = 0; r < sizeKpd.rows; r++) {
+//      pin_mode(rowPins[r], INPUT_PULLUP);
+//    }
     Keypad::init = 0;
   }
 

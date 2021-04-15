@@ -33,6 +33,7 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
+//#define INPUT_PULLUP
 
 #include "Key.h"
 
@@ -48,14 +49,14 @@
 #ifndef INPUT_PULLUP
 #warning "Using  pinMode() INPUT_PULLUP AVR emulation"
 #define INPUT_PULLUP 0x2
-#define pinMode(_pin, _mode) _mypinMode(_pin, _mode)
+#define iochip.pinMode(_pin, _mode) _mypinMode(_pin, _mode)
 #define _mypinMode(_pin, _mode)  \
   do {							 \
     if(_mode == INPUT_PULLUP)	 \
-      pinMode(_pin, INPUT);	 \
-    digitalWrite(_pin, 1);	 \
+      iochip.pinMode(_pin, INPUT);	 \
+    iochip.digitalWrite(_pin, 1);	 \
     if(_mode != INPUT_PULLUP)	 \
-      pinMode(_pin, _mode);	 \
+      iochip.pinMode(_pin, _mode);	 \
   }while(0)
 #endif
 
@@ -79,6 +80,8 @@ typedef struct {
 #define MAPSIZE 4		// MAPSIZE is the number of rows (times 16 columns)
 #define makeKeymap(x) ((char*)x)
 
+#include  "MCP23S17.h"
+extern MCP iochip;
 
 //class Keypad : public Key, public HAL_obj {
 class Keypad : public Key {
@@ -87,13 +90,13 @@ class Keypad : public Key {
     Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols);
 
     virtual void pin_mode(byte pinNum, byte mode) {
-      pinMode(pinNum, mode);
+      iochip.pinMode(pinNum, mode);
     }
     virtual void pin_write(byte pinNum, boolean level) {
-      digitalWrite(pinNum, level);
+      iochip.digitalWrite(pinNum, level);
     }
     virtual int  pin_read(byte pinNum) {
-      return digitalRead(pinNum);
+      return iochip.digitalRead(pinNum);
     }
 
     uint bitMap[MAPSIZE];	// 10 row x 16 column array of bits. Except Due which has 32 columns.

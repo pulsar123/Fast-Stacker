@@ -152,7 +152,7 @@ void camera()
     {
       // Initiating AF now:
       if (!g.telescope)
-        digitalWrite(PIN_AF, HIGH);
+        iochip.digitalWrite(EPIN_AF, HIGH);
       g.t_AF = g.t;
       g.AF_on = 1;
 #ifdef CAMERA_DEBUG
@@ -169,7 +169,7 @@ void camera()
   {
 #ifndef DISABLE_SHUTTER
     if (!g.telescope)
-      digitalWrite(PIN_SHUTTER, HIGH);
+      iochip.digitalWrite(EPIN_SHUTTER, HIGH);
 #endif
 #ifdef CAMERA_DEBUG
     shutter_status(1);
@@ -185,7 +185,7 @@ void camera()
     // Releasing the shutter:
 #ifndef DISABLE_SHUTTER
     if (!g.telescope)
-      digitalWrite(PIN_SHUTTER, LOW);
+      iochip.digitalWrite(EPIN_SHUTTER, LOW);
 #endif
 #ifdef CAMERA_DEBUG
     shutter_status(0);
@@ -200,7 +200,7 @@ void camera()
       (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
     if (!g.telescope)
-      digitalWrite(PIN_AF, LOW);
+      iochip.digitalWrite(EPIN_AF, LOW);
 #ifdef CAMERA_DEBUG
     AF_status(0);
 #endif

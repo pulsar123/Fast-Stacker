@@ -4,6 +4,16 @@
 
    Online tutorial: http://pulsar124.wikia.com/wiki/Fast_Stacker
 
+    Major rehaul of hardware and software.
+    Hardware h2.0
+    
+ - ESP8266 microcontroller (D1 Mini)
+ - MCP23S17 chip - 16 GPIO expander using SPI
+ - SPI-driven TFT display ST7735
+ - 4x4 keypad
+ - DRV8825 stepper motor driver
+ - stepper motor
+ 
    The hardware used:
    Original (h1.0):
     - Velbon Super Mag Slider manual macro rail, with some customization
@@ -22,10 +32,11 @@
 
    I am using the following libraries:
 
-    - pcd8544 (for Nokia 5110): https://github.com/snigelen/pcd8544
-    - Keypad library: http://playground.arduino.cc/Code/KeypadTdu
+    - TFT_eSPI - fast library for ST7735 TFT display (https://github.com/Bodmer/TFT_eSPI); copy the customized file User_Setup.h to 
+      the library's folder
+    - MCP23S17 Class for Arduino (included, customized; https://playground.arduino.cc/Main/MCP23S17/)
+    - Keypad library (included, customized): http://playground.arduino.cc/Code/KeypadTdu
 
-   Since s0.10, I customized the above libraries, and provide the custom versions with these package. (No need to install the libraries.)
 
    Hardware revisions [software versions supported]:
 
@@ -37,12 +48,14 @@
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
    h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2, and 6 with A2. Increased N_MICROSTEPS to 16. Added thermometer (10k resistor + 10k thermistor).
                   Using Hall sensor instead of micro switch in telescope mode.
+   h2.0 [s2.00 and up]: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers
 */
+#include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <math.h>
 #include <SPI.h>
-#include "Keypad.h"
-#include "pcd8544.h"
+#include <TFT_eSPI.h>
+#include "Keypad.h" // #include  "MCP23S17.h" is called there
 #include "stacker.h"
 #include "stdio.h"
 
@@ -51,6 +64,20 @@
 void setup() {
   // Should be the first line in setup():
   g.setup_flag = 1;
+
+  // Completely disabling WiFi:
+  WiFi.mode( WIFI_OFF );
+  WiFi.forceSleepBegin();
+  
+  EEPROM.begin(ADDR_END); // Initializing EEPROM
+  
+  iochip.begin(); // Initializing the port expander
+  iochip.pinMode    (IO_MODE);
+  iochip.pullupMode (IO_PULLUP);
+  // Setting the requested microstepping mode:
+  iochip.digitalWrite(EPIN_M0, MOTOR_M0);
+  iochip.digitalWrite(EPIN_M1, MOTOR_M1);
+  iochip.digitalWrite(EPIN_M2, MOTOR_M2);
 
 #ifdef DUMP_REGS
   Serial.begin(9600);
@@ -67,23 +94,26 @@ void setup() {
   return;
 #endif
 
+//!!!
+  Serial.begin(115200);
+
 #ifdef TEST_SWITCH
 #ifdef SERIAL_SWITCH
   Serial.begin(9600);
 #endif
 #endif
 
-  // Setting pins for BigEasyDriver to OUTPUT:
+  // Setting pins for motor Driver to OUTPUT:
 #ifndef DISABLE_MOTOR
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
 #endif
-  pinMode(PIN_ENABLE, OUTPUT);
-  digitalWrite(PIN_ENABLE, HIGH);
+  iochip.digitalWrite(EPIN_ENABLE, HIGH);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   g.error = 0;
 
+/* !!!! for now, telescope mode is disabled
   // Temporarily borrowing the AF pin to check if we are connected to the telescope, macro rail, or nothing
   pinMode(PIN_AF, INPUT_PULLUP);
   // Dynamically detecting whether we are connected to the macro rail
@@ -94,7 +124,10 @@ void setup() {
   else if (raw < 1000)
     // if it's higher (but not close to infinity), we are grounded via thermistor (~10k or higher) -> telescope mode:
     g.telescope = 1;
+    */
+  g.telescope = 0; // For now    
 #ifndef MOTOR_DEBUG
+/*
   else
     // if the resistance is very high, assuming that no cable is connectedn_limiters
   {
@@ -102,12 +135,8 @@ void setup() {
     // If cable is disconnected, by default using macro rail mode:
     g.telescope = 0;
   }
+  */
 #endif
-
-
-  // In macro mode, this will operate the shutter relay; in telescope mode, this will provide constant +5V to the voltage divider with thermistor
-  // (to measure temperature)
-  pinMode(PIN_SHUTTER, OUTPUT);
 
   if (g.telescope)
   {
@@ -115,22 +144,18 @@ void setup() {
     // In telescope mode, PIN_AF will be used to measure the temperature on the telescope
     //    pinMode(PIN_AF, INPUT_PULLUP);
     // Without pullup, as for now I am using an external pullup resistor:
-    pinMode(PIN_AF, INPUT);
+// !!!   pinMode(PIN_AF, INPUT);
 #endif
   }
-  else
-  {
-    pinMode(PIN_AF, OUTPUT);
-  }
 
-  pinMode(PIN_LCD_LED, OUTPUT);
-
-#ifndef SOFTWARE_SPI
-  // My Nokia 5110 didn't work in SPI mode until I added this line (reference: http://forum.arduino.cc/index.php?topic=164108.0)
-  // Some LCD's don't work with this settings (empty screen) - try to change the constant to SPI_CLOCK_DIV16 if this is the case
-  SPI.setClockDivider(SPI_CLOCK_DIV8);
-#endif
-  lcd.begin();  // Always call lcd.begin() first.
+// Initializing the display
+  tft.init();
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextWrap(true);
+  tft.setTextFont(2);
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
@@ -185,6 +210,9 @@ void loop()
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
 
+
+//!!!
+EEPROM.commit();
 #ifdef TIMING
   timing();
 #endif

@@ -1,11 +1,38 @@
+
+
+void my_setCursor(byte pos, byte line, byte set)
+/*
+ * Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new displey pixel coordinates -
+ * stored in global vars g.x0, g.y0. If set=1, also execute tft.setCursor with these ccoordinates
+ */
+{
+
+  if (line < TFT_NY-1)
+//    g.y0 = TOP_GAP + FONT_HEIGHT - 1 + line*(LINE_GAP+FONT_HEIGHT);
+    g.y0 = TOP_GAP - 1 + line*(LINE_GAP+FONT_HEIGHT);
+    else
+    // Bottom (status) line is special, separated from the rest:
+    g.y0 = 128 - TOP_GAP - 1 - FONT_HEIGHT -3;
+
+  if (pos < 7)
+    g.x0 = LEFT_GAP + pos*FONT_WIDTH;
+    else
+    g.x0 = LEFT_GAP + (pos+4)*FONT_WIDTH;
+
+//  if (set == 1)
+    tft.setCursor(g.x0, g.y0);
+
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
   return 1e-6 * FPS[g.reg.i_fps] * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
 
 
 short Nframes ()
@@ -111,7 +138,7 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
     if (g.reg.save_energy)
     {
 #ifndef DISABLE_MOTOR
-      digitalWrite(PIN_ENABLE, LOW);
+      iochip.digitalWrite(EPIN_ENABLE, LOW);
 #endif
       delay(ENABLE_DELAY_MS);
     }
@@ -282,7 +309,7 @@ void stop_now()
   if (g.reg.save_energy)
   {
 #ifndef DISABLE_MOTOR
-    digitalWrite(PIN_ENABLE, HIGH);
+    iochip.digitalWrite(EPIN_ENABLE, HIGH);
 #endif
     delay(ENABLE_DELAY_MS);
   }
@@ -326,6 +353,7 @@ void stop_now()
     g.test_flag = 4;
 #endif
 
+  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -333,12 +361,13 @@ void stop_now()
 
 void set_backlight()
 // Setting the LCD backlight. Up to 32 levels.
+// Unused in h2.0!
 {
   unsigned char level;
 
-  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
+//  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
 
-  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+//  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
   return;
 }
@@ -417,6 +446,8 @@ void rail_reverse(byte fix_points)
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
+  EEPROM.commit();
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -469,6 +500,7 @@ void read_params(byte n)
   }
   // Loading new register clears the current memory point index:
   g.current_point = -1;
+  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -479,9 +511,10 @@ void save_params(byte n)
 // Now only used in macro mode
 {
   EEPROM.put( g.addr_reg[n], g.reg);
+  EEPROM.commit();
   sprintf(g.buffer, "Saved to Reg%1d", n);
   display_comment_line(g.buffer);
-  lcd.clearRestOfLine();
+  tft.print("       ");
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -515,9 +548,11 @@ void update_save_energy()
   return;
 #else
   if (g.reg.save_energy)
-    digitalWrite(PIN_ENABLE, HIGH); // Not using the holding torque feature (to save batteries)
+    // Not using the holding torque feature (to save batteries)
+    iochip.digitalWrite(EPIN_ENABLE, HIGH);
   else
-    digitalWrite(PIN_ENABLE, LOW); // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
+    // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
+    iochip.digitalWrite(EPIN_ENABLE, LOW);
   return;
 #endif
 }
@@ -616,6 +651,7 @@ void set_memory_point(char n)
 #endif
   // Saving the changed register as default one (macro mode) or as the current (ireg) one:
   EEPROM.put( g.addr_reg[g.ireg], g.reg);
+  EEPROM.commit();
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "  P%1d was set  ", n);
