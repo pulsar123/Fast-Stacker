@@ -277,23 +277,14 @@ void stop_now()
 {
 #ifdef TIMING
   // Update timing stats for the very last loop in motion (before setting g.moving=0):
-  timing();
+//  timing();
+//  g.total_dt_timing =+ micros() - g.t0_timing;
 #endif
 
   g.moving = 0;
   g.t_old = g.t;
   g.pos_old = g.pos;
   g.pos_short_old = floorMy(g.pos);
-
-#ifdef TIMING
-  // Displaying the timing data from the last movement:
-  display_current_position();
-  delay(5000);
-  g.i_timing = (unsigned long)0;
-  g.dt_max = (short)0;
-  g.dt_min = (short)10000;
-  g.bad_timing_counter = (short)0;
-#endif
 
   /*
     if (g.telescope == 0)
@@ -353,7 +344,7 @@ void stop_now()
     g.test_flag = 4;
 #endif
 
-  EEPROM.commit();
+//  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -446,7 +437,7 @@ void rail_reverse(byte fix_points)
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
-  EEPROM.commit();
+//  EEPROM.commit();
 
   return;
 }
@@ -500,7 +491,7 @@ void read_params(byte n)
   }
   // Loading new register clears the current memory point index:
   g.current_point = -1;
-  EEPROM.commit();
+//  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -651,7 +642,7 @@ void set_memory_point(char n)
 #endif
   // Saving the changed register as default one (macro mode) or as the current (ireg) one:
   EEPROM.put( g.addr_reg[g.ireg], g.reg);
-  EEPROM.commit();
+//  EEPROM.commit();
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "  P%1d was set  ", n);

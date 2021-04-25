@@ -2,33 +2,38 @@
 void timing()
 {
 
-  if (g.moving == 0)
+  if (g.moving_old == 0 && g.moving == 1)
+    g.t0_timing = g.t;
+
+  if (g.moving_old == 1 && g.moving == 0)
+  {
+      g.total_dt_timing = g.total_dt_timing + (g.t - g.t0_timing);
+      g.dt_timing = 0;
+  }
+
+  g.moving_old = g.moving;
+  
+  if (g.moving == 0 || g.dt_timing == 0)
     return;
 
   g.i_timing++;
 
-  if (g.i_timing == 1)
-    g.t0_timing = g.t;
-
-  // Skipping the first call, as it measures the pre-motion loop timing:
-  if (g.i_timing < 2)
-    return;
-
   // Last loop length:
-  short dt = (short)(g.t - g.t_old);
+//  int dt = g.t - g.t_old;
+
 
   // Counting the number of loops longer than the shortest microstep interval allowed, for the last movement:
-  if ((float)dt > (1.0 / SPEED_LIMIT))
+  if ((float)g.dt_timing > (1.0 / SPEED_LIMIT))
     g.bad_timing_counter++;
 
   // Finding the longest loop length, for the last movement:
   //  float dpos = g.pos - (float)g.pos_short_old;
   //  dt = 10.0 * (abs(dpos));
-  if (dt > g.dt_max)
-    g.dt_max = dt;
+  if (g.dt_timing > g.dt_max)
+    g.dt_max = g.dt_timing;
 
-  if (dt < g.dt_min)
-    g.dt_min = dt;
+  if (g.dt_timing < g.dt_min)
+    g.dt_min = g.dt_timing;
 
   return;
 }

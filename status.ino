@@ -9,9 +9,6 @@ void display_all()
 {
   float p;
   byte row, col;
-#ifdef TIMING
-  return;
-#endif
 
   tft.fillScreen(TFT_BLACK);
   my_setCursor(0, 0, 1);
@@ -101,6 +98,28 @@ void display_all()
       //    tft.print("              ");
       my_setCursor(0, 5, 1);
       // Line 6:
+      sprintf(g.buffer, "         s%s", VERSION);
+
+#ifdef TIMING
+      // Average loop length for the last motion, in shortest miscrostep length units *100:
+      int avr = (100.0 * (float)g.total_dt_timing / (float)(g.i_timing - 1) * SPEED_LIMIT);
+      // Maximum/minimum loop lenght in the above units:
+      int max1 = (100.0 * (float)(g.dt_max) * SPEED_LIMIT);
+      int min1 = (100.0 * (float)(g.dt_min) * SPEED_LIMIT);
+      sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
+      my_setCursor(0, 4, 1);
+      tft.print(g.buffer);
+      // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
+      sprintf(g.buffer, "%4d %8d   ", g.bad_timing_counter, g.i_timing);
+      my_setCursor(0, 5, 1);
+      tft.print(g.buffer);
+#ifdef MOTOR_DEBUG
+      //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
+      //  my_setCursor(0, 3);
+      //  tft.print(g.buffer);
+#endif
+#endif
+
 #ifdef SHOW_EEPROM
       //  Showing amount of EEPROM used:
       sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
@@ -109,8 +128,6 @@ void display_all()
       // Printing the temperature (Celcius), and version:
       sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp, 1), VERSION);
       //      sprintf(g.buffer, "%3d %4s", g.raw_T, ftoa(g.buf6, g.Temp, 1));
-#else
-      sprintf(g.buffer, "         s%s", VERSION);
 #endif // TEMPERATURE
 #endif  // EEPROM
       tft.print(g.buffer);
@@ -249,7 +266,7 @@ void letter_status(char const * l)
   Display a letter code "l" at the beginning of the status line
 */
 {
-  if (g.error || g.alt_flag)
+   if (g.error || g.alt_flag)
     return;
   my_setCursor(0, 5, 1);
   if (g.paused)
@@ -282,16 +299,16 @@ void motion_status()
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
-        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, rewind_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, rewind_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
       else
-        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, reverse_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, reverse_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
     }
     else
     {
       if (g.stacker_mode < 2)
-        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, forward_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, forward_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
       else
-        tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, straight_char, 3*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, straight_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
     }
   }
 
@@ -407,15 +424,17 @@ void battery_status()
     level = 0;
   if (level > 4)
     level = 4;
-  tft.drawBitmap(g.x0, g.y0+DEL_BITMAP, battery_char[level], 2*FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
-//tft.print(V);
+  tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, battery_char[level], 2 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+  //tft.print(V);
 
 #endif // BATTERY_DEBUG
 
   // Disabling the rail once V goes below the critical V_LOW voltage
 #ifndef MOTOR_DEBUG
+ #ifndef NO_CRITICAL_VOLTAGE
   if (V < V_LOW)
     g.error = 2;
+ #endif    
 #endif
 
   return;
@@ -627,27 +646,6 @@ void display_current_position()
   return;
 #endif
 
-#ifdef TIMING
-  // Average loop length for the last motion, in shortest miscrostep length units *100:
-  short avr = (short)(100.0 * (float)(g.t - g.t0_timing) / (float)(g.i_timing - 1) * SPEED_LIMIT);
-  // Maximum/minimum loop lenght in the above units:
-  short max1 = (short)(100.0 * (float)(g.dt_max) * SPEED_LIMIT);
-  short min1 = (short)(100.0 * (float)(g.dt_min) * SPEED_LIMIT);
-  sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
-  my_setCursor(0, 4, 1);
-  tft.print(g.buffer);
-  // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
-  sprintf(g.buffer, "%4d %6ld   ", g.bad_timing_counter, g.i_timing);
-  my_setCursor(0, 5, 1);
-  tft.print(g.buffer);
-#ifdef MOTOR_DEBUG
-  //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
-  //  my_setCursor(0, 3);
-  //  tft.print(g.buffer);
-#endif
-  return;
-#endif
-
   if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
@@ -695,9 +693,6 @@ void display_comment_line(char const * l)
   Display a comment line briefly (then it should be replaced with display_current_position() output).
 */
 {
-#ifdef TIMING
-  return;
-#endif
 #ifdef CAMERA_DEBUG
   return;
 #endif

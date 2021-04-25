@@ -24,6 +24,7 @@
 //#define TELE_SWITCH
 // If defined, inverts the limiter switch logic (HIGH when triggered; LOW otherwise). Needed only in telescope mode if you use Hall effect sensor as the limiting switch
 //#define HALL_SENSOR
+#define BUZZER
 
 //////// Debugging options ////////
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -43,11 +44,13 @@
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
-#define MOTOR_DEBUG
+//#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
 //#define DISABLE_MOTOR
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
+// If defined, disables critically low voltage action:
+#define NO_CRITICAL_VOLTAGE
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
 // Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
@@ -150,7 +153,9 @@ const byte EPIN_SHUTTER = 13;  // Green LED; expander B4
 const byte EPIN_AF = 14;  // Red LED; expander B5
 // Analogue pin for the battery life sensor:
 #define PIN_BATTERY A0
-
+#ifdef BUZZER
+const byte EPIN_BUZZ = 15; // expander B6
+#endif
 
 //////// Voltage parameters: ////////
 // Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R3 and R4.
@@ -295,6 +300,10 @@ const COORD_USTYPE N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
 const byte N_DT_TIMELAPSE = 9;
 const COORD_USTYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
 
+// Buzzer stuff:
+#ifdef BUZZER
+const COORD_ULONG DT_BUZZ_US = 1000; // Half-period for the buzzer sound, us
+#endif
 
 //////////////////////  Telescope stuff //////////////////////
 // Names for different focusing points.
@@ -423,7 +432,9 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 // point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
 // this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
 // speed might get slightly lower than what program thinks it is.
+#ifndef TIMING
 #define PRECISE_STEPPING
+#endif
 // Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
 // amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
 // If undefined, to rewind by the same amount,
@@ -671,6 +682,10 @@ struct global
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_UTYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   float mm_per_microstep; // Rail specific setting
+#ifdef BUZZER
+  COORD_ULONG t_buzz; // timer for the buzzer
+  byte buzz_state; // HIGH or LOW for the buzzer state
+#endif  
 #ifdef PRECISE_STEPPING
   COORD_ULONG dt_backlash;
 #endif
@@ -680,9 +695,12 @@ struct global
 #ifdef TIMING
   COORD_ULONG i_timing;
   COORD_ULONG t0_timing;
-  short dt_max;
-  short dt_min;
-  short bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
+  int dt_max;
+  int dt_min;
+  int bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
+  int dt_timing; // Timing for the last loop in motion, us
+  int total_dt_timing; // Cumulative movement time in microseconds
+  byte moving_old;  // Old value of g.moving
 #endif
   byte telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   byte ireg; // The register number to display on the top line in telescope mode (0 means nothing to display).

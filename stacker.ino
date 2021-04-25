@@ -79,6 +79,13 @@ void setup() {
   iochip.digitalWrite(EPIN_M1, MOTOR_M1);
   iochip.digitalWrite(EPIN_M2, MOTOR_M2);
 
+#ifdef BUZZER
+  iochip.pinMode(EPIN_BUZZ, OUTPUT);
+  g.buzz_state = LOW;
+  iochip.digitalWrite(EPIN_BUZZ, g.buzz_state);
+  g.t_buzz = micros();
+#endif
+
 #ifdef DUMP_REGS
   Serial.begin(9600);
   Serial.setTimeout(5000);
@@ -95,7 +102,7 @@ void setup() {
 #endif
 
 //!!!
-  Serial.begin(115200);
+//  Serial.begin(115200);
 
 #ifdef TEST_SWITCH
 #ifdef SERIAL_SWITCH
@@ -192,6 +199,10 @@ void loop()
   // Performing backlash compensation after bad direction moves:
   backlash();
 
+#ifdef BUZZER
+  buzzer();
+#endif  
+
   // Display related regular activities:
   display_stuff();
 
@@ -212,7 +223,8 @@ void loop()
 
 
 //!!!
-EEPROM.commit();
+  if (g.moving == 0)
+    EEPROM.commit();
 #ifdef TIMING
   timing();
 #endif

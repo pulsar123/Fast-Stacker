@@ -451,7 +451,7 @@ Serial.println(keypad.key[1].kchar);
           {
             g.error = 0;
             display_all();
-            EEPROM.commit();
+//            EEPROM.commit();
             return;
           }
         }
@@ -463,7 +463,7 @@ Serial.println(keypad.key[1].kchar);
           // When error 1 (limiter on initially), the only commands accepted are rewind and fast forward:
           if (g.error == 1 && key0 != '1' && key0 != 'A')
           {
-            EEPROM.commit();
+//            EEPROM.commit();
             return;
           }
 
@@ -928,7 +928,7 @@ Serial.println(keypad.key[1].kchar);
     }  // End of if(keyStateChanged)
   } // End of two-key / one-key if
 
-  EEPROM.commit();
+//  EEPROM.commit();
   return;
 }
 

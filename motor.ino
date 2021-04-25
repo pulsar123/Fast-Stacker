@@ -38,6 +38,11 @@ void motor_control()
 
   ////////   PART 1: estimating the current position, pos (solving the equation of motion)
 
+#ifdef TIMING
+  // Last loop length:
+  g.dt_timing = g.t - g.t_old;
+#endif  
+
   // Time in microseconds since the last accel change:
   dt = g.t - g.t0;
   // Storing the current accel value:

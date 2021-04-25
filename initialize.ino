@@ -222,7 +222,9 @@ void initialize(byte factory_reset)
     g.backlash_init = 1;
   }
   g.started_moving = 0;
+#ifdef PRECISE_STEPPING
   g.dt_backlash = 0;
+#endif  
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
@@ -242,9 +244,12 @@ void initialize(byte factory_reset)
   if (g.moving == 0)
   {
     g.i_timing = (unsigned long)0;
-    g.dt_max = (short)0;
-    g.dt_min = (short)10000;
-    g.bad_timing_counter = (short)0;
+    g.dt_max = 0;
+    g.dt_min = 10000000;
+    g.bad_timing_counter = 0;
+    g.total_dt_timing = 0;
+    g.moving_old = 0;
+    g.dt_timing = 0;
   }
 #endif
 
