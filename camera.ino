@@ -4,11 +4,11 @@ void camera()
 */
 {
   float speed;
-#ifdef TEST_SWITCH
+#if defined(TEST_SWITCH)
   return;
 #endif
 
-  if (g.error > 0)
+  if (g.error > 0 || g.uninterrupted == 1)
     return;
 
 

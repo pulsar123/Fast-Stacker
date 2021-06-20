@@ -12,6 +12,7 @@
 // Requires hardware version h2.0
 #define VERSION "2.0"
 
+//++++++++++ Major features +++++++++++++++++
 // Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
 //#define TEMPERATURE
 /* Use one (foreground) microswitch in telescope mode.
@@ -24,15 +25,15 @@
 //#define TELE_SWITCH
 // If defined, inverts the limiter switch logic (HIGH when triggered; LOW otherwise). Needed only in telescope mode if you use Hall effect sensor as the limiting switch
 //#define HALL_SENSOR
-#define BUZZER
+//#define BUZZER
 
-//////// Debugging options ////////
+//+++++++++++++ Data types +++++++++++++++++++
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE s32
 // Coordinates type for non-negative variables:
 #define COORD_UTYPE u32
-// Signed shorter type:
+// Signed shorter type (only used for telescope):
 #define COORD_STYPE s16
 // Unsigned shorter type:
 #define COORD_USTYPE u16
@@ -40,7 +41,11 @@
 #define COORD_LONG s32
 // Long unsigned signed type (for timers and such):
 #define COORD_ULONG u32
-// For timing the main loop:
+
+//////// Debugging options ////////
+// If defined, no display updates when moving
+//#define NO_DISP
+// For timing the main loop (likely also want to comment out PRECISE_STEPPING):
 //#define TIMING
 // Motor debugging mode: limiters disabled (used for finetuning the motor alignment with the macro rail knob, finding the minimum motor current,
 // and software debugging without the motor unit)
@@ -50,25 +55,29 @@
 // Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
 //#define BATTERY_DEBUG
 // If defined, disables critically low voltage action:
-#define NO_CRITICAL_VOLTAGE
+//#define NO_CRITICAL_VOLTAGE
+// If defined, debug buzzer (find the resonance frequency):
+// two keys get reassigned: keys "5" and "6" (change frequency)
+//#define BUZZER_DEBUG
+//#define DELTA_BUZZ_US  1 // Steps in us for changing buzzer timing when doing buzzer debugging
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
 // Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
-// When BL_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH" and "increase BACKLASH" functions
+// When BL_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce BACKLASH" and "increase BACKLASH" functions
 // Don't use BL_DEBUG together with either BL2_DEBUG or DELAY_DEBUG!
 //#define BL_DEBUG
 // Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
-// When BL2_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
+// When BL2_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
 // Don't use BL2_DEBUG together with either BL_DEBUG or DELAY_DEBUG!
 //#define BL2_DEBUG
 // Step for changing both BACKLASH and BACKLASH_2, in microsteps:
 const COORD_TYPE BL_STEP = 1;
 // Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
-// When DELAY_DEBUG is defined, two keys get reassigned: keys "2" and "3" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
+// When DELAY_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
 // Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
 //#define DELAY_DEBUG
 // Step used durinmg DELAY_DEBUG (in us)
-const COORD_ULONG DELAY_STEP = 50000;
+//const COORD_ULONG DELAY_STEP = 50000;
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
@@ -83,10 +92,10 @@ const COORD_ULONG DELAY_STEP = 50000;
 //#define SERIAL_SWITCH
 // Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
 //#define TEST_HALL
+//#define TEST_LIMITER // If defined, displays limiter state after the coordinate
 
 // Memory saving tricks:
 // Show only short error messages instead of detailed ones (saves space):
-//#define SHORT_ERRORS
 // Show bitmaps (takes more space):
 #define BATTERY_BITMAPS
 #define REWIND_BITMAPS
@@ -136,11 +145,11 @@ const COORD_ULONG SHUTTER_OFF_DELAY2 = 100000; // 100000
 const byte PIN_STEP = D1;
 const byte PIN_DIR = D2;
 // LOW: enable motor; HIGH: disable motor (to save energy):
-const byte EPIN_ENABLE = 12; // Expander B3
+const byte EPIN_ENABLE = 9; // Expander B3
 // Microstepping control:
-const byte EPIN_M0 = 9; // Expander B0
-const byte EPIN_M1 = 10; // Expander B1
-const byte EPIN_M2 = 11; // Expander B2
+const byte EPIN_M0 = 10; // Expander B0
+const byte EPIN_M1 = 11; // Expander B1
+const byte EPIN_M2 = 12; // Expander B2
 // -----------  Display pins  --------------------------------------
 // Using hardware SPI (pins D5 and D7)
 //const byte TFT_CS = D0;
@@ -226,7 +235,7 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 // Macro rail speed limit:
-const float SPEED_LIMIT_MM_S = 10;
+const float SPEED_LIMIT_MM_S = 10; // 10
 // The limit for TELESCOPE mode:
 const float SPEED_LIMIT_TEL_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
@@ -236,12 +245,14 @@ const float SPEED_LIMIT_TEL_MM_S = 5;
 const float BREAKING_DISTANCE_MM = 1.0;
 // The value for TELESCOPE mode:
 const float BREAKING_DISTANCE_TEL_MM = 1.0;
-// Padding (in microsteps) for a soft limit, before hitting the limiters:
-const COORD_TYPE LIMITER_PAD = 400;
-// A bit of extra padding (in microsteps) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
-const COORD_TYPE LIMITER_PAD2 = 100;
-const COORD_TYPE DELTA_LIMITER = 1000; // In calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
-// travel this many microsteps after the limiter goes off again, before starting checking the limiter again
+// Padding (in mm) for a soft limit, before hitting the limiters (increase if you constantly hit the limiter by accident)
+const float LIMITER_PAD_MM = 2.5;
+// A bit of extra padding (in mm) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
+// (increase if you constantly hit the limiter by accident)
+const float LIMITER_PAD2_MM = 0.6;
+// During calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
+// travel this many mm, before starting checking the limiter again (should be large enough that the limiter is guaranteed to go off by that point)
+const float DELTA_LIMITER_MM = 4.0;
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP
 // For DRV8825 stepper driver it should be at least 1.9 us. Form my measurements, setting STEP_LOW_DT to 2 us results
 // in 2.8 us impulses, to 1 us - in 1.7 us impulses, so I choose to use 2 us:
@@ -252,6 +263,10 @@ const short ENABLE_DELAY_MS = 3;
 const float TEL_INIT_MM = 1;
 // The maximum travel distance in telescope mode, starting from the closest position:
 const float TEL_LENGTH_MM = 45;
+// Number of consequitive HIGH values to set g.limit_on to HIGH
+// Set it to >1 if you get false limiter triggering when motor is in use. The larger the number, the more stable it is against the impulse noise
+// (the drawback - you'll start having a lag between the actual trigger and the reaction to it.)
+//const byte N_LIMITER = 1;  // Not used
 
 
 //////// User interface parameters: ////////
@@ -265,7 +280,7 @@ const COORD_ULONG DISPLAY_REFRESH_TIME = 1000000; // time interval in us for ref
 // Number of custom memory registers; macro:
 const unsigned char N_REGS = 5;
 // telescope:
-const unsigned char N_REGS_TEL = 12;
+const unsigned char N_REGS_TEL = 1;
 // Number of backlight levels (not used in h2.0):
 #define N_BACKLIGHT 4
 // Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
@@ -302,35 +317,12 @@ const COORD_USTYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000,
 
 // Buzzer stuff:
 #ifdef BUZZER
-const COORD_ULONG DT_BUZZ_US = 1000; // Half-period for the buzzer sound, us
+const COORD_ULONG DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
 #endif
 
 //////////////////////  Telescope stuff //////////////////////
 // Names for different focusing points.
 char const Name[N_REGS_TEL][15] = {
-  // Reg1 (#2):
-  "20  10  5  2.3",
-  // Reg2 (#5):
-  "T  TB  TF  TFB",
-  // Reg3 (#8):
-  "Cr Ca CaB Ca20",
-  // Reg4 (#3):
-  "              ",
-  // Reg5 (#6):
-  "              ",
-  // Reg6 (#9):
-  "              ",
-  // Reg7 (*2):
-  "              ",
-  // Reg8 (*5):
-  "              ",
-  // Reg9 (*8):
-  "              ",
-  // Reg10 (*3):
-  "              ",
-  // Reg11 (*6):
-  "              ",
-  // Reg12 (*9):
   "              "
 };
 // Temperature related parameters
@@ -428,13 +420,13 @@ const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
 // If defined, will be using my module to make sure that my physical microsteps always correspond to the program coordinates
 // (this is needed to fix the problem when some Arduino loops are longer than the time interval between microsteps, which results in skipped steps)
-// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_backlash) until the
+// My solution: every time we detect a skipped microstep in motor_control, we backtrack a bit in time (by modifying variable g.dt_lost) until the
 // point when a single microstep was supposed to happen, and use this time lag correction until the moving has stopped. If more steps are skipped,
 // this will keep increasing the time lag. As a result, my rail position will always be precise, but my timings might get slightly behind, and my actual
 // speed might get slightly lower than what program thinks it is.
-#ifndef TIMING
+//#ifndef TIMING  //!!!
 #define PRECISE_STEPPING
-#endif
+//#endif
 // Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
 // amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
 // If undefined, to rewind by the same amount,
@@ -442,6 +434,9 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 #define EXTENDED_REWIND
 const float TEL_INIT = TEL_INIT_MM / MM_PER_MICROSTEP_TEL;
 const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
+const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE LIMITER_PAD = (COORD_TYPE)(LIMITER_PAD_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE LIMITER_PAD2 = (COORD_TYPE)(LIMITER_PAD2_MM / MM_PER_MICROSTEP + 0.5);
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -468,10 +463,7 @@ const short dA = sizeof(COORD_TYPE);
 
 // EEPROM addresses: make sure they don't go beyong the ESP8266 EEPROM size of 4k!
 const int ADDR_POS = 0;  // Current position (float, 4 bytes)
-const int ADDR_CALIBRATE = ADDR_POS + 4; // If =3, full limiter calibration will be done at the beginning (1 byte)
-//!!! For some reason +1 doesn't work here, but +2 does, depsite the fact that the previous variable is 1-byte long:
-const int ADDR_LIMIT1 = ADDR_CALIBRATE + 2; // pos_short for the foreground limiter (4 bytes)
-const int ADDR_LIMIT2 = ADDR_LIMIT1 + dA; // pos_short for the background limiter (4 bytes)
+const int ADDR_LIMIT2 = ADDR_POS + 4; // pos_short for the background limiter (4 bytes)
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level (1 byte)
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS + 1) * SIZE_REG; // Start of default + N_REGS custom memory registers for telescope mode
@@ -593,7 +585,7 @@ const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 struct global
 {
   struct regist reg; // Custom parameters register
-  unsigned int addr_reg[N_REGS_TEL + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
+  unsigned int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
   COORD_ULONG t;  // Time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
@@ -630,6 +622,7 @@ struct global
   byte accident;  // =1 if we accidently triggered limit1; 0 otherwise
   byte limit_on; //  The last recorded state of the limiter switches
   byte uninterrupted;  // =1 disables checking for limits (hard and soft); used for emergency breaking and during calibration
+  byte uninterrupted2;  // =1 disables checking for limits (hard and soft); used for recovering rail when it's confused (#D command)
   byte travel_flag; // =1 when travel was initiated
   float pos_goto; // position to go to
   byte moving_mode; // =0 when using speed_change, =1 when using go_to
@@ -649,7 +642,8 @@ struct global
   COORD_ULONG t_shutter_off; // Time when the camera shutter was switched off
   COORD_ULONG t_AF; // Time when the camera AF was triggered
   signed char direction; // -1/1 for reverse/forward directions of moving
-  char buffer[21];  // char buffer to be used for lcd print; 1 more element than the lcd width (14)
+  char buffer[21];  // char buffer to be used for lcd print; 1 more element than the lcd width (20)
+  char empty_buffer[21];  // char buffer to be used to clear one row of the LCD; 1 more element than the lcd width (20)
   COORD_ULONG t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   byte x0, y0;  // Displey pixel coordinates, set in misc/my_setCursor
@@ -671,7 +665,7 @@ struct global
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
-  char tmp_char[2];
+  char tmp_char;
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
@@ -682,12 +676,13 @@ struct global
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_UTYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   float mm_per_microstep; // Rail specific setting
+  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
   COORD_ULONG t_buzz; // timer for the buzzer
   byte buzz_state; // HIGH or LOW for the buzzer state
 #endif  
 #ifdef PRECISE_STEPPING
-  COORD_ULONG dt_backlash;
+  COORD_ULONG dt_lost;
 #endif
 #ifdef EXTENDED_REWIND
   byte no_extended_rewind;
@@ -701,6 +696,11 @@ struct global
   int dt_timing; // Timing for the last loop in motion, us
   int total_dt_timing; // Cumulative movement time in microseconds
   byte moving_old;  // Old value of g.moving
+  float d_sum;
+  int d_N;
+  int d_Nbad;
+  int d_max;
+  int N_insanity;
 #endif
   byte telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
   byte ireg; // The register number to display on the top line in telescope mode (0 means nothing to display).
@@ -741,6 +741,13 @@ struct global
 #endif
 #ifdef TEST_HALL
   byte hall_on = 0;
+#endif
+#ifdef BUZZER
+  COORD_ULONG dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us
+#endif
+#ifdef TEST_LIMITER
+  int limiter_i; // counter for the false limiter readings
+  byte limiter_ini; // initial limiter state
 #endif
 };
 

@@ -1,0 +1,131 @@
+== Calibration ==
+
+=== User initated (#C command) ===
+g.accident = 0
+
+* #C pressed, keypad.ino
+** ignored if g.moving == 1 || g.paused || g.limit_on
+** g.calibrate_flag = 1
+** g.error = 4
+** display_all() -> "Calibrate?"
+
+* Any key pressed, keypad.ino
+** g.error = 0
+
+* calibration.ino
+** change_speed(g.speed_limit, 0, 2) -> start moving in the positive direction at max speed/acceleration
+** g.accel = 2
+** g.t0 = g.t
+** g.speed0 = 0
+** g.speed1 = g.speed_limit
+** g.pos0 = g.pos
+** g.moving = 0
+** started_moving = 1
+** g.direction = 1 (??)
+
+* motor.ino
+** started_moving = 0
+** g.moving = 1
+** g.t0 = g.t // Time when acceleration changed
+
+After triggering the limit2 switch:
+* limiters.ino
+** ignored if g.moving == 0 || g.uninterrupted == 1 || g.error > 0
+** Read_limiters()
+** g.limit_on = 1
+** g.calibrate_flag = 2
+** g.limit2 = g.pos_short_old // Temporary value for limit2 (in old coords)
+** change_speed(0.0, 0, 2)
+** g.uninterrupted = 1 // Not reading limiter until stopped
+
+* stop_now()
+**  g.moving = 0;
+**  g.t_old = g.t;
+**  g.pos_old = g.pos;
+**  g.pos_short_old = (COORD_TYPE)floor(g.pos);
+  g.uninterrupted = 0;
+  g.backlashing = 0;
+  g.speed = 0.0;
+
+
+* calibration
+// Will move back to limit1 at full speed:
+    change_speed(-g.speed_limit, 0, 2);
+    g.calibrate_flag = 3;
+    g.accel = -2;
+    g.t0 = g.t;
+    g.speed0 = 0;
+    g.pos0 = g.pos;
+    g.started_moving = 1;
+    g.direction = -1;
+    g.speed1 = -g.speed_limit;
+
+* motor.ino
+** started_moving = 0
+** g.moving = 1
+** g.t0 = g.t // Time when acceleration changed
+
+After triggering the limit1 switch:
+* limiters.ino
+  change_speed(0.0, 0, 2);
+  g.uninterrupted = 1; // Not reading limiter until stopped
+
+* stop_now()
+**  g.moving = 0;
+**  g.t_old = g.t;
+**  g.pos_old = g.pos;
+**  g.pos_short_old = (COORD_TYPE)floor(g.pos);
+  g.uninterrupted = 0;
+  g.backlashing = 0;
+  g.speed = 0.0;
+
+
+* calibration
+// Triggered limit1 and stopped, will now move forward to calibrate limit1 on the first switch-off position
+   go_to(g.pos + 4 * BREAKING_DISTANCE, g.speed_limit);
+   g.calibrate_flag = 4;
+   change_speed(g.speed_limit, 1, 2);
+** g.accel = 2
+** g.t0 = g.t
+** g.speed0 = 0
+** g.speed1 = g.speed_limit
+** g.pos0 = g.pos
+** g.moving = 0
+** started_moving = 1
+** g.direction = 1 (??)
+
+* motor.ino
+** started_moving = 0
+** g.moving = 1
+** g.t0 = g.t // Time when acceleration changed
+
+//When limit1 goes off
+limiters.ino
+      g.calibrate_flag = 5;
+      // Making sure only the very first turn of of limit one is registered (and used for calibration); ignoring the subsequent switch noise
+      g.uninterrupted = 1;
+      // At the end of calibration new coordinates will be derived from old by adding this parameter to the old ones:
+      g.coords_change = -g.pos_short_old;
+
+* stop_now()
+**  g.moving = 0;
+**  g.t_old = g.t;
+**  g.pos_old = g.pos;
+**  g.pos_short_old = (COORD_TYPE)floor(g.pos);
+  g.uninterrupted = 0;
+  g.backlashing = 0;
+  g.speed = 0.0;
+
+* calibration.ino
+      g.pos = g.pos + (float)g.coords_change;
+      g.pos_short_old = g.pos_short_old + g.coords_change;
+      g.t0 = g.t;
+      g.pos0 = g.pos;
+      g.pos_old = g.pos;
+      g.limit2 = g.limit2 + g.coords_change;
+      EEPROM.put( ADDR_LIMIT2, g.limit2);
+      // Saving the current position to EEPROM:
+      EEPROM.put( ADDR_POS, g.pos );
+      g.calibrate_flag = 0;
+      g.accident = 0;
+

@@ -10,6 +10,11 @@ void display_all()
   float p;
   byte row, col;
 
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
+
   tft.fillScreen(TFT_BLACK);
   my_setCursor(0, 0, 1);
 
@@ -109,6 +114,12 @@ void display_all()
       sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
       my_setCursor(0, 4, 1);
       tft.print(g.buffer);
+
+      // Maximum number of steps requested in one loop (should be 1), number of loops with d>1, total number of loops, number of times when PRECISE_STEPPING sanity check failed:
+      sprintf(g.buffer, "%3d %4d %6d %4d", g.d_max, g.d_Nbad, g.d_N, g.N_insanity);
+      my_setCursor(0, 6, 1);
+      tft.print(g.buffer);
+
       // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
       sprintf(g.buffer, "%4d %8d   ", g.bad_timing_counter, g.i_timing);
       my_setCursor(0, 5, 1);
@@ -193,39 +204,14 @@ void display_all()
 
       case 1:
         tft.setTextColor(TFT_RED, TFT_BLACK);
-#ifdef SHORT_ERRORS
-        tft.print("No cable");
-#else
         tft.print("Cable disconnected, or limiter is on!");
         tft.print("Only if cable is connected, rewind");
-        /*
-                  tft.print("Cable discon- ");
-                  tft.print("nected, or    ");
-                  tft.print("limiter is on!");
-                  tft.print("Only if cable ");
-                  tft.print("is connected, ");
-                  tft.print("rewind."); lcd.clearRestOfLine();
-        */
-#endif
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
       case 2: // Critically low battery level; not used when debugging
         tft.setTextColor(TFT_RED, TFT_BLACK);
-#ifdef SHORT_ERRORS
-        tft.print("Low battery");
-#else
-        //          tft.print("Critically lowbattery level!\n");
-        //          tft.print("Replace the   batteries");
-
         tft.print("Critically low battery\n level!");
-        //          tft.print("              ");
-        //            lcd.clearRestOfLine();
-        //            tft.print("Replace the   ");
-        //            tft.print("batteries."); lcd.clearRestOfLine();
-        //            lcd.clearRestOfLine();
-        //          tft.print("              ");
-#endif
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
@@ -237,21 +223,8 @@ void display_all()
 
       case 4:  // Calibration initiated
         tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-#ifdef SHORT_ERRORS
-        tft.print("Calibrate?");
-#else
         tft.print("  Calibration\n   required!\n");
         tft.print("\n Press any key\n to start calibration");
-        /*
-          tft.print("  Calibration ");
-          tft.print("  required!"); lcd.clearRestOfLine();
-          //        tft.print("              ");
-          lcd.clearRestOfLine();
-          tft.print("Press any key ");
-          tft.print("to start"); lcd.clearRestOfLine();
-          tft.print("calibration.  ");
-        */
-#endif
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         break;
 
@@ -266,15 +239,22 @@ void letter_status(char const * l)
   Display a letter code "l" at the beginning of the status line
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
    if (g.error || g.alt_flag)
     return;
   my_setCursor(0, 5, 1);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
   if (g.paused)
     tft.print("P");
   else if (g.timelapse_mode)
     tft.print("T");
   else
     tft.print(*l);
+  tft.print(' ');
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -284,6 +264,10 @@ void motion_status()
   Motion status: 2-char status showing the direction and speed (rewind vs. focus stacking)
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
   uint8_t i;
@@ -322,6 +306,10 @@ void display_frame_counter()
   Printing the current stacking frame number in the status line.
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag || g.telescope)
     return;
   // Printing frame counter:
@@ -331,7 +319,9 @@ void display_frame_counter()
     sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
   my_setCursor(5, 5, 1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.print (g.buffer);
+//  tft.print (g.buffer);
+tft.drawString(g.buffer, g.x0, g.y0);
+
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
 
   return;
@@ -345,10 +335,15 @@ void points_status()
 /* Displays F or B if the current coordinate is exactly the foreground (g.reg.point[0]) or background (g.reg.point[3]) point.
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
 
   my_setCursor(10, 5, 1);
+
 
   if (g.status_flag == 2 && g.t > g.t_status + FLASHING_DELAY)
   {
@@ -376,6 +371,8 @@ void points_status()
   else
     g.status_flag = 0;
 
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+
   if (g.telescope)
   {
     sprintf (g.buffer, "%1d ", g.current_point + 1);
@@ -389,6 +386,8 @@ void points_status()
       tft.print("B ");
   }
 
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -399,7 +398,11 @@ void battery_status()
   Measuring the battery voltage and displaying it.
 */
 {
-  if (g.moving == 1 || g.alt_flag)
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
+  if (g.moving == 1 || g.started_moving == 1 || g.alt_flag)
     return;
 
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
@@ -416,7 +419,7 @@ void battery_status()
   sprintf(g.buffer, "%3d", analogRead(PIN_BATTERY));
   tft.print(g.buffer);
 #else
-  my_setCursor(12, 5, 1);  // 12
+  my_setCursor(12, 5, 0);  // 12
 
   // A 5-level bitmap indication (between V_LOW and V_HIGH):
   short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
@@ -447,6 +450,10 @@ void display_status_line()
   Display the whole status line
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
   letter_status(" ");
@@ -464,15 +471,20 @@ void display_u_per_f()
   Display the input parameter u per frame (1000*MM_PER_FRAME)
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
 
-  // +0.05 is for proper round-off:
-  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 
   if (um_per_frame >= 10.0)
-    sprintf(g.buffer, "%4duf ", (int)um_per_frame);
+    // +0.5 is for proper round-off:
+    sprintf(g.buffer, "%4duf ", (int)(um_per_frame+0.5));
   else
+    // +0.05 is for proper round-off:
     sprintf(g.buffer, "%4suf ", ftoa(g.buf7, um_per_frame + 0.05, 1));
 
   my_setCursor(0, 2, 1);
@@ -487,6 +499,10 @@ void display_fps()
   Display the input parameter fps (frames per second)
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag || g.telescope)
     return;
   if (FPS[g.reg.i_fps] >= 1.0)
@@ -509,6 +525,10 @@ void display_one_point_params()
   - travel time, s.
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
 
@@ -517,9 +537,9 @@ void display_one_point_params()
   if (g.telescope)
   {
     if (g.locked[g.ireg - 1])
-      sprintf(g.tmp_char, "L");
+      g.tmp_char = 'L';
     else
-      sprintf(g.tmp_char, " ");
+      g.tmp_char = ' ';
     sprintf(g.buffer, " Register %2d%1s ", g.ireg, g.tmp_char);
   }
   else
@@ -557,6 +577,10 @@ void display_two_point_params()
 */
 {
   float dx;
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag)
     return;
 
@@ -580,9 +604,9 @@ void display_two_point_params()
       sprintf(g.buf6, "****");
 
     if (g.reg.point[3] >= g.reg.point[0])
-      sprintf(g.buffer, "%4d %4s   %4s   ", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
+      sprintf(g.buffer, "%4d  %4s   %4s   ", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
     else
-      sprintf(g.buffer, "**** ****   ****");
+      sprintf(g.buffer, "****  ****   ****   ");
   }
   tft.print(g.buffer);
   return;
@@ -598,12 +622,19 @@ void display_two_points()
   float p;
   COORD_TYPE p_int;
 
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
   if (g.error || g.alt_flag || g.telescope)
     return;
 
 #ifdef TEST_SWITCH
   return;
 #endif
+
+  my_setCursor(0, 3, 1);
+  tft.print(g.empty_buffer);  //erasing the line
 
 #ifdef SHOW_RAW
   sprintf(g.buffer, "F%5d", g.reg.point[0]);
@@ -639,6 +670,10 @@ void display_current_position()
 */
 {
   float p;
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
 #ifdef CAMERA_DEBUG
   //  return;
 #endif
@@ -646,38 +681,44 @@ void display_current_position()
   return;
 #endif
 
+//!!! added  g.moving==1 || g.started_moving==1
+//  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.started_moving==1)
   if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
   if (g.reg.straight)
-    sprintf(g.tmp_char, " ");
+    g.tmp_char = ' ';
   else
-    sprintf(g.tmp_char, "R");
+    g.tmp_char = 'R';
 
   if (g.timelapse_mode)
     sprintf(g.buf6, "%3d", g.timelapse_counter + 1);
   else
     sprintf(g.buf6, "   ");
 
-#ifdef BL_DEBUG
+#if defined(BL_DEBUG)
   // When debugging backlash, displays the current backlash value in microsteps
   sprintf(g.buf6, "%3d", g.backlash);
-#endif
-#ifdef BL2_DEBUG
+#elif defined(BL2_DEBUG)
   // When debugging BACKLASH_2, displays the current BACKLAS_2 value in microsteps
   sprintf(g.buf6, "%3d", BACKLASH_2);
-#endif
-#ifdef DELAY_DEBUG
+#elif defined(DELAY_DEBUG)
   // Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
   sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2 / 10000);
+#elif defined(BUZZER_DEBUG)
+  // When debugging buzzer, displays the current g.dt1_buzz_us value in microseconds
+  sprintf(g.buf6, "%3d", g.dt1_buzz_us);
 #endif
 
-
 #ifdef SHOW_RAW
-  sprintf(g.buffer, "%1s %6d   %3s", g.tmp_char, g.pos_short_old, g.buf6);
+  sprintf(g.buffer, "  %c  %6d    %3s  ", g.tmp_char, g.pos_short_old, g.buf6);
 #else
   p = g.mm_per_microstep * g.pos;
-  sprintf(g.buffer, "%1s %6smm %3s", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
+  sprintf(g.buffer, "  %c  %6smm  %3s  ", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
+#endif
+
+#ifdef TEST_LIMITER
+  sprintf(g.buffer, "%d", g.limiter_i);
 #endif
 
   my_setCursor(0, 4, 1);
@@ -691,8 +732,13 @@ void display_current_position()
 void display_comment_line(char const * l)
 /*
   Display a comment line briefly (then it should be replaced with display_current_position() output).
+  The char array *l should always have the length of the line + 1 (21), to ensure the older conent is erased
 */
 {
+#ifdef NO_DISP
+  if (g.moving || g.started_moving)
+    return;
+#endif
 #ifdef CAMERA_DEBUG
   return;
 #endif
@@ -720,7 +766,7 @@ void delay_buffer()
   float delay2 = SECOND_DELAY[g.reg.i_second_delay];
   // +0.5 for roundoff:
   short dt = (short)((float)(g.Nframes) * (FIRST_DELAY[g.reg.i_first_delay] + SECOND_DELAY[g.reg.i_second_delay]) + (float)(g.Nframes - 1) * dt_goto + 0.5);
-  sprintf(g.buffer, "%4s %4s %4d", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);
+  sprintf(g.buffer, " %4s   %4s   %4d ", ftoa(g.buf7, delay1, 1), ftoa(g.buf6, delay2, 1), dt);  // 20 chars long
 
   return;
 }

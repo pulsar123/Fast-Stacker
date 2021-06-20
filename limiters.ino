@@ -1,11 +1,24 @@
 void limiters()
 /* Processing inputs from the two limiting switches, plus all the relevant calculations.
+ *  
+ *  Only processed when moving.
 
 */
 {
   COORD_TYPE dx, dx_break;
 
-  if (g.moving == 0 || g.uninterrupted == 1 || g.error > 0)
+#ifdef TEST_LIMITER
+// Detecting false readings from the limiting switch:
+  Read_limiters();
+  if (g.limit_on != g.limiter_ini)
+  {
+    g.limiter_i++;
+    display_current_position();
+  }
+#endif
+
+
+  if (g.moving == 0 || g.uninterrupted == 1 || g.error > 0 || g.uninterrupted2 == 1)
     return;
 
 #ifdef TEST_SWITCH
@@ -20,6 +33,7 @@ void limiters()
 
   // Assigning the limiters' state to g.limit_on:
   Read_limiters();
+
 
   /////////////////////////////////////////////// Hard limits ///////////////////////////////////////////////////////////////////
   // If a limiter is on:
@@ -94,7 +108,7 @@ void limiters()
 
     // Emergency breaking (cannot be interrupted):
     start_breaking();
-    display_comment_line("Hit a limiter ");
+    display_comment_line("   Hit a limiter    "); // Expensive 
   }
   else
 

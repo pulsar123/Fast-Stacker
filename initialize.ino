@@ -29,6 +29,12 @@ void initialize(byte factory_reset)
   // Assigning the limiters' state to g.limit_on:
   Read_limiters();
 
+#ifdef TEST_LIMITER
+  g.limiter_i = 0;
+//  g.limiter_ini = g.limit_on;
+  g.limiter_ini = 0;
+#endif  
+
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(65000);
@@ -82,6 +88,7 @@ void initialize(byte factory_reset)
   g.current_point = -1;
   g.limit1 = 0;
   g.accident = 0;
+  g.limiter_counter = 0;
 
   if (factory_reset)
   {
@@ -103,10 +110,10 @@ void initialize(byte factory_reset)
     update_save_energy();
     for (byte i = 0; i < 4; i++)
     {
-      g.reg.point[i] = 2000;
+      g.reg.point[i] = DELTA_LIMITER;
     }
     g.limit2 = 32000;
-    g.pos = 2000;
+    g.pos = DELTA_LIMITER;
     g.backlight = 0;
 
     if (g.telescope)
@@ -183,7 +190,7 @@ void initialize(byte factory_reset)
 
   g.pos0 = g.pos;
   g.pos_old = g.pos;
-  g.pos_short_old = floorMy(g.pos);
+  g.pos_short_old = floor(g.pos);
   g.t0 = micros();
   g.t = g.t0;
   g.t_old = g.t0;
@@ -198,6 +205,7 @@ void initialize(byte factory_reset)
 
   g.N_repeats = 0;
   g.uninterrupted = 0;
+  g.uninterrupted2 = 0;
   g.backlashing = 0;
   g.pos_stop_flag = 0;
   g.frame_counter = 0;
@@ -223,7 +231,7 @@ void initialize(byte factory_reset)
   }
   g.started_moving = 0;
 #ifdef PRECISE_STEPPING
-  g.dt_backlash = 0;
+  g.dt_lost = 0;
 #endif  
   g.continuous_mode = 1;
   g.noncont_flag = 0;
@@ -251,6 +259,11 @@ void initialize(byte factory_reset)
     g.moving_old = 0;
     g.dt_timing = 0;
   }
+    g.d_sum += 0.0;
+    g.d_N = 0;
+    g.d_Nbad = 0;
+    g.d_max = 0;
+    g.N_insanity = 0;
 #endif
 
 #ifdef MOTOR_DEBUG
@@ -313,7 +326,13 @@ void initialize(byte factory_reset)
   set_backlight();
 #endif
 
-  EEPROM.commit();
+#ifdef BUZZER
+  g.dt1_buzz_us = DT_BUZZ_US;
+#endif
+
+  sprintf(g.empty_buffer, "                    ");  // 20 spaces, used to clear one LCD row
+  
+EEPROM.commit();
   
   return;
 }

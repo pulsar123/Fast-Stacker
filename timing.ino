@@ -116,7 +116,6 @@ void write_regs()
     eeAddress = eeAddress + SIZE_REG;
   }
 
-  EEPROM.commit();
 
 }
 #endif

@@ -10,7 +10,7 @@ void backlash()
     the rail back in the good direction, to completely compensate the backlash.
 */
 {
-#ifdef TEST_SWITCH
+#if defined(TEST_SWITCH)
   return;
 #endif
 

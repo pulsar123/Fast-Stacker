@@ -30,9 +30,9 @@
 ||
 */
 #include "Keypad.h"
+
+// stacker: defining the CS pin for the expander cip here:
 #define PIN_MCP_CS D3
-
-
 MCP iochip(0, PIN_MCP_CS);
 
 // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
@@ -85,16 +85,17 @@ bool Keypad::getKeys() {
 
 // Private : Hardware scan
 void Keypad::scanKeys() {
+//stacker 2.0: input mode for row pins is set in the main code, no need to do it here
   // Re-intialize the row pins. Allows sharing these pins with other hardware.
   //stacker: Initializing the row pins only once, as we are not sharing them, and it helps to save time:
-  if (Keypad::init == 1)
-  {
-//stacker 2.0: input mode is set in the main code
+//  if (Keypad::init == 1)
+//  {
 //    for (byte r = 0; r < sizeKpd.rows; r++) {
 //      pin_mode(rowPins[r], INPUT_PULLUP);
+//         iochip.pullupMode(rowPins[r], HIGH); //!!!
 //    }
-    Keypad::init = 0;
-  }
+//    Keypad::init = 0;
+//  }
 
   // bitMap stores ALL the keys that are being pressed.
   for (byte c = 0; c < sizeKpd.columns; c++) {
@@ -104,8 +105,10 @@ void Keypad::scanKeys() {
       bitWrite(bitMap[r], c, !pin_read(rowPins[r]));  // keypress is active low so invert to high.
     }
     // Set pin to high impedance input. Effectively ends column pulse.
-    pin_write(columnPins[c], HIGH);
+    pin_write(columnPins[c], HIGH); // Probably not needed?
     pin_mode(columnPins[c], INPUT);
+// Looks like no need to do it here every scan - I do it once in the main code, when initializing.
+//      iochip.pullupMode(columnPins[c], HIGH);
   }
 }
 

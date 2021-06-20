@@ -71,15 +71,6 @@ void process_keypad()
     state0_changed = keypad.key[0].stateChanged;
   }
 
-//!!!
-//  if (state0 == PRESSED || state1==PRESSED)
-  {
-Serial.print(state0);
-Serial.print(state1);
-Serial.print(keypad.key[0].kchar);
-Serial.println(keypad.key[1].kchar);
-  }
-
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Two-key #X commands (no fake key events allowed)
   if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key)
@@ -214,7 +205,6 @@ Serial.println(keypad.key[1].kchar);
           break;
         g.error = 3;
         display_all();
-        //        initialize(1);
         break;
 
       case '7': // #7: Manual camera shutter triggering
@@ -256,7 +246,7 @@ Serial.println(keypad.key[1].kchar);
         if (g.paused || g.telescope)
           break;
         go_to((float)g.starting_point + 0.5, g.speed_limit);
-        display_comment_line(" Going to P0  ");
+        display_comment_line("    Going to P0     ");
         break;
 
       case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
@@ -278,12 +268,12 @@ Serial.println(keypad.key[1].kchar);
           g.timelapse_counter = 0;
           if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
             g.timelapse_mode = 1;
-          display_comment_line("2-points stack");
+          display_comment_line("   2-points stack   ");
         }
         else
         {
           // Should print error message
-          display_comment_line("Bad 2 points! ");
+          display_comment_line("   Bad 2 points!    ");
         }
         break;
 
@@ -386,10 +376,19 @@ Serial.println(keypad.key[1].kchar);
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        /*
-                case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
-                  break;
-        */
+        
+        case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
+        // Use this command if the rail gets confused and cannot be operated normally (e.g. false limiter trigger)
+        // Once the rail is moved into a safe position, reboot the controller
+          g.uninterrupted2 = 1;
+          g.limit1 = 10000;          
+          g.limit2 = 100000;
+          g.pos = 50000;
+          g.pos_short_old = (COORD_TYPE)floor(g.pos);
+          g.error = 0; // To remove "Calibrate?" screen if present
+          display_all();
+          break;
+        
 
         case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
           if (g.telescope)
@@ -451,7 +450,6 @@ Serial.println(keypad.key[1].kchar);
           {
             g.error = 0;
             display_all();
-//            EEPROM.commit();
             return;
           }
         }
@@ -463,7 +461,6 @@ Serial.println(keypad.key[1].kchar);
           // When error 1 (limiter on initially), the only commands accepted are rewind and fast forward:
           if (g.error == 1 && key0 != '1' && key0 != 'A')
           {
-//            EEPROM.commit();
             return;
           }
 
@@ -601,13 +598,13 @@ Serial.println(keypad.key[1].kchar);
                     g.timelapse_counter = 0;
                     if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
                       g.timelapse_mode = 1;
-                    display_comment_line("2-points stack");
+                    display_comment_line("   2-points stack   ");
                   }
                 }
                 else
                 {
                   // Should print error message
-                  display_comment_line("Bad 2 points! ");
+                  display_comment_line("   Bad 2 points!    ");
                 }
               }
               break;
@@ -651,7 +648,7 @@ Serial.println(keypad.key[1].kchar);
                   g.starting_point = g.pos_short_old;
                   g.stacker_mode = 3;
                   g.continuous_mode = 1;
-                  display_comment_line("1-point stack ");
+                  display_comment_line("   1-point stack    ");
                 }
               }
               break;
@@ -664,34 +661,38 @@ Serial.println(keypad.key[1].kchar);
               {
                 if (g.paused)
                   break;
-#ifndef BL_DEBUG
-#ifndef BL2_DEBUG
-#ifndef DELAY_DEBUG
+#if defined(DELAY_DEBUG)
+                // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
+                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
+                if (SHUTTER_ON_DELAY2 < 0)
+                  SHUTTER_ON_DELAY2 = 0;
+                display_all();
+#elif defined(BL2_DEBUG)
+                // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
+                BACKLASH_2 = BACKLASH_2 - BL_STEP;
+                if (BACKLASH_2 < 0)
+                  BACKLASH_2 = 0;
+                display_all();
+#elif defined(BL_DEBUG)
+                // The meaning of "6" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
+                g.backlash = g.backlash - BL_STEP;
+                if (g.backlash < 1)
+                  g.backlash = 1;
+                display_all();
+#elif defined(BUZZER_DEBUG)
+                // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to decrease the buzzer timing:
+                g.dt1_buzz_us = g.dt1_buzz_us - DELTA_BUZZ_US;
+                if (g.dt1_buzz_us < 1)
+                  g.dt1_buzz_us = 1;
+                display_all();
+#else
                 if (g.reg.i_n_shots > 0)
                   g.reg.i_n_shots--;
                 else
                   break;
                 EEPROM.put( g.addr_reg[0], g.reg);
-#else //DELAY_DEBUG
-                // The meaning of "2" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
-                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
-                if (SHUTTER_ON_DELAY2 < 0)
-                  SHUTTER_ON_DELAY2 = 0;
-#endif // DELAY_DEBUG              
-#else // BL2_DEBUG
-                // The meaning of "2" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
-                BACKLASH_2 = BACKLASH_2 - BL_STEP;
-                if (BACKLASH_2 < 0)
-                  BACKLASH_2 = 0;
-#endif //BL2_DEBUG
-#else // BL_DEBUG
-                // The meaning of "2" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
-                g.backlash = g.backlash - BL_STEP;
-                if (g.backlash < 1)
-                  g.backlash = 1;
-#endif // BL_DEBUG
-//                display_all();
                 display_one_point_params();
+#endif
               }
               break;
 
@@ -703,34 +704,36 @@ Serial.println(keypad.key[1].kchar);
               {
                 if (g.paused)
                   break;
-#ifndef BL_DEBUG
-#ifndef BL2_DEBUG
-#ifndef DELAY_DEBUG
+#if defined (DELAY_DEBUG)
+                // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
+                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
+                if (SHUTTER_ON_DELAY2 > 10000000)
+                  SHUTTER_ON_DELAY2 = 10000000;
+                display_all();
+#elif defined (BL2_DEBUG)
+                // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
+                BACKLASH_2 = BACKLASH_2 + BL_STEP;
+                if (BACKLASH_2 > 10000)
+                  BACKLASH_2 = 10000;
+                display_all();
+#elif defined(BL_DEBUG)
+                // The meaning of "6" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
+                g.backlash = g.backlash + BL_STEP;
+                if (g.backlash > 10000)
+                  g.backlash = 10000;
+                display_all();
+#elif defined(BUZZER_DEBUG)
+                // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to increase the buzzer timing:
+                g.dt1_buzz_us = g.dt1_buzz_us + DELTA_BUZZ_US;
+                display_all();
+#else
                 if (g.reg.i_n_shots < N_PARAMS - 1)
                   g.reg.i_n_shots++;
                 else
                   break;
                 EEPROM.put( g.addr_reg[0], g.reg);
-#else //DELAY_DEBUG
-                // The meaning of "3" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
-                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
-                if (SHUTTER_ON_DELAY2 > 10000000)
-                  SHUTTER_ON_DELAY2 = 10000000;
-#endif // DELAY_DEBUG              
-#else // BL2_DEBUG
-                // The meaning of "3" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
-                BACKLASH_2 = BACKLASH_2 + BL_STEP;
-                if (BACKLASH_2 > 10000)
-                  BACKLASH_2 = 10000;
-#endif // BL2_DEBUG
-#else // BL_DEBUG
-                // The meaning of "3" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
-                g.backlash = g.backlash + BL_STEP;
-                if (g.backlash > 10000)
-                  g.backlash = 10000;
-#endif // BL_DEBUG
-//                display_all();
                 display_one_point_params();
+#endif
               }
               break;
 
@@ -876,14 +879,14 @@ Serial.println(keypad.key[1].kchar);
             {
               g.paused = 3;
             }
-            display_comment_line("    Paused    ");
+            display_comment_line("       Paused       ");
             letter_status("P");
           }
           else
             // In 1-point stacking, we abort
           {
             g.frame_counter = 0;
-            display_comment_line("Stacking abort");
+            display_comment_line("   Stacking abort   ");
           }
           g.stacker_mode = 0;
         }
@@ -928,7 +931,6 @@ Serial.println(keypad.key[1].kchar);
     }  // End of if(keyStateChanged)
   } // End of two-key / one-key if
 
-//  EEPROM.commit();
   return;
 }
 

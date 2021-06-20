@@ -2,12 +2,14 @@ void calibration()
 /* Calibration of either one or both limiting switches - placing soft limits (limit1, limit2) such that the hard
    limits (triggering the limiting switches) normally doesn't occur.
 
+   All opeations here are done only when not moving.
+
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.
 
    In telescope mode (if TELE_SWITCH is defined), this routine is executed every time at boot time, for absolute calibration of the single switch.
 */
 {
-#ifdef TEST_SWITCH
+#if defined(TEST_SWITCH)
   return;
 #endif
 
@@ -35,7 +37,8 @@ void calibration()
       break;
 
     case 3: // Triggered limit1 and stopped, will now move forward to calibrate limit1 on the first switch-off position
-      go_to(g.pos + 2 * BREAKING_DISTANCE, g.speed_limit);
+    // Warning: here we should move far enough, so by the time we stop the limiter has to be off again (the "4" multiplier) !!!
+      go_to(g.pos + 4 * BREAKING_DISTANCE, g.speed_limit);
       display_all();
       g.calibrate_flag = 4;
       break;
@@ -57,7 +60,6 @@ void calibration()
         EEPROM.put( ADDR_LIMIT2, g.limit2);
         // Saving the current position to EEPROM:
         EEPROM.put( ADDR_POS, g.pos );
-        EEPROM.commit();
       }
       g.calibrate_flag = 0;
       g.accident = 0;

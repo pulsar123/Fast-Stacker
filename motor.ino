@@ -14,7 +14,7 @@ void motor_control()
   // Current time in microseconds:
 #ifdef PRECISE_STEPPING
   // Moving the motor timer back in time if skipped steps were detected in this travel:
-  g.t = micros() - g.dt_backlash;
+  g.t = micros() - g.dt_lost;
 #else
   g.t = micros();
 #endif
@@ -97,7 +97,7 @@ void motor_control()
 
 
   // Integer position (in microsteps):
-  COORD_TYPE pos_short = floorMy(g.pos);
+  COORD_TYPE pos_short = (COORD_TYPE)floor(g.pos);
 
   // If speed changed the sign since the last step, change motor direction:
   if (g.speed > 0.0 && g.speed_old <= 0.0)
@@ -133,9 +133,18 @@ void motor_control()
     // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
     COORD_UTYPE d = abs(pos_short - g.pos_short_old);
 
+#ifdef TIMING
+    g.d_sum += (float)d;
+    g.d_N++;
+    if (d > 1)
+      g.d_Nbad++;
+    if (d > g.d_max)
+      g.d_max = d;
+#endif    
+
 #ifdef PRECISE_STEPPING               //  Precise stepping module
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Fixing the rare occasions of a skipped motor step, by adjusting the time delay constant (g.dt_backlash) to the point
+    // Fixing the rare occasions of a skipped motor step, by adjusting the time delay constant (g.dt_lost) to the point
     // when we are back in the past around the time the correct step should have been taken.
     // This is just a fix, not a good solution if your SPEED_LIMIT is so high that the Arduino loop becomes
     // comparable or longer than the time interval between motor steps at the highest speed allowed.
@@ -156,7 +165,7 @@ void motor_control()
         d_sign = -1;
 
       // Time correction depends on the travel history between t_old and now
-      short dt1_backlash = 0;
+      int dt1_lost = 0;
       float pos_a;
       COORD_TYPE pos_short_new = g.pos_short_old + (COORD_TYPE)d_sign;
       float pos_new = (float)pos_short_new;
@@ -171,7 +180,7 @@ void motor_control()
             // First subcase: the single step should have happened during the latter (accel=0) part of the time interval since t_old
           {
             if (g.speed1 != 0.0)
-              dt1_backlash = dt - dt_a - (pos_new - pos_a) / g.speed1;
+              dt1_lost = dt - dt_a - (pos_new - pos_a) / g.speed1;
           }
           else if ((pos_new >= g.pos_old && pos_new < pos_a) || (pos_new <= g.pos_old && pos_new > pos_a))
             // Second subcase: the step should have happened in the first (accel!=0) part of the time interval since t_old
@@ -186,7 +195,7 @@ void motor_control()
 
         case 3: // The simplest case when we had zero acceleration since t0
           if (g.speed0 != 0.0)
-            dt1_backlash = dt - (pos_new - g.pos0) / g.speed0;
+            dt1_lost = dt - (pos_new - g.pos0) / g.speed0;
           break;
       }
 
@@ -204,26 +213,32 @@ void motor_control()
           float dt2 = (-g.speed0 + D2) / (g.accel_v[2 + g.accel]);
           // Picking the right solution (if any):
           if (dt - dt1 > 0 && dt - dt1 < g.t - g.t_old)
-            dt1_backlash = dt - dt1;
+            dt1_lost = dt - dt1;
           else if (dt - dt2 > 0 && dt - dt2 < g.t - g.t_old)
-            dt1_backlash = dt - dt2;
+            dt1_lost = dt - dt2;
         }
       }
 
       // Sanity checks:
       // The single step event should have happened somewhere between t_old and t:
-      if (dt1_backlash > 0 && dt1_backlash < g.t - g.t_old)
+      if (dt1_lost > 0 && dt1_lost < g.t - g.t_old)
       {
         // Moving back in time:
-        g.t = g.t - dt1_backlash;
-        dt = dt - dt1_backlash;
+        g.t = g.t - dt1_lost;
+        dt = dt - dt1_lost;
         // Time lag correction is cumulative for the current travel (gets reset to 0 when reaching stop_now):
-        g.dt_backlash = g.dt_backlash + dt1_backlash;
+        g.dt_lost = g.dt_lost + dt1_lost;
         // Now the current position only differs from pos_short_old by a single step:
         pos_short = pos_short_new;
         g.pos = pos_new;
         d = 1;
       }
+#ifdef TIMING
+      else
+      {
+        g.N_insanity++;
+      }
+#endif      
 
     }  // if (d > 1)
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

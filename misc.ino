@@ -2,17 +2,21 @@
 
 void my_setCursor(byte pos, byte line, byte set)
 /*
- * Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new displey pixel coordinates -
- * stored in global vars g.x0, g.y0. If set=1, also execute tft.setCursor with these ccoordinates
+ * Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new display pixel coordinates -
+ * stored in global vars g.x0, g.y0. If set=1, also execute tft.setCursor with these coordinates
  */
 {
 
   if (line < TFT_NY-1)
-//    g.y0 = TOP_GAP + FONT_HEIGHT - 1 + line*(LINE_GAP+FONT_HEIGHT);
     g.y0 = TOP_GAP - 1 + line*(LINE_GAP+FONT_HEIGHT);
     else
     // Bottom (status) line is special, separated from the rest:
     g.y0 = 128 - TOP_GAP - 1 - FONT_HEIGHT -3;
+
+#ifdef TIMING
+  if (line == TFT_NY)
+    g.y0 = 128 - TOP_GAP - 1 - 2*FONT_HEIGHT -6;
+#endif
 
   if (pos < 7)
     g.x0 = LEFT_GAP + pos*FONT_WIDTH;
@@ -66,23 +70,6 @@ char *ftoa(char *a, float f, int precision)
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-
-COORD_TYPE floorMy(float x)
-/* A limited implementation of C function floor - only to convert from float to COORD_TYPE.
-   Works with positive, negative numbers and 0.
-*/
-{
-  COORD_TYPE m = x;
-  if (x >= 0.0)
-    return m;
-  else
-    return m - 1;
-}
-
-
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 COORD_TYPE roundMy(float x)
 /* Rounding of float numbers, output - COORD_TYPE.
    Works with positive, negative numbers and 0.
@@ -107,7 +94,7 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
 
   // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
   //!!!
-  //  if (g.uninterrupted || g.calibrate_flag == 2)
+//    if (g.uninterrupted || g.calibrate_flag == 2)
   if (g.uninterrupted)
     return;
 
@@ -134,14 +121,19 @@ void change_speed(float speed1_loc, byte moving_mode1, char accel)
   {
     // Starting moving
     g.started_moving = 1;
+    //!!!!
+    if (g.accel <0 )
+      g.direction = -1;
+      else
+      g.direction = 1;
     motion_status();
+#ifndef DISABLE_MOTOR
     if (g.reg.save_energy)
     {
-#ifndef DISABLE_MOTOR
       iochip.digitalWrite(EPIN_ENABLE, LOW);
-#endif
       delay(ENABLE_DELAY_MS);
     }
+#endif
   }
 
   // Updating the target speed:
@@ -174,7 +166,7 @@ void go_to(float pos1, float speed)
     return;
 
   // Ultimate physical coordinate to achieve:
-  COORD_TYPE pos1_short = floorMy(pos1);
+  COORD_TYPE pos1_short = (COORD_TYPE)floor(pos1);
 
   // Current physical coordinate:
   COORD_TYPE pos_short_phys = g.pos_short_old + g.BL_counter;
@@ -240,7 +232,7 @@ void go_to(float pos1, float speed)
       // Case 1: Moving towards the target, in the bad (negative) direction:
       g.speed <= 0.0 && !speed_changes ||
       // Case 2: Moving in the bad direction, will have to reverse the direction to the good one, but at the end not enough to compensate for BL:
-      g.speed <= 0.0 && speed_changes && floorMy(dx_stop - dx) < g.backlash ||
+      g.speed <= 0.0 && speed_changes && (COORD_TYPE)floor(dx_stop - dx) < g.backlash ||
       // Case 3: Initially moving in the good direction, but reverse at the end, so BL compensation is needed:
       g.speed > 0.0 && speed_changes)
     {
@@ -284,7 +276,7 @@ void stop_now()
   g.moving = 0;
   g.t_old = g.t;
   g.pos_old = g.pos;
-  g.pos_short_old = floorMy(g.pos);
+  g.pos_short_old = (COORD_TYPE)floor(g.pos);
 
   /*
     if (g.telescope == 0)
@@ -332,7 +324,7 @@ void stop_now()
     g.noncont_flag = 1;
 
 #ifdef PRECISE_STEPPING
-  g.dt_backlash = 0;
+  g.dt_lost = 0;
 #endif
 #ifdef EXTENDED_REWIND
   g.no_extended_rewind = 0;
@@ -344,7 +336,6 @@ void stop_now()
     g.test_flag = 4;
 #endif
 
-//  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -427,7 +418,7 @@ void rail_reverse(byte fix_points)
   EEPROM.put( ADDR_POS, g.pos );
   g.pos0 = g.pos;
   g.pos_old = g.pos;
-  g.pos_short_old = floorMy(g.pos);
+  g.pos_short_old = (COORD_TYPE)floor(g.pos);
   if (fix_points)
   {
     // Updating the current two points positions:
@@ -437,7 +428,6 @@ void rail_reverse(byte fix_points)
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
-//  EEPROM.commit();
 
   return;
 }
@@ -481,7 +471,7 @@ void read_params(byte n)
     g.Nframes = Nframes();
   }
   display_all();
-  sprintf(g.buffer, "Loading Reg %2d", n);
+  sprintf(g.buffer, "   Loading Reg %2d   ", n);
   display_comment_line(g.buffer);
   if (g.reg.straight != straight_old)
     // If the rail needs a rail reverse, initiate it:
@@ -491,7 +481,6 @@ void read_params(byte n)
   }
   // Loading new register clears the current memory point index:
   g.current_point = -1;
-//  EEPROM.commit();
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -502,10 +491,9 @@ void save_params(byte n)
 // Now only used in macro mode
 {
   EEPROM.put( g.addr_reg[n], g.reg);
-  EEPROM.commit();
-  sprintf(g.buffer, "Saved to Reg%1d", n);
+  sprintf(g.buffer, "   Saved to Reg%1d    ", n);
   display_comment_line(g.buffer);
-  tft.print("       ");
+//  tft.print("       ");
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -624,7 +612,7 @@ void set_memory_point(char n)
     return;
   if (g.locked[g.ireg - 1])
   {
-    display_comment_line("    Locked    ");
+    display_comment_line("       Locked       ");
     return;
   }
   g.current_point = n - 1;
@@ -642,10 +630,9 @@ void set_memory_point(char n)
 #endif
   // Saving the changed register as default one (macro mode) or as the current (ireg) one:
   EEPROM.put( g.addr_reg[g.ireg], g.reg);
-//  EEPROM.commit();
   g.Nframes = Nframes();
   display_all();
-  sprintf(g.buffer, "  P%1d was set  ", n);
+  sprintf(g.buffer, "     P%1d was set     ", n);
   display_comment_line(g.buffer);
   return;
 }
@@ -668,7 +655,7 @@ void goto_memory_point(char n)
   g.delta_pos_curr = g.delta_pos[g.current_point];
   // Travelling to the memory point position corrected for the current temperature:
   go_to((float)(g.reg.point[g.current_point] + g.delta_pos[g.current_point]) + 0.5, g.speed_limit);
-  sprintf(g.buffer, " Going to P%1d  ", n);
+  sprintf(g.buffer, "    Going to P%1d     ", n);
   display_comment_line(g.buffer);
   return;
 }
@@ -691,16 +678,37 @@ void Read_limiters()
    Sets g.limit_on to HIGH/1 if any limiter is enabled; sets it to LOW/0 otherwise.
 */
 {
+  byte limit_on;
 #ifdef MOTOR_DEBUG
   g.limit_on = 0;
+  return;
 #else
-  g.limit_on = digitalRead(PIN_LIMITERS);
+  limit_on = digitalRead(PIN_LIMITERS);
 #ifdef HALL_SENSOR
 //!!!!
 //  g.limit_on = g.telescope - g.limit_on;
   g.limit_on = 1 - g.limit_on;
 #endif
 #endif
+
+g.limit_on = limit_on;
+/*
+// Impulse noise suppression:
+  if (limit_on == 1)
+    {
+      g.limiter_counter++;
+      if (g.limiter_counter >= N_LIMITER)
+      {
+        g.limit_on = 1;
+      }
+    }
+    else
+    {
+      g.limit_on = 0;
+      g.limiter_counter = 0;
+    }
+*/
+  
   return;
 }
 

@@ -1,4 +1,4 @@
-/* Sergey Mashchenko 2015, 2016
+/* Sergey Mashchenko 2015-2021
 
    Fast Stacker: an automated macro rail for focus stacking
 
@@ -68,12 +68,14 @@ void setup() {
   // Completely disabling WiFi:
   WiFi.mode( WIFI_OFF );
   WiFi.forceSleepBegin();
+//  ESP.deepSleep(1000, WAKE_RF_DISABLED);
   
   EEPROM.begin(ADDR_END); // Initializing EEPROM
   
   iochip.begin(); // Initializing the port expander
   iochip.pinMode    (IO_MODE);
   iochip.pullupMode (IO_PULLUP);
+  iochip.inputInvert(0B0000000000000000); // Likely not needed
   // Setting the requested microstepping mode:
   iochip.digitalWrite(EPIN_M0, MOTOR_M0);
   iochip.digitalWrite(EPIN_M1, MOTOR_M1);
@@ -157,12 +159,13 @@ void setup() {
 
 // Initializing the display
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
   tft.setTextWrap(true);
   tft.setTextFont(2);
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   
+
 
   // Checking if EEPROM was never used:
   if (EEPROM.read(0) == 255 && EEPROM.read(1) == 255)
@@ -182,6 +185,35 @@ void setup() {
 
   // Should be the last line in setup:
   g.setup_flag = 0;
+
+//!!!!
+/*
+int tmp1, tmp2;
+char buf21[21];
+sprintf(buf21, "                    ");
+g.stacker_mode = 1;
+tft.fillScreen(TFT_WHITE);
+  
+for (int i=0; i<15; i++)
+{
+  for(g.frame_counter=1; g.frame_counter<590; g.frame_counter+=588)
+  {
+tmp1 = micros();
+//display_frame_counter();
+//  tft.fillScreen(TFT_BLACK);
+for (int j=0; j<6; j++)
+{
+  my_setCursor(0, j, 1);
+  tft.print(buf21);
+}
+
+tmp2 = micros();
+Serial.println(tmp2-tmp1);
+delay(1000);
+  }
+}
+delay(10000);
+*/
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -222,9 +254,8 @@ void loop()
   motor_control();
 
 
-//!!!
-  if (g.moving == 0)
-    EEPROM.commit();
+  if (g.moving == 0 && g.started_moving == 0)
+    EEPROM.commit(); // The actual EEPROM update only happens when not moving
 #ifdef TIMING
   timing();
 #endif
