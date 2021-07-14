@@ -1,252 +1,82 @@
 void motor_control()
 /* Controlling the stepper motor, based on current time, target speed (speed1), acceleration (accel),
-   values at the last accel change (t0, pos0, speed0), and old integer position pos_old_short.
+   values at the last accel change (t0, pos0, speed0), and old integer position pos_int_old.
 
    Important: g.moving can be set to zero only here (by calling stop_now())! Also, it should be set to 1 only outside of this function.
+
+   v2.0: I plan to completely re-write this algorithm. It should become one of a "prediction-correction" type. The main points:
+
+     There is only one model special event requiring syncing the model and real times:
+     - The moment when a step should be taken
+     I have two time lines - the real time (as returned by micros() ), and the model time: micros() - g.dt_lost
+     The real and model times are only synced when we overshoot a special event (making a step). Sync is achieved by increasing g.dt_lost accordingly,
+       so all special events happen exactly as planned (in the model timeline).
+     If a model change comes from a real time event (hit a limiter; pressed/depressed a key while moving), the action is taken only when we overshoot the next special event
+       (when we the real and model times are synced via g.dt_lost).
+     Every time we discover that a special event has just happened:
+     - First we adjust (sync) the model time (g.dt_lost)
+     - We carry out the action (make a step plus optionally change direction)
+     - The model is updated/changed as needed (e.g. there was a key press/depress, limiter hit, between the previous step and the current one)
+     - And then we predict the model time when the next special event
+       (step) should happen.
+
+  This way, all motions happen exactly according to the model equations (in terms of position), with speeds a bit slower than in the model. If properly implemented,
+  this should result in zero missed steps even if some Arduino loops are significantly longer than a time between adjacent steps (because of displaying data, or some internal
+  microprocessor delays - happens to ESP8266 regularly).
+
+  Overall strategy:
+  1) An event (external, internal) triggers a call to one of the three motion model generators. This assigns values to all model parameters and vectors, fully describing
+  the motion until it stops. If there was a prior model, the new one replaces it.
+   - go_to: always starting from rest, go to a specific coordinate, stop there.
+   - accelerate: accelerate until hitting the speed limit (optionally), then hit a soft limit, decelerate and stop. Can be initiated while moving. This is the only model
+      allowing for a direction change.
+   - stop: break using the prescribed accceleration until it stops. Can only be called if moving.
+  2) Inside motor_control, use the model to predict the next motor controlling event: a step.
+   - If currently at rest, start processing the model during the first call of the function
+   - If currently moving, start processing the new model at the next step (when model and physical times are synced)
+  3) Inside motor_control, execute the next event (step with an optional dir change) after the predicted time, while syncing the model and physical times.
+  4) Make sure stop event is handled reliably.
+   - Overshoot slightly all moves (by 1-3 microsteps) to account for floating point errors, and stop abruptly when reaching the target coordinate in the last model leg.
 */
+
 {
-  COORD_ULONG dt, dt_a;
+  TIME_TYPE dt, dt_a;
   float dV;
   char new_accel;
   byte instant_stop, i_case;
+  byte make_prediction = 0;
 
-  g.t_old = g.t;
-  // Current time in microseconds:
-#ifdef PRECISE_STEPPING
-  // Moving the motor timer back in time if skipped steps were detected in this travel:
+  // Current time in microseconds (might not be synced yet in the current Arduino loop):
+  // Model time (can be behind the physical time):
   g.t = micros() - g.dt_lost;
-#else
-  g.t = micros();
-#endif
 
-  // If we initiated a movement elsewhere (by setting started_moving=1), we should only update g.t0 here. Meaning
-  // that the motion is only actually initiated here, skipping all the potential delays (especially when using
-  // SAVE_ENERGY).
+  // no motion, so simply returning:
+  if (g.moving == 0 && g.started_moving == 0)
+    return;
+
   if (g.started_moving == 1)
+    // We are here if we are starting to move - initiated from a prior either go_to() or accelerate() commands (only when at rest)
   {
     g.started_moving = 0;
     g.moving = 1;
-    g.t0 = g.t;
-    // We skip this loop, as no point solving the equation of motion for the t=t0 point (dt=0)
-    return;
+    g.speed = 0.0;
+    g.model_t0 = g.t;
+    // We make prediction either when we start from rest (here), or at the next model/real time sync (below)
+    make_prediction = 1;
+    // No need to sync model/real times here, as we start from rest, so they are identical for now (g.dt_lost=0)
   }
 
-  // moving=0 means no motion, so simply returning:
-  if (g.moving == 0)
-    return;
 
-
-  ////////   PART 1: estimating the current position, pos (solving the equation of motion)
-
-#ifdef TIMING
-  // Last loop length:
-  g.dt_timing = g.t - g.t_old;
-#endif  
-
-  // Time in microseconds since the last accel change:
-  dt = g.t - g.t0;
-  // Storing the current accel value:
-  new_accel = g.accel;
-  instant_stop = 0;
-
-  if (g.accel != 0)
-    // Accelerating/decelerating cases
+  // If it's time to execute an event (step), do it now, and sync model time with real time
+  if (g.t >= g.t_next_step)
   {
-    // Change of speed (assuming accel hasn't changed from t0 to t);
-    // can be negative or positive:
-    dV = g.accel_v[2 + g.accel] * (float)dt;
+    make_prediction = 1;
 
-    // Current speed (can be positive or negative):
-    g.speed = g.speed0 + dV;
-
-    // If going beyond the target speed, stop accelerating:
-    if ((g.accel > 0 && g.speed >= g.speed1) || (g.accel < 0 && g.speed <= g.speed1))
-    {
-      i_case = 1;
-      // t_a : time in the past (between t0 and t) when acceleration should have changed to 0, to prevent going beyong the target speed
-      // dt_a = t_a-t0; should be >0, and <dt:
-      dt_a = (g.speed1 - g.speed0) / g.accel_v[2 + g.accel];
-      // Current position has two components: first one (from t0 to t_a) is still accelerated,
-      // second one (t_a ... t) has accel=0:
-      g.pos = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2 + g.accel] * (float)dt_a) + g.speed1 * (float)(dt - dt_a);
-      g.speed = g.speed1;
-      new_accel = 0;
-      // If the target speed was zero, stop now
-      if (fabs(g.speed1) < SPEED_TINY)
-      {
-        // At this point we stopped, so no need to revisit the motor_control module
-        instant_stop = 1;
-        stop_now();
-      }
-    }
-    else
-    {
-      i_case = 2;
-      // Current position when accel !=0 :
-      g.pos = g.pos0 +  (float)dt * (g.speed0 + 0.5 * dV );
-    }
-  }
-  else
-  {
-    i_case = 3;
-    // Current position when accel=0
-    g.pos = g.pos0 +  (float)dt * g.speed0;
-  }
-
-  //////////  PART 2: Estimating if we need to make a step, and making the step if needed
-
-
-  // Integer position (in microsteps):
-  COORD_TYPE pos_short = (COORD_TYPE)floor(g.pos);
-
-  // If speed changed the sign since the last step, change motor direction:
-  if (g.speed > 0.0 && g.speed_old <= 0.0)
-  {
-#ifndef DISABLE_MOTOR
-    digitalWrite(PIN_DIR, 1-g.reg.straight);
-#endif
-    delayMicroseconds(STEP_LOW_DT);
-  }
-  else if (g.speed < 0.0 && g.speed_old >= 0.0)
-  {
-#ifndef DISABLE_MOTOR
-    digitalWrite(PIN_DIR, g.reg.straight);
-#endif
-    delayMicroseconds(STEP_LOW_DT);
-  }
-
-  // If the pos_short changed since the last step, do another step
-  // This implicitely assumes that Arduino loop is shorter than the time interval between microsteps at the largest allowed speed
-  if (pos_short != g.pos_short_old)
-  {
-    // One microstep (driver direction pin should have been written to elsewhere):
-#ifndef DISABLE_MOTOR
-    digitalWrite(PIN_STEP, LOW);
-#endif
-    // Minimum delay required by the driver:
-    delayMicroseconds(STEP_LOW_DT);
-#ifndef DISABLE_MOTOR
-    digitalWrite(PIN_STEP, HIGH);
-#endif
-
-    // How many steps we'd need to take at this call:
-    // If it is > 1, we've got a problem (skipped steps), potential solution is below, in PRECISE_STEPPING module
-    COORD_UTYPE d = abs(pos_short - g.pos_short_old);
-
-#ifdef TIMING
-    g.d_sum += (float)d;
-    g.d_N++;
-    if (d > 1)
-      g.d_Nbad++;
-    if (d > g.d_max)
-      g.d_max = d;
-#endif    
-
-#ifdef PRECISE_STEPPING               //  Precise stepping module
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Fixing the rare occasions of a skipped motor step, by adjusting the time delay constant (g.dt_lost) to the point
-    // when we are back in the past around the time the correct step should have been taken.
-    // This is just a fix, not a good solution if your SPEED_LIMIT is so high that the Arduino loop becomes
-    // comparable or longer than the time interval between motor steps at the highest speed allowed.
-    // Do some TIMING tests to figure out the timings, if you use parts with different specs (motor, rail, LCD, keypad).
-    // In my setup, average Arduino loop length is 250 us when moving, or
-    // about 50% of the microstep interval when moving at the maximum (5 mm/s) speed; the longest loops are
-    // around 120%, but my rail skips only a couple of steps per 10,000 steps on average. This is easily
-    // fixable (see below). If you get a sizable fraction (say, more than 5 percent) of the steps skipped,
-    // you need to lower down your SPEED_LIMIT. For an arbitrary rail and motor, make sure the following condition is met:
-    // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
-    char d_sign;
-    if (d > 1)
-    {
-      // The single step with a corresponding sign which should have been taken
-      if (pos_short > g.pos_short_old)
-        d_sign = 1;
-      else
-        d_sign = -1;
-
-      // Time correction depends on the travel history between t_old and now
-      int dt1_lost = 0;
-      float pos_a;
-      COORD_TYPE pos_short_new = g.pos_short_old + (COORD_TYPE)d_sign;
-      float pos_new = (float)pos_short_new;
-      byte solve_square_equation = 0;
-      switch (i_case)
-      {
-        case 1: // The most difficult case when acceleration changed to zero since t_old, when we hit the target speed
-          // Coordinate corresponding to t_a (when accel changed to zero; in the past; should be between g.pos_old and g.pos):
-          pos_a = g.pos0 + (float)dt_a * (g.speed0 + 0.5 * g.accel_v[2 + g.accel] * (float)dt_a);
-          // Two subcases
-          if ((pos_new >= pos_a && pos_new <= g.pos) || (pos_new <= pos_a && pos_new >= g.pos))
-            // First subcase: the single step should have happened during the latter (accel=0) part of the time interval since t_old
-          {
-            if (g.speed1 != 0.0)
-              dt1_lost = dt - dt_a - (pos_new - pos_a) / g.speed1;
-          }
-          else if ((pos_new >= g.pos_old && pos_new < pos_a) || (pos_new <= g.pos_old && pos_new > pos_a))
-            // Second subcase: the step should have happened in the first (accel!=0) part of the time interval since t_old
-          {
-            solve_square_equation = 1;
-          }
-          break;
-
-        case 2: // The intermediate difficulty case when the acceleration was constant since t0
-          solve_square_equation = 1;
-          break;
-
-        case 3: // The simplest case when we had zero acceleration since t0
-          if (g.speed0 != 0.0)
-            dt1_lost = dt - (pos_new - g.pos0) / g.speed0;
-          break;
-      }
-
-      if (solve_square_equation)
-      {
-        float D2;
-        // We have to solve a square equation to recover the time from coordinate
-        float D = g.speed0 * g.speed0 - 2.0 * g.accel_v[2 + g.accel] * (g.pos0 - pos_new);
-        // Checking if there is at least one real solution:
-        if (D >= 0.0)
-        {
-          D2 = sqrt(D);
-          // Two possible solutions:
-          float dt1 = (-g.speed0 - D2) / (g.accel_v[2 + g.accel]);
-          float dt2 = (-g.speed0 + D2) / (g.accel_v[2 + g.accel]);
-          // Picking the right solution (if any):
-          if (dt - dt1 > 0 && dt - dt1 < g.t - g.t_old)
-            dt1_lost = dt - dt1;
-          else if (dt - dt2 > 0 && dt - dt2 < g.t - g.t_old)
-            dt1_lost = dt - dt2;
-        }
-      }
-
-      // Sanity checks:
-      // The single step event should have happened somewhere between t_old and t:
-      if (dt1_lost > 0 && dt1_lost < g.t - g.t_old)
-      {
-        // Moving back in time:
-        g.t = g.t - dt1_lost;
-        dt = dt - dt1_lost;
-        // Time lag correction is cumulative for the current travel (gets reset to 0 when reaching stop_now):
-        g.dt_lost = g.dt_lost + dt1_lost;
-        // Now the current position only differs from pos_short_old by a single step:
-        pos_short = pos_short_new;
-        g.pos = pos_new;
-        d = 1;
-      }
-#ifdef TIMING
-      else
-      {
-        g.N_insanity++;
-      }
-#endif      
-
-    }  // if (d > 1)
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#endif // PRECISE_STEPPING
-
+    make_step();
+    g.ipos = g.ipos0 + g.d_ipos_next; // Current coordinate
     // Measuring backlash (it gets larger as we move in the bad - negative - direction,
     // and gets smaller as we move in the good - positive - direction):
-    g.BL_counter = g.BL_counter + (g.pos_short_old - pos_short);
+    g.BL_counter = - g.direction;
     // Backlash cannot be negative:
     if (g.BL_counter < 0)
       g.BL_counter = 0;
@@ -254,70 +84,465 @@ void motor_control()
     if (g.BL_counter > g.backlash)
       g.BL_counter = g.backlash;
 
-    // Saving the current position as old:
-    g.pos_short_old = pos_short;
-    g.pos_old = g.pos;
-    // Old speed (to use to detect when the direction has to change):
-    g.speed_old = g.speed;
-  }  // if (pos_short != g.pos_short_old)
 
-  if (g.moving_mode == 1)
-    // Used in go_to mode
+    // Syncing time
+    g.dt_lost += g.t - g.t_next_event; // Adding the current step's time mismatch to the total mismatch
+    g.t = g.t_next_event; // This syncs the model time. We are now at exactly the next_event point, from the model's point of view
+
+  }
+
+  if (make_prediction == 0)
+    // If there is no need to make a prediction, we are done here
+    return;
+
+  // We are here only if we need to make a prediction
+  // At this point, g.t has already beeing synced
+
+  // Finding the model leg for the current time:
+  char i0 = -1;
+  TIME_TYPE dt = g.t - g.model_t0; // Current (already synced) model time, relative to the initial model time
+  for (byte i = 0; i < g.Npoints - 1; i++)
   {
-    // For small enough speed, we stop instantly when reaching the target location (or overshoot the precise location):
-    if ((g.speed1 >= 0.0 && g.speed >= 0.0 && g.pos >= g.pos_goto || g.speed1 <= 0.0 && g.speed <= 0.0 && g.pos <= g.pos_goto))
-      // Just a hack for now (to fix a rare bug when rail keeps moving and not stopping)
-      //        && fabs(g.speed) < SPEED_SMALL + SPEED_TINY)
+    if (dt >= g.model_time[i] && dt < g.model_time[i + 1])
     {
-      new_accel = 0;
-      instant_stop = 1;
-      stop_now();
+      i0 = i;
+      break;
     }
+  }
+  if (i0 == -1)
+    // A problem, should never happen. Emergency stop
+  {
+    stop_now();
+    return;
+  }
 
-    if (instant_stop == 0)
+  // Immediate stop condition - if we are the the last leg of the model, and at the target coordinate:
+  if (i0 == g.Npoints - 1 && g.ipos == g.ipos_goto)
+  {
+    stop_now();
+    return;
+  }
+
+  float d_pos = g.d_pos_next - g.model_pos[i0];   // Current relative position within the current model leg
+  float d_pos_next = d_pos + g.direction;  // Next step coordinate within the current leg
+
+
+  // Optional direction change
+  char i_dir = -1;
+  for (byte i = i0 + 1; i++; i < g.Npoints - 1)
+  {
+    float delta = g.direction * (g.model_pos[i] - g.ipos); // How far is the leg's starting point, in the direction of motion
+    // If a direction change happenes before the next step, we change direction now
+    if (g.model_ptype[i] == DIR_CHANGE_POINT && delta < 1.0 && delta >= 0.0)
     {
-      // Final position  if a full break were enabled now:
-      // Breaking is always done at maximum deceleration
-      float del_pos;
-      del_pos = 1.0 - 0.5 * (g.speed * g.speed) / g.accel_limit;
-      if (g.speed >= 0.0)
-        //The additional -/+1.0 factor is to make the rail stop 1 step later on average, to deal with round-off errors
-        g.pos_stop = g.pos - del_pos;
-      else
-        g.pos_stop = g.pos + del_pos;
+      i_dir = i;
+      g.direction = g.model_dir[i]; // Should be the more reliable way, compared to simply flipping the direction here
+      motor_direction();
+      motion_status();
 
-      // Checking if pos_goto is bracketed between pos_stop_old and pos_stop (not checked first time):
-      if (g.pos_stop_flag == 1 && ((g.pos_goto > g.pos_stop && g.pos_goto < g.pos_stop_old) || (g.pos_goto < g.pos_stop && g.pos_goto > g.pos_stop_old)))
-        // Time to break happened between the previous and current motor_control calls
-        // If we initiate breaking now, we'll always slightly overshoot the target position (so the previous part
-        // with the instant stop when speed is very small makes sense)
+      // Re-syncing the model to the dir change moment
+      g.dt_lost += g.t - g.model_time[i]; // dt_lost becomes smaller, as we jump into future
+      g.t = g.model_time[i]; // This syncs the model time. We are now at exactly the dir change point, from the model's point of view
+
+      i0 = i;  // Updating current model leg
+      // Integer coordinate (within the current leg) of the next step: moving 1 step in the direction opposite to the original direction (before dir change)
+      d_pos_next = g.ipos + g.direction - g.model_pos[i];
+      d_pos = 0.0;   // Updating the current position in the updated leg
+
+      break;
+    }
+  }
+
+  // Predicting the next step timing
+  // At this point (as we took care of a dir change above), motions are guaranteed to be in one direction only.
+
+  TIME_TYPE dt0 = g.t - g.model_time[i0];  // Current time relative to the leg's initial time
+  TIME_TYPE t_step = 0; // Absolute time for the next step
+
+  float d_pos0_next = d_pos_next + g.model_pos[i0]; // The next step coordinate relative to the initial (first leg) model coordinate
+  char i_next = -1;
+
+  for (byte i = i0; i < g.Npoints - 1; i++)
+  {
+    // Finding the model leg where the next step should happen:
+    if (d_pos0_next >= g.model_pos[i] && d_pos0_next < g.model_pos[i + 1])
+    {
+      i_next = i;
+      
+      if (i > i0)
+      // Things to do if the next step takes us beyond the current leg
       {
-        // Initiating breaking at maximum (2) acceleration index:
-        if (g.speed >= 0.0)
-          new_accel = -2;
-        else
-          new_accel = 2;
-        g.speed1 = 0.0;
+        d_pos_next = d_pos0_next - g.model_pos[i]; // Distance to travel to next step within the leg it belongs to (with a sign)
+        dt0 = 0.0;
       }
-      g.pos_stop_old = g.pos_stop;
-      g.pos_stop_flag = 1;
+
+      if (g.model_accel[i] == 0)
+        // Zero current acceleration = linear leg.
+      {
+        t_step = d_pos_next / g.model_speed[i] + g.model_time[i];
+      }
+      else
+        // Constant acceleration leg
+      {
+        // Solving a quadratic equation
+        // Discriminant square:
+        float D2 = g.model_speed[i] * g.model_speed[i] + 2.0 * g.accel_v[2 + g.model_accel[i]] * d_pos_next;
+        // This should always be true. the only times it would be untrue if there is a direction change before the next step;
+        // This was handled above, so should never happen.
+        if (D2 .ge. 0.0)
+        {
+          float D = sqrt(D2);
+          // Two possible prediction times, relative to the current time:
+          TIME_TYPE dt1 = roundMy((-g.model_speed[i] - D) / g.accel_v[2 + g.model_accel[i]]) - dt0;
+          TIME_TYPE dt2 = roundMy((-g.model_speed[i] + D) / g.accel_v[2 + g.model_accel[i]]) - dt0;
+          // Picking a dt solution which is both physical (>=0) and smaller than the other one (if they are both physical)
+          if (dt1 >= 0 && (dt2 < 0 || dt1 <= dt2))
+          {
+            t_step = dt1 + dt0 + g.model_time[i];
+          }
+          else if (dt2 >= 0 && (dt1 < 0 || dt2 < dt1))
+          {
+            t_step = dt2 + dt0 + g.model_time[i];
+          }
+        }
+        else
+          // This should never happen. Emergency stop
+        {
+          stop_now();
+          return;
+        }
+
+      }
     }
   }
 
-
-  //////////  PART 3: Finalizing
-
-  // If accel was modified here, update pos0, t0 to the current ones:
-  if (new_accel != g.accel || instant_stop == 1)
+  // Failed to predict the next step. This should never happen. Emergency stop
+  if (t_step == 0 || i_next == -1)
   {
-    g.t0 = g.t;
-    g.pos0 = g.pos;
-    g.speed0 = g.speed;
-    g.accel = new_accel;
+    stop_now();
+    return;
   }
 
+
+  g.t_next_step = t_step;
+  g.d_ipos_next = roundMy(d_pos0_next);
+
+  return;
+
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void change_speed(float speed1_loc, byte moving_mode1, char accel)
+/* Run the function every time you want to change speed. It will figure out required acceleration based on current speed and speed1,
+   and will update t0, speed0, pos0, if accel changed here. The parameter "accel" is the suggested acceleration (0, 1, or 2).
+   Inputs:
+    - speed1_loc: new target speed.
+    When moving_mode1=1, global moving_mode=1 is  enabled (to be used in go_to).
+*/
+{
+  char new_accel;
+
+  // Ignore any speed change requests during emergency breaking  (after hitting a limiter)
+  //!!!
+  //    if (g.uninterrupted || g.calibrate_flag == 2)
+  if (g.uninterrupted)
+    return;
+
+  g.moving_mode = moving_mode1;
+
+  if (speed1_loc >= g.speed)
+    // We have to accelerate
+    new_accel = accel;
+  else
+    // Have to decelerate:
+    new_accel = -accel;
+
+  if (new_accel != g.accel)
+    // Acceleration changed
+  {
+    g.accel = new_accel;
+    // Memorizing the current values for t, speed and pos:
+    g.t0 = g.t;
+    g.speed0 = g.speed;
+    g.pos0 = g.pos;
+  }
+
+  if (g.accel != 0 && g.moving == 0 && g.started_moving == 0)
+  {
+    // Starting moving
+    g.started_moving = 1;
+    //!!!!
+    if (g.accel < 0 )
+      g.direction = -1;
+    else
+      g.direction = 1;
+    motion_status();
+#ifndef DISABLE_MOTOR
+    if (g.reg.save_energy)
+    {
+      iochip.digitalWrite(EPIN_ENABLE, LOW);
+      delay(ENABLE_DELAY_MS);
+    }
+#endif
+  }
+
+  // Updating the target speed:
+  g.speed1 = speed1_loc;
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void go_to(COORD_TYPE ipos1, float speed)
+/* Initiating a travel to pos1 at given target speed (positive number) and maximum acceleration.
+   With non-zero g.backlash constant, all go_to moves result in fully backlash-compensated moves. The
+   backlash model used is the simplest possible: when starting from a good initial position
+   (g.BL_counter=0), meaning the physical coordinate = program coordinate, and
+   moving in the bad (negative pos) direction, the rail will not start moving until g.backlash
+   steps are done (and g.BL_counter gets the largest possible value, g.backlash), and then it starts
+   moving instantly. If switching direction, again the rail doesn't move until g.backlash steps
+   are carried out, and g.BL_counter becomes 0 (smallest possible value), and then it starts moving
+   instantly. The current physical coordinate of the rail is always connected to the program
+   coordinate via equation:
+
+   pos_phys = pos_prog + g.BL_counter
+
+   v2.0
+   Complete rework, based on model time, and models of motion. For now, only the simplest case -
+   starting from rest - is considered. All coordinates are integers now (as we only sync model and real times
+   when making a step, or changing the direction).
+
+   Soft limit has to be enforced here!
+
+*/
+{
+  float speed1_loc;
+  byte speed_changes;
+
+  // New (in v2.0): will do nothing unless we are at rest:
+  if (g.moving || g.started_moving)
+    return;
+
+  // We are already there, and no need for backlash compensation, so just returning:
+  if (ipos1 == g.ipos && g.BL_counter == 0)
+    return;
+
+  if (ipos1 >= g.ipos)
+    g.direction = 1;
+  else
+    g.direction = -1;
+
+  motion_status();
+  motor_direction(); // Explicitly sending the proper direction command to the motor
+
+  if (g.direction > 0)
+    // Will be moving in the good (positive) direction (no need for backlash compensation):
+  {
+    speed1_loc = speed;
+  }
+  else
+    // Will be moving in the bad (negative) direction (have to overshoot, for future backlash compensation):
+  {
+    // Overshooting by g.backlash microsteps (this will be compensated in backlash() function after we stop):
+    ipos1 = ipos1 - g.backlash;
+    speed1_loc = -speed;
+  }
+
+  // The coordinate to stop at, to be used in motor_control():
+  g.ipos_goto = ipos1;
+
+  // Distance to travel (always positive):
+  float dx = (float)(fabs(ipos1 - g.ipos));
+
+  // Describing the motion model.
+  // First point:
+  g.model_accel[0] = 2;
+  g.model_time[0] = 0;
+  g.model_speed[0] = 0.0;
+  g.model_pos[0] = 0.0; // Model position (float) relative to the initial point (g.ipos0)
+  g.model_ptype[0] = INIT_POINT;
+
+  // First - how many model points? 3 or 4, depending on how far to travel, and the maximum travel speed.
+  // Maximum speed (if there are no speed limits):
+  float Vmax = sqrt(g.accel_limit * dx);
+  if (Vmax > speed1_loc)
+  {
+    g.Npoints = 4; // More points, as we hit the speed limit
+
+    g.model_accel[1] = 0;  // Hit the speed limit
+    g.model_time[1] = speed1_loc / g.accel_limit; // Time to hit the speed limit
+    g.model_speed[1] = speed;  // Speed at this moment (with a sign)
+    g.model_pos[1] = g.direction * 0.5 * speed1_loc * speed1_loc / g.accel_limit;
+    g.model_ptype[1] = ACCEL_CHANGE_POINT;
+
+    float d2 = dx - g.accel_limit * g.model_time[1] * g.model_time[1];
+    g.model_accel[2] = -2;  // Starting to decelerate
+    g.model_time[2] = d2 / speed1_loc + g.model_time[1];
+    g.model_speed[2] = speed;
+    g.model_pos[2] = g.model_pos[1] + g.direction * d2;
+    g.model_ptype[2] = ACCEL_CHANGE_POINT;
+
+    g.model_accel[3] = 0;  // Stopped
+    g.model_time[3] = g.model_time[2] + g.model_time[1];
+    g.model_speed[3] = 0.0;
+    g.model_pos[3] = g.direction * dx;
+    g.model_ptype[3] = STOP_POINT;
+  }
+  else
+  {
+    g.Npoints = 3; // Not hitting the speed limit
+
+    g.model_accel[1] = -2; // Decelerate after hitting the mid-point
+    g.model_time[1] = sqrt(dx / g.accel_limit); // Mid-point time
+    g.model_speed[1] = g.direction * g.accel_limit * g.model_time[1];
+    g.model_pos[1] = g.direction * dx / 2;
+    g.model_ptype[1] = ACCEL_CHANGE_POINT;
+
+    g.model_accel[2] = 0;  // Stopped
+    g.model_time[2] = 2.0 * g.model_time[1];
+    g.model_speed[2] = 0.0;
+    g.model_pos[2] = g.direction * dx;
+    g.model_ptype[2] = STOP_POINT;
+  }
+
+  // For GoTo motions, direction doesn't change:
+  for (byte i = 0, i < g.Npoints)
+    g.model_dir[i] = g.direction;
+
+  g.pos_stop_flag = 0;
+  g.i_point = 0;
+  g.model_init = 1;
+  g.started_moving = 1;
+  g.ipos0 = g.ipos;  // Initial coordinate
+  // Initial time (model_time0) is not set here, as it'll be set in motor_control()
+
+  return;
+
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void stop_now()
+/*
+  Things to do when we decide to stop inside motor_control().
+*/
+{
+#ifdef TIMING
+  // Update timing stats for the very last loop in motion (before setting g.moving=0):
+  //  timing();
+  //  g.total_dt_timing =+ micros() - g.t0_timing;
+#endif
+
+  g.moving = 0;
+  g.model_change = 0;
+  g.t_old = g.t;
+
+  /*
+    if (g.telescope == 0)
+      if (g.error == 1)
+      {
+        unsigned char limit_on = digitalRead(PIN_LIMITERS);
+        // If we fixed the error 1 (limiter on initially) by rewinding to a safe area, set error code to 0:
+        if (limit_on == LOW)
+          g.error = 0;
+      }
+  */
+
+  if (g.reg.save_energy)
+  {
+#ifndef DISABLE_MOTOR
+    iochip.digitalWrite(EPIN_ENABLE, HIGH);
+#endif
+    delay(ENABLE_DELAY_MS);
+  }
+
+  // Saving the current position to EEPROM:
+  if (!g.telescope)
+    EEPROM.put( ADDR_POS, g.ipos );
+
+  if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
+  {
+    // Ending focus stacking
+    g.stacker_mode = 0;
+  }
+
+  // We can lower the breaking flag now, as we already stopped:
+  g.uninterrupted = 0;
+  g.backlashing = 0;
+  g.speed = 0.0;
+  // Refresh the whole display:
+  display_all();
+  if (g.noncont_flag > 0)
+  {
+    letter_status("S");
+  }
+  g.t_display = g.t;
+
+  // Used in continuous_mode=0; we are here right after the travel to the next frame position
+  if (g.noncont_flag == 4)
+    g.noncont_flag = 1;
+
+  g.dt_lost = 0; // Now at rest, so model time is identical to the real time
+
+#ifdef EXTENDED_REWIND
+  g.no_extended_rewind = 0;
+#endif
+#ifdef TEST_SWITCH
+  if (g.test_flag == 1 || g.test_flag == 5)
+    g.test_flag = 2;
+  if (g.test_flag == 3)
+    g.test_flag = 4;
+#endif
+
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void motor_direction()
+// Sending a direction command to the motor, based on the current g.direction value
+// Ideally should be done when not moving yet
+{
+
+  // Only sending command to motor if  there is a mismatch between the desired (g.direction) and current actual (g.dir) motor direction:
+  if (g.dir != g.direction)
+  {
+    delayMicroseconds(STEP_LOW_DT); // Putting the delay here, as we might have just executed a step, in motor_control
+
+    if (g.direction == 1)
+    {
+      g.dir = 1; // This variable reflect the actual state of the motor
+#ifndef DISABLE_MOTOR
+      digitalWrite(PIN_DIR, 1 - g.reg.straight);
+#endif
+    }
+    else
+    {
+      g.dir = 0;
+#ifndef DISABLE_MOTOR
+      digitalWrite(PIN_DIR, g.reg.straight);
+#endif
+    }
+  }
 
   return;
 }
 
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+void make_step()
+// Make one step
+{
+#ifndef DISABLE_MOTOR
+  digitalWrite(PIN_STEP, LOW);
+#endif
+  // Minimum delay required by the driver:
+  delayMicroseconds(STEP_LOW_DT);
+#ifndef DISABLE_MOTOR
+  digitalWrite(PIN_STEP, HIGH);
+#endif
+
+  return;
+}
 

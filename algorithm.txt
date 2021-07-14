@@ -1,3 +1,95 @@
+= New algorith (v2.0) =
+
+== Remaking motor_control() ==
+
+!!! No need to sync model/real time for dir change, as it's not time sensitive. The only events I should predict (and sync times) are making a step. If I predict a dir change within the next step, I do the current step, then change direction, and then predict the next step in the opposite direction (ipos-1).
+
+Inside motor_control()
+
+At each special event (step, dir), we do the action, sync the model/real times, and predict the next event (step, dir).
+
+If an outside event jus happened (dire ket press/depress, limiter switch), it is handled in the next special event, by modifying the model accordingly, before making a predictoion.
+
+Soft limits are handled in go_to. Probably should also be handled in motor_control, for accelerate() commands.
+
+
+Model is precomputed as 3 vectors: 
+ - model_accel (char): indexes for model acceleration at the points when acceleration changes (-2...+2)
+ - model_time (float, or even double): model time relative to the initial point for the points when acceleration changes.
+  - model_x (float, or double): coordinates relative to the initial point for the acceleration change moments
+  
+We also memorize the initial absolute model time (int) and initial coordinate (int).
+
+Event prediction:
+ - g.t_next_step // absolute time
+ - g.d_ipos_next // relative to the model starting point
+
+
+Model description:
+ - g.ipos_goto
+ - g.ipos0
+ - g.Npoints
+ - g.model_t0 (initialized inside motor_control)
+ - g.model_time[]
+ - g.model_ptype[]
+ - g.model_speed[]
+ - g.model_accel[]
+ - g.model_pos[] (float)
+ - g.model_dir[]
+ 
+Other important vars:
+ - g.dt_lost
+ - g.moving
+ - g.started_moving
+ - g.speed
+ - g.ipos
+ - g.direction
+ - g.BL_counter
+ - g.model_change : 0: nothing, 1: switch to accelerate model, 2: switch to stop model
+ 
+When changing direction, current model position is not integer!
+
+ - Make current action (step, dir), sync time
+ - Now check if one or more of the future model points is within a single step from the current int coordinate x: 
+    if (model_x[i]>x && model_x[i]<x+1)
+ - If yes, we do complex (piecewise) model timing prediction
+ - If no, we do a simple prediction, based on the current leg o fthe model: solving a linear eq if accel=0, or qudratic eq if accel!=0.
+ 
+- It looks like the only sensible way is to only act upon one event at a time. If more than one event happened since last event, we execute the earliest one.
+
+ - Model should include soft limits. Make sure the last leg (after hitting a soft limit) is uninterrupted.
+
+ - Stop creteria
+ -- My model is coordinate (step) centric. All models end at a specific step.
+ -- GoTo: the step specified
+ -- Accelerate: step when stopped after reaching the soft limit
+ -- Stop: step when speed becomes zero
+ -- With all these final step estimates, add an OVERSHOOT parameter (1-3 steps), to account for roundoff errors.
+ -- When in final leg, stop_now when hitting the destination coordinate.
+ -- In final leg, if fail to predict the next step, stop_now (as the last resort).
+ 
+Models:
+ - go_to : only starting from rest, go to specified coordinate with a given maximum speed, medium acceleration. Also used for the backlash compensation move at the end if needed. Soft limits are enforced internally.
+ 
+ - accelerate: when pressing forward or rewind keys. Moves at the constant given acceleration, until hitting the maximum speed. Starts decelerating at given acceleration before the soft limit, stops at the soft limit. Can be initiated when moving.
+ 
+ - stop. Start breaking with the highest acceleration at the next step. After hitting a limiter, or emergency breaking keys.
+
+
+=== Preliminary remarks ===
+* No need to store floating pointg positions (g.pos, g.pos0), as when we stop, we can only be at an integer position relative to the initial point. 
+* Make sure g.dt_lost=0 when not moving (???).
+
+=== Initial motion ===
+
+* g.started_moving = 1 elsewhere
+* Introducing g.ipos (current integer position), and g.ipos_old (???; previous integer position), g.ipos0 (integer position at the last special event). The floating point position is not needed anymore.
+* Gettibg rid of g.pos, g.pos_old, g.pos_int_old, g.pos_goto
+
+
+
+
+= Old algorithm (pre-2.0)=
 == Calibration ==
 
 === User initated (#C command) ===

@@ -75,6 +75,7 @@ void initialize(byte factory_reset)
   g.moving = 0;
   g.speed1 = 0.0;
   g.accel = 0;
+  g.accel_old = 0;
   g.speed0 = 0.0;
   g.speed = 0.0;
   g.pos_stop_flag = 0;
@@ -83,6 +84,8 @@ void initialize(byte factory_reset)
   g.AF_on = 0;
   g.single_shot = 0;
   g.direction = 1;
+  g.dir = 1;
+  g.model_change = 0;
   g.comment_flag = 0;
   g.status_flag = 0;
   g.current_point = -1;
@@ -113,7 +116,7 @@ void initialize(byte factory_reset)
       g.reg.point[i] = DELTA_LIMITER;
     }
     g.limit2 = 32000;
-    g.pos = DELTA_LIMITER;
+    g.ipos = DELTA_LIMITER;
     g.backlight = 0;
 
     if (g.telescope)
@@ -136,7 +139,7 @@ void initialize(byte factory_reset)
     {
       g.reg.i_mm_per_frame = 5;
       EEPROM.put( ADDR_LIMIT2, g.limit2);
-      EEPROM.put( ADDR_POS, g.pos );
+      EEPROM.put( ADDR_POS, g.ipos );
     }
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
@@ -163,7 +166,7 @@ void initialize(byte factory_reset)
     }
     else
     {
-      EEPROM.get( ADDR_POS, g.pos );
+      EEPROM.get( ADDR_POS, g.ipos );
       EEPROM.get( ADDR_LIMIT2, g.limit2);
     }
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
@@ -188,9 +191,7 @@ void initialize(byte factory_reset)
 
   set_backlight();
 
-  g.pos0 = g.pos;
-  g.pos_old = g.pos;
-  g.pos_short_old = floor(g.pos);
+  g.ipos0 = g.ipos;
   g.t0 = micros();
   g.t = g.t0;
   g.t_old = g.t0;
@@ -217,6 +218,8 @@ void initialize(byte factory_reset)
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
+  g.model_init = 0;
+
   if (factory_reset || g.telescope)
     // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
   {
@@ -230,9 +233,7 @@ void initialize(byte factory_reset)
     g.backlash_init = 1;
   }
   g.started_moving = 0;
-#ifdef PRECISE_STEPPING
   g.dt_lost = 0;
-#endif  
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
@@ -275,7 +276,7 @@ void initialize(byte factory_reset)
     // No rail reverse in telescope mode:
     g.reg.straight = 0;
     g.pos = 0.0;
-    g.pos_short_old = 0;
+    g.pos_int_old = 0;
     g.pos0 = 0.0;
     g.pos_old = g.pos;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
@@ -317,7 +318,7 @@ void initialize(byte factory_reset)
   }
   g.reg.straight = 1;
   // This will help to park the rail properly (at the next full step position) at the end:
-  g.pos0_test = g.pos_short_old;
+  g.pos0_test = g.pos_int_old;
 #endif
 
 #ifdef TEST_HALL

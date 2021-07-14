@@ -245,7 +245,7 @@ void process_keypad()
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
         if (g.paused || g.telescope)
           break;
-        go_to((float)g.starting_point + 0.5, g.speed_limit);
+        go_to(g.starting_point, g.speed_limit);
         display_comment_line("    Going to P0     ");
         break;
 
@@ -258,7 +258,7 @@ void process_keypad()
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+          go_to(g.reg.point[0], g.speed_limit);
           g.starting_point = g.reg.point[0];
           g.destination_point = g.reg.point[3];
           g.stacker_mode = 1;
@@ -384,7 +384,7 @@ void process_keypad()
           g.limit1 = 10000;          
           g.limit2 = 100000;
           g.pos = 50000;
-          g.pos_short_old = (COORD_TYPE)floor(g.pos);
+          g.pos_int_old = (COORD_TYPE)floor(g.pos);
           g.error = 0; // To remove "Calibrate?" screen if present
           display_all();
           break;
@@ -473,7 +473,7 @@ void process_keypad()
                 initialize(1);
                 break;
               }
-              else if (g.pos_short_old <= 0 || g.paused > 1)
+              else if (g.pos_int_old <= 0 || g.paused > 1)
                 break;
               if (g.paused)
               {
@@ -500,7 +500,7 @@ void process_keypad()
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
-              if (g.pos_short_old >= g.limit2 || g.paused > 1)
+              if (g.pos_int_old >= g.limit2 || g.paused > 1)
                 break;
               if (g.paused)
               {
@@ -566,7 +566,7 @@ void process_keypad()
                     }
                     // Time when stacking was initiated:
                     g.t0_stacking = g.t;
-                    g.pos_to_shoot = g.pos_short_old;
+                    g.pos_to_shoot = g.pos_int_old;
                     g.stacker_mode = 2;
                   }
                   else if (g.paused == 3)
@@ -578,7 +578,7 @@ void process_keypad()
                   else if (g.paused == 2)
                     // Restarting from a pause which happened during the initial travel to the starting point
                   {
-                    go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+                    go_to(g.reg.point[0], g.speed_limit);
                     g.stacker_mode = 1;
                     g.start_stacking = 0;
                     g.paused = 0;
@@ -589,7 +589,7 @@ void process_keypad()
                   {
                     // Using the simplest approach which will result the last shot to always slightly undershoot
                     g.Nframes = Nframes();
-                    go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+                    go_to(g.reg.point[0], g.speed_limit);
                     g.starting_point = g.reg.point[0];
                     g.destination_point = g.reg.point[3];
                     g.stacker_mode = 1;
@@ -644,8 +644,8 @@ void process_keypad()
                   g.t0_stacking = g.t;
                   g.frame_counter = 0;
                   display_frame_counter();
-                  g.pos_to_shoot = g.pos_short_old;
-                  g.starting_point = g.pos_short_old;
+                  g.pos_to_shoot = g.pos_int_old;
+                  g.starting_point = g.pos_int_old;
                   g.stacker_mode = 3;
                   g.continuous_mode = 1;
                   display_comment_line("   1-point stack    ");
@@ -866,7 +866,7 @@ void process_keypad()
                 g.frame_counter--;
                 // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
                 pos_target = frame_coordinate();
-                go_to(pos_target + 0.5, g.speed_limit);
+                go_to(ipos_target, g.speed_limit);
               }
             }
             // Paused while travelling to the starting point
@@ -914,7 +914,7 @@ void process_keypad()
             float pos1 = g.pos - dx_stop;
             // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
             // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
-            go_to(pos1, g.speed_limit);
+            go_to(ipos1, g.speed_limit);
           }
           else
 #endif

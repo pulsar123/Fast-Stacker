@@ -53,6 +53,7 @@
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <math.h>
+#include <limits.h>
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include "Keypad.h" // #include  "MCP23S17.h" is called there
@@ -253,12 +254,9 @@ void loop()
   // Issuing write to stepper motor driver pins if/when needed:
   motor_control();
 
-
-  if (g.moving == 0 && g.started_moving == 0)
-    EEPROM.commit(); // The actual EEPROM update only happens when not moving
-#ifdef TIMING
-  timing();
-#endif
+  // Cleaning up at the end of each loop:
+  cleanup();
+  
 #endif // DUMP_REGS
 }
 

@@ -38,7 +38,7 @@ void calibration()
 
     case 3: // Triggered limit1 and stopped, will now move forward to calibrate limit1 on the first switch-off position
     // Warning: here we should move far enough, so by the time we stop the limiter has to be off again (the "4" multiplier) !!!
-      go_to(g.pos + 4 * BREAKING_DISTANCE, g.speed_limit);
+      go_to(g.ipos + 4 * BREAKING_DISTANCE, g.speed_limit);
       display_all();
       g.calibrate_flag = 4;
       break;
@@ -46,7 +46,7 @@ void calibration()
     case 5: // End of calibration; updating coordinates
       letter_status(" ");
       g.pos = g.pos + (float)g.coords_change;
-      g.pos_short_old = g.pos_short_old + g.coords_change;
+      g.pos_int_old = g.pos_int_old + g.coords_change;
       g.t0 = g.t;
       g.pos0 = g.pos;
       g.pos_old = g.pos;
@@ -59,7 +59,7 @@ void calibration()
         g.limit2 = g.limit2 + g.coords_change;
         EEPROM.put( ADDR_LIMIT2, g.limit2);
         // Saving the current position to EEPROM:
-        EEPROM.put( ADDR_POS, g.pos );
+        EEPROM.put( ADDR_POS, g.ipos );
       }
       g.calibrate_flag = 0;
       g.accident = 0;

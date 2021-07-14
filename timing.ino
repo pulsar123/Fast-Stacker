@@ -27,7 +27,7 @@ void timing()
     g.bad_timing_counter++;
 
   // Finding the longest loop length, for the last movement:
-  //  float dpos = g.pos - (float)g.pos_short_old;
+  //  float dpos = g.pos - (float)g.pos_int_old;
   //  dt = 10.0 * (abs(dpos));
   if (g.dt_timing > g.dt_max)
     g.dt_max = g.dt_timing;
@@ -208,11 +208,11 @@ void test_switch()
         // Stuff to do after the test is done
       {
         g.test_flag = 10;
-        COORD_TYPE d = g.pos_short_old - g.pos0_test;
+        COORD_TYPE d = g.pos_int_old - g.pos0_test;
         if (d % N_MICROSTEPS > 0)
         {
           // The next full step coordinate:
-          float next_step = g.pos_short_old + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
+          float next_step = g.pos_int_old + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
           // Parking macro rail at the next full step position after the test:
           go_to(next_step, g.speed_limit);
         }

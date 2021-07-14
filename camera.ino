@@ -32,7 +32,7 @@ void camera()
     g.t0_stacking = g.t;
     g.frame_counter = 0;
     display_frame_counter();
-    g.pos_to_shoot = g.pos_short_old;
+    g.pos_to_shoot = g.pos_int_old;
     g.stacker_mode = 2;
   }
 
@@ -50,12 +50,12 @@ void camera()
       if (g.stacker_mode == 3)
         // 1-point stacking
       {
-        go_to((float)g.limit2 + 0.5, speed);
+        go_to(g.limit2, speed);
       }
       else if (g.stacker_mode == 2)
         // 2-point stacking (after moving to the starting point)
       {
-        go_to((float)g.destination_point + 0.5, speed);
+        go_to(g.destination_point, speed);
       }
 
     }
@@ -77,7 +77,7 @@ void camera()
       {
         g.noncont_flag = 4;
         // Travelling to the next frame position in non-continuous stacking:
-        go_to((float)g.pos_to_shoot + 0.5, g.speed_limit);
+        go_to(g.ipos_to_shoot, g.speed_limit);
       }
       else
       {
@@ -97,7 +97,7 @@ void camera()
   // This block is shared between continuous and non-continuous modes (in the latter case, it does the first shutter trigger, to lock the mirror)
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.start_stacking == 3)
   {
-    if (g.pos_short_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
+    if (g.pos_int_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
       // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
@@ -223,7 +223,7 @@ void camera()
         g.end_of_stacking = 0;
         g.t0_mil = g.t_mil;
         g.timelapse_counter++;
-        go_to((float)g.reg.point[0] + 0.5, g.speed_limit);
+        go_to(g.reg.point[0], g.speed_limit);
         g.stacker_mode = 1;
         g.start_stacking = 0;
       }

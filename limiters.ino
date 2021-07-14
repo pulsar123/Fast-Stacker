@@ -27,7 +27,7 @@ void limiters()
 #else
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
-  if (g.calibrate_flag == 3 && g.pos_short_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_short_old < g.limit1 + DELTA_LIMITER )
+  if (g.calibrate_flag == 3 && g.pos_int_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_int_old < g.limit1 + DELTA_LIMITER )
     return;
 #endif
 
@@ -79,14 +79,14 @@ void limiters()
       else if (g.speed > SPEED_TINY)
       {
         g.calibrate_flag = 2;
-        g.limit2 = g.pos_short_old;
+        g.limit2 = g.pos_int_old;
       }
       else if (g.speed < -SPEED_TINY)
         // Calibration initiated by hitting limit1 switch by accident:
       {
         g.calibrate_flag = 1;
         // Temporary value for limit1 coordinate:
-        g.limit1 = g.pos_short_old;
+        g.limit1 = g.pos_int_old;
         g.accident = 1;
       }
       else
@@ -99,7 +99,7 @@ void limiters()
       // when stopped after the calibration is done)
     {
       g.calibrate_flag = 2;
-      g.limit2 = g.pos_short_old;
+      g.limit2 = g.pos_int_old;
     }
 
     // Moving forward right before calibrating limit1, switch is still on
@@ -144,7 +144,7 @@ void limiters()
       // Making sure only the very first turn of of limit one is registered (and used for calibration); ignoring the subsequent switch noise
       g.uninterrupted = 1;
       // At the end of calibration new coordinates will be derived from old by adding this parameter to the old ones:
-      g.coords_change = -g.pos_short_old;
+      g.coords_change = -g.pos_int_old;
     }
 
     // While calibration telescope, during the first move (away from the telescope) switch is off and we reached the maximum speed, so we start breaking
@@ -153,7 +153,7 @@ void limiters()
       // Initiating limit1 calibration loop:
       g.calibrate_flag = 2;
       // Preliminary value for limit2, just in case:
-      g.limit2 = g.pos_short_old + (COORD_TYPE)TEL_LENGTH;
+      g.limit2 = g.pos_int_old + (COORD_TYPE)TEL_LENGTH;
       start_breaking();
     }
 
@@ -169,17 +169,17 @@ void limiters()
       if (g.speed < -SPEED_TINY || g.speed > SPEED_TINY)
       {
         if (g.speed < 0.0)
-          dx = g.pos_short_old - LIMITER_PAD2;
+          dx = g.pos_int_old - LIMITER_PAD2;
         else
-          dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+          dx = g.limit2 - g.pos_int_old - LIMITER_PAD2;
       }
       else
         // Otherwise, we use the target direction sign, speed1:
       {
         if (g.speed1 < -SPEED_TINY)
-          dx = g.pos_short_old - LIMITER_PAD2;
+          dx = g.pos_int_old - LIMITER_PAD2;
         else if (g.speed1 > SPEED_TINY)
-          dx = g.limit2 - g.pos_short_old - LIMITER_PAD2;
+          dx = g.limit2 - g.pos_int_old - LIMITER_PAD2;
         else
           return;
       }
