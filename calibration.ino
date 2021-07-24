@@ -14,7 +14,7 @@ void calibration()
 #endif
 
   // This module only works when not moving:
-  if (g.calibrate_flag == 0 || g.moving == 1 || g.started_moving == 1 || g.backlashing == 1 || g.error > 0)
+  if (g.calibrate_flag == 0 || g.moving == 1 || g.model_init == 1 || g.backlashing == 1 || g.error > 0)
     return;
 #ifndef TELE_SWITCH
   if (g.telescope)

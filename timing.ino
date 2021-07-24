@@ -127,7 +127,7 @@ void test_switch()
   float breaking_distance, delta, x;
   byte i;
 
-  if (g.moving || g.started_moving || g.error)
+  if (g.moving || g.model_init || g.error)
     return;
 
   switch (g.test_flag)

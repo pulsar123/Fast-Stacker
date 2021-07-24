@@ -11,7 +11,7 @@ void display_all()
   byte row, col;
 
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
 
@@ -240,7 +240,7 @@ void letter_status(char const * l)
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
    if (g.error || g.alt_flag)
@@ -265,7 +265,7 @@ void motion_status()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -274,7 +274,7 @@ void motion_status()
 
   my_setCursor(2, 5, 1);
 
-  if (g.moving == 0 && g.started_moving == 0)
+  if (g.moving == 0 && g.model_init == 0)
   {
     tft.print("   ");
   }
@@ -307,7 +307,7 @@ void display_frame_counter()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag || g.telescope)
@@ -336,7 +336,7 @@ void points_status()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -399,10 +399,10 @@ void battery_status()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
-  if (g.moving == 1 || g.started_moving == 1 || g.alt_flag)
+  if (g.moving == 1 || g.model_init == 1 || g.alt_flag)
     return;
 
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
@@ -451,7 +451,7 @@ void display_status_line()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -472,7 +472,7 @@ void display_u_per_f()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -500,7 +500,7 @@ void display_fps()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag || g.telescope)
@@ -526,7 +526,7 @@ void display_one_point_params()
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -578,7 +578,7 @@ void display_two_point_params()
 {
   float dx;
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag)
@@ -623,7 +623,7 @@ void display_two_points()
   COORD_TYPE p_int;
 
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
   if (g.error || g.alt_flag || g.telescope)
@@ -671,7 +671,7 @@ void display_current_position()
 {
   float p;
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
 #ifdef CAMERA_DEBUG
@@ -681,8 +681,8 @@ void display_current_position()
   return;
 #endif
 
-//!!! added  g.moving==1 || g.started_moving==1
-//  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.started_moving==1)
+//!!! added  g.moving==1 || g.model_init==1
+//  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.model_init==1)
   if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
@@ -736,7 +736,7 @@ void display_comment_line(char const * l)
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.started_moving)
+  if (g.moving || g.model_init)
     return;
 #endif
 #ifdef CAMERA_DEBUG

@@ -2,6 +2,23 @@
 
 == Remaking motor_control() ==
 
+The newest approach:
+
+ - Replace current calls to "go_to", "change_speed" etc with simply updating one variable (plus a few optional ones) - g.next_model:
+ -- NONE: 0
+ -- GO_TO: 1 // Only starting at rest. Also set model_accel, and g.model_speed, and model_ipos vars
+ -- ACCEL: 2 // also set model_accel
+ -- STOP: 3 // also set model_accel
+ - Inside motor_control, the earliest moment model and real times are synced (either at rest, or after making a step), call generate_model() if g.next_model != NONE
+ - Inside generate_model(), generate the next model based on g.next_model value (and model_speed, model_accel, model_ipos).
+ - Initialize the new model - synced time, speed etc
+ - Set g.next_model to NONE.
+ 
+This way we can still stick to simpler models - e.g. go_to only works from rest (so we avoid complicated scenarios reqairing direction change). We are also consistent now - all models are initiated the same way.
+
+
+
+
 !!! No need to sync model/real time for dir change, as it's not time sensitive. The only events I should predict (and sync times) are making a step. If I predict a dir change within the next step, I do the current step, then change direction, and then predict the next step in the opposite direction (ipos-1).
 
 Inside motor_control()
@@ -32,7 +49,7 @@ Model description:
  - g.model_t0 (initialized inside motor_control)
  - g.model_time[]
  - g.model_ptype[]
- - g.model_speed[]
+ - g.model_speed[]  : a signed number
  - g.model_accel[]
  - g.model_pos[] (float)
  - g.model_dir[]
@@ -46,6 +63,13 @@ Other important vars:
  - g.direction
  - g.BL_counter
  - g.model_change : 0: nothing, 1: switch to accelerate model, 2: switch to stop model
+ 
+Positive numbers:
+ - speed
+ - Vmax
+Signed numbers:
+ - speed_signed
+ - dx
  
 When changing direction, current model position is not integer!
 

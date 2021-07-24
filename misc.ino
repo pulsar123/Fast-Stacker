@@ -326,7 +326,7 @@ void measure_temperature()
 
 
 
-void make_step(COORD_TYPE * pos_target, short * frame_counter0)
+void move_to_next_frame(COORD_TYPE * pos_target, short * frame_counter0)
 /*
    Make a step to pos_target, update frame counter
 */

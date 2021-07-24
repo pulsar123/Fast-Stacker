@@ -29,6 +29,7 @@
     New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil). Added telescope focuser module (second identical stepper motor
        plus a voltage divider consisting of a thermistor and regular resistor with a similar resistance - both 10k in my case). Added 10uF capacitor for LCD backlighting (to fix the
        LCD instability due to PWM ripples in backlighting control).
+    h2.0: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers
 
    I am using the following libraries:
 

@@ -12,7 +12,7 @@ void camera()
     return;
 
 
-  if (g.stacker_mode == 1 && g.moving == 0 && g.started_moving == 0 && g.backlashing == 0 && g.start_stacking == 0)
+  if (g.stacker_mode == 1 && g.moving == 0 && g.model_init == 0 && g.backlashing == 0 && g.start_stacking == 0)
     // We are here if the rail had to travel to the starting point for stacking, and now is ready for stacking
   {
     g.t0_mil = millis();
@@ -62,7 +62,7 @@ void camera()
   }
 
   // Non-continuous stacking mode
-  if (g.continuous_mode == 0 && g.start_stacking == 3 && g.moving == 0 && g.started_moving == 0 && g.stacker_mode == 2)
+  if (g.continuous_mode == 0 && g.start_stacking == 3 && g.moving == 0 && g.model_init == 0 && g.stacker_mode == 2)
   {
     if (g.noncont_flag == 2 && g.t - g.t_shot > FIRST_DELAY[g.reg.i_first_delay] * 1e6)
     {

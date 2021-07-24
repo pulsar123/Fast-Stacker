@@ -85,7 +85,6 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.dir = 1;
-  g.model_change = 0;
   g.comment_flag = 0;
   g.status_flag = 0;
   g.current_point = -1;
@@ -191,7 +190,7 @@ void initialize(byte factory_reset)
 
   set_backlight();
 
-  g.ipos0 = g.ipos;
+  g.model_ipos0 = g.ipos;
   g.t0 = micros();
   g.t = g.t0;
   g.t_old = g.t0;
@@ -218,8 +217,6 @@ void initialize(byte factory_reset)
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
-  g.model_init = 0;
-
   if (factory_reset || g.telescope)
     // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
   {
@@ -232,7 +229,7 @@ void initialize(byte factory_reset)
     g.BL_counter = g.backlash;
     g.backlash_init = 1;
   }
-  g.started_moving = 0;
+  g.model_init = 0;
   g.dt_lost = 0;
   g.continuous_mode = 1;
   g.noncont_flag = 0;

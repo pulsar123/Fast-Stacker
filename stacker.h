@@ -261,7 +261,7 @@ const float TEL_LENGTH_MM = 45;
 // Set it to >1 if you get false limiter triggering when motor is in use. The larger the number, the more stable it is against the impulse noise
 // (the drawback - you'll start having a lag between the actual trigger and the reaction to it.)
 //const byte N_LIMITER = 1;  // Not used
-const byte OVERSHOOT = 3; // In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
+const float OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
 
 
 //////// User interface parameters: ////////
@@ -401,6 +401,7 @@ const float ACCEL_LIMIT_TEL = SPEED_LIMIT_TEL * SPEED_LIMIT_TEL / (2.0 * BREAKIN
 const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
 // A small float (to detect zero speed):
 const float SPEED_TINY = 1e-5 * SPEED_LIMIT;
+const float ACCEL_TINY = 1e-5 * ACCEL_LIMIT;
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE BACKLASH_TEL = (COORD_TYPE)(BACKLASH_TEL_MM / MM_PER_MICROSTEP_TEL + 0.5);
@@ -571,28 +572,34 @@ const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
 struct global
 {
   // New vars in v2.0
+  byte model_init; // 0: default. 1: a new model has just been requested (will be reset to 0 in motor_control, once the new model is generated)
+  TIME_TYPE model_t0; // Absolute (model) time for the first model point.
+  COORD_TYPE model_ipos0; // The coordinate at the start of a movement.
+  byte model_type; // Code for the current (or requested) model. Codes:
+    #define MODEL_NONE 0 // No model, no motion
+    #define MODEL_GOTO 1 // GoTo model, can only start from rest, cannot be interrupted by FF, REWIND, STOP. Needs model_speed and model_ipos1
+    #define MODEL_FF 2 // Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
+    #define MODEL_REWIND 3 // Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
+    #define MODEL_STOP 4 // Decelerate until stopped, using intermediate acceleration. Can be interrupted by FF and REWIND
+    #define MODEL_BREAK 5 // Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
+  float model_speed_max; // Desired (maximum) speed for the next goto motion (always positive).
+  COORD_TYPE model_ipos1; // Desired target position for the next move (goto, accelerate, or stop)
   // Each model of motion is completely described by the following parameters:
-  byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes
-  byte i_point; // Index of the current point (0..Npoints-1)
+  byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes. (Normally do not coincide with steps.)
   #define N_POINTS_MAX 5  // Largest possible value for Npoints
-  char model_accel[N_POINTS_MAX]; // Acceleration index (-2...2) at each model point
+  float model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
   TIME_TYPE model_time[N_POINTS_MAX]; // Model time for each model point (relative to the 0-th point)
-  float model_speed[N_POINTS_MAX]; // Model speed (only matters for accel=0 legs; absolute values)
+  float model_speed[N_POINTS_MAX]; // Model speed (signed)
   float model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
   byte model_ptype[N_POINTS_MAX]; // Model point type:
-  #define INIT_POINT 0  // Starting moving from rest
-  #define ACCEL_CHANGE_POINT 1  // Changing acceleration
-  #define STOP_POINT 2  // Final (stop) point
-  #define DIR_CHANGE_POINT 3  // Changing direction point
-  char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of g.direction values
-  TIME_TYPE model_t0; // Absolute (model) time for the first model point.
-  byte model_hits_limit; // if =1, the last leg of the model is after hitting a soft limit, and should be uninterrupted
-  byte model_init; // 1: model was just initiated (in go_to etc), first motor_control() call will start processing it
-  COORD_TYPE ipos0; // The coordinate at the start of a movement.
-  byte direction_predict; // Direction prediction for the next change of direction event
-  TIME_TYPE t_next_event; // Timing prediction for the next event (step or direction change)
-  byte next_event_type; // =0 for a step, =1 for a dir
-  byte model_change; // 0: nothing, 1: switch to accelerate model, 2: switch to stop model. Only matters if updated while moving
+    #define INIT_POINT 0  // Starting moving from rest
+    #define ZERO_ACCEL 1  // Acceleration becomes zero
+    #define ACCEL 2  // Acceleration becomes non-zero
+    #define STOP_POINT 3  // Final (stop) point
+    #define DIR_CHANGE_POINT 4  // Changing direction point
+  char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
+  TIME_TYPE t_next_step; // Absolute timing prediction for the next step
+  COORD_TYPE ipos_next_step; // Absolute coordinate for the next step
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
@@ -629,13 +636,12 @@ struct global
    */
   byte calibrate_flag; 
   COORD_TYPE limit1; // pos_int for the foreground limiter (temporary value, only used when accidently triggering foreground switch)
-  COORD_TYPE limit2; // pos_int for the background limiter
+  COORD_TYPE limit2; // pos_int for the background limiter; limit2 > limit1
   byte accident;  // =1 if we accidently triggered limit1; 0 otherwise
   byte limit_on; //  The last recorded state of the limiter switches
   byte uninterrupted;  // =1 disables checking for limits (hard and soft); used for emergency breaking and during calibration
   byte uninterrupted2;  // =1 disables checking for limits (hard and soft); used for recovering rail when it's confused (#D command)
   byte travel_flag; // =1 when travel was initiated
-  COORD_TYPE ipos_goto; // position to go to
   byte moving_mode; // =0 when using speed_change, =1 when using go_to
   byte pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
@@ -668,7 +674,6 @@ struct global
   TIME_TYPE t0_stacking; // time when stacking was initiated;
   byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
-  byte started_moving; // =1 when we just started moving (the first loop), 0 otherwise
   byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame

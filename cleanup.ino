@@ -5,7 +5,7 @@ void cleanup()
   g.t_old = g.t;
   g.accel_old = g.accel;
   
-  if (g.moving == 0 && g.started_moving == 0)
+  if (g.moving == 0 && g.model_init == 0)
     EEPROM.commit(); // The actual EEPROM update only happens when not moving
 
 #ifdef TIMING

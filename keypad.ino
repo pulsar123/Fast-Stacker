@@ -225,7 +225,7 @@ void process_keypad()
           pos_target = frame_coordinate();
         else
           pos_target = (COORD_TYPE)g.pos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-        make_step(&pos_target, &frame_counter0);
+        move_to_next_frame(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
 
@@ -238,7 +238,7 @@ void process_keypad()
           pos_target = frame_coordinate();
         else
           pos_target = (COORD_TYPE)g.pos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-        make_step(&pos_target, &frame_counter0);
+        move_to_next_frame(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
 
@@ -482,13 +482,13 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
                 pos_target = frame_coordinate();
-                make_step(&pos_target, &frame_counter0);
+                move_to_next_frame(&pos_target, &frame_counter0);
               }
               else
               {
 #ifdef EXTENDED_REWIND
                 // Fixing a bug in extended rewind: disabling this feature if "1" was pressed when rail was moving
-                if (g.moving || g.started_moving)
+                if (g.moving || g.model_init)
                   g.no_extended_rewind = 1;
 #endif
                 g.direction = -1;
@@ -509,7 +509,7 @@ void process_keypad()
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
                 pos_target = frame_coordinate();
-                make_step(&pos_target, &frame_counter0);
+                move_to_next_frame(&pos_target, &frame_counter0);
               }
               else
               {
