@@ -73,9 +73,6 @@ void limiters()
     // Accidental limiter triggering module:
     if (g.calibrate_flag == 0)
     {
-      // Hitting telescope limiter by accident initiates calibration:
-      if (g.telescope)
-        g.calibrate_flag = 10;
       // Calibration initiated by hitting limit2 switch by accident:
       else if (g.direction == 1)
       {
@@ -143,16 +140,6 @@ void limiters()
       g.uninterrupted = 1;
       // At the end of calibration new coordinates will be derived from old by adding this parameter to the old ones:
       g.coords_change = -g.ipos;
-    }
-
-    // While calibration telescope, during the first move (away from the telescope) switch is off and we reached the maximum speed, so we start breaking
-    if (g.calibrate_flag == 10 && g.accel == 0)
-    {
-      // Initiating limit1 calibration loop:
-      g.calibrate_flag = 2;
-      // Preliminary value for limit2, just in case:
-      g.limit2 = g.ipos + (COORD_TYPE)TEL_LENGTH;
-      start_breaking();
     }
 
   }

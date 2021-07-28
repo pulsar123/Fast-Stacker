@@ -6,7 +6,6 @@ void calibration()
 
    For example, we end up runnning this if we hit a limiter and just breaked to a complete stop after that.
 
-   In telescope mode (if TELE_SWITCH is defined), this routine is executed every time at boot time, for absolute calibration of the single switch.
 */
 {
 #if defined(TEST_SWITCH)
@@ -16,10 +15,6 @@ void calibration()
   // This module only works when not moving:
   if (g.calibrate_flag == 0 || g.moving == 1 || g.model_init == 1 || g.backlashing == 1 || g.error > 0)
     return;
-#ifndef TELE_SWITCH
-  if (g.telescope)
-    return;
-#endif
 
   switch (g.calibrate_flag)
   {
@@ -46,25 +41,12 @@ void calibration()
     case 5: // End of calibration; updating coordinates
       letter_status(" ");
       g.ipos = g.ipos + g.coords_change;
-      if (g.telescope)
-      {
-        g.limit2 = (COORD_TYPE)TEL_LENGTH;
-      }
-      else
-      {
         g.limit2 = g.limit2 + g.coords_change;
         EEPROM.put( ADDR_LIMIT2, g.limit2);
         // Saving the current position to EEPROM:
         EEPROM.put( ADDR_POS, g.ipos );
-      }
       g.calibrate_flag = 0;
       g.accident = 0;
-      display_all();
-      break;
-
-    // Telescope specific mode:
-    case 10: // Initiating telescope calibration: moving forward until the switch goes off and the maximum speed is reached (accel=0)
-      go_to(g.limit2, g.speed_limit);
       display_all();
       break;
   }

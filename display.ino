@@ -29,11 +29,6 @@ void display_stuff()
   if (g.moving == 0 && g.error == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
   {
     g.t_display = g.t;
-#ifdef TEMPERATURE
-    if (g.telescope)
-      // Measuring temperature (only in telescope mode), from thermistor connected to PIN_AF:
-      measure_temperature();
-#endif
     if (!g.alt_flag)
 //!!!      display_all();
 //    else

@@ -10,22 +10,11 @@ void initialize(byte factory_reset)
   }
   g.delta_pos_curr = 0;
 
-  if (g.telescope)
-    // Providing constant +5V to the temperature probe on telescope:
-    iochip.digitalWrite(EPIN_SHUTTER, HIGH);
-  else
-  {
 #ifndef DISABLE_SHUTTER
-    iochip.digitalWrite(EPIN_SHUTTER, LOW);
+  iochip.digitalWrite(EPIN_SHUTTER, LOW);
 #endif
-    iochip.digitalWrite(EPIN_AF, LOW);
-  }
-#if defined(TEST_SWITCH) || defined(TEST_HALL)
-  // Providing +5V for Hall sensor:
-  iochip.digitalWrite(EPIN_SHUTTER, HIGH);
-  delay(10);
-#endif
-
+  iochip.digitalWrite(EPIN_AF, LOW);
+  
   // Assigning the limiters' state to g.limit_on:
   Read_limiters();
 
@@ -41,32 +30,14 @@ void initialize(byte factory_reset)
   keypad.setDebounceTime(50);
   g.key_old = '=';
 
-  if (g.telescope)
-  {
-    /* !!!
-    g.speed_limit = SPEED_LIMIT_TEL;
-    g.n_regs = N_REGS_TEL;
-    g.accel_limit = ACCEL_LIMIT_TEL;
-    g.mm_per_microstep = MM_PER_MICROSTEP_TEL;
-    tft.fillScreen(TFT_BLACK);
-    my_setCursor(0, 0);
-    tft.print("TELESCOPE");
-    delay(500);
-    // Setting the pointer to the telescope memory registers in EEPROM:
-    address = ADDR_REG1_TEL;
-    */
-  }
-  else
-  {
     g.speed_limit = SPEED_LIMIT;
-    g.n_regs = N_REGS;
     g.ireg = 0;
     g.accel_limit = ACCEL_LIMIT;
     g.mm_per_microstep = MM_PER_MICROSTEP;
     address = ADDR_REG1;
-  }
-  // EEPROM addresses for memory registers (different for macro and telescope modes), including the 0th (default) register:
-  for (unsigned char jj = 0; jj <= g.n_regs; jj++)
+
+  // EEPROM addresses for memory registers, including the 0th (default) register:
+  for (unsigned char jj = 0; jj <= N_REGS; jj++)
   {
     g.addr_reg[jj] = address + jj * SIZE_REG;
   }
@@ -104,7 +75,7 @@ void initialize(byte factory_reset)
     g.reg.straight = 1;
     g.reg.save_energy = 1;
     update_save_energy();
-    for (byte i = 0; i < 4; i++)
+    for (byte i = 0; i < 2; i++)
     {
       g.reg.point[i] = DELTA_LIMITER;
     }
@@ -112,32 +83,13 @@ void initialize(byte factory_reset)
     g.ipos = DELTA_LIMITER;
     g.backlight = 0;
 
-    if (g.telescope)
-    {
-      byte i;
-      // Disabling calibration when operating telescope
-      g.reg.i_mm_per_frame = 0;
-      for (i = 0; i < 4; i++)
-        g.reg.raw_T[i] = 512;
-      // Initially registers are no locked:
-      for (i = 0; i < g.n_regs; i++)
-      {
-        g.locked[i] = 0;
-        EEPROM.put( ADDR_LOCK + i, g.locked[i] );
-      }
-      g.ireg = 1;
-      EEPROM.put( ADDR_IREG, g.ireg );
-    }
-    else
-    {
-      g.reg.i_mm_per_frame = 5;
-      EEPROM.put( ADDR_LIMIT2, g.limit2);
-      EEPROM.put( ADDR_POS, g.ipos );
-    }
+    g.reg.i_mm_per_frame = 5;
+    EEPROM.put( ADDR_LIMIT2, g.limit2);
+    EEPROM.put( ADDR_POS, g.ipos );
     EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
     // Initializing all EEPROM registers (including the default one):
-    for (byte jj = 0; jj <= g.n_regs; jj++)
+    for (byte jj = 0; jj <= N_REGS; jj++)
     {
       EEPROM.put(g.addr_reg[jj], g.reg);
     }
@@ -149,35 +101,14 @@ void initialize(byte factory_reset)
     g.calibrate_flag = 0;
     g.error = 0;
     // Reading the values from EEPROM:
-    if (g.telescope)
-    {
-      for (byte i = 0; i < g.n_regs; i++)
-      {
-        EEPROM.get( ADDR_LOCK + i, g.locked[i] );
-      }
-      EEPROM.get( ADDR_IREG, g.ireg );
-    }
-    else
-    {
-      EEPROM.get( ADDR_POS, g.ipos );
-      EEPROM.get( ADDR_LIMIT2, g.limit2);
-    }
+    EEPROM.get( ADDR_POS, g.ipos );
+    EEPROM.get( ADDR_LIMIT2, g.limit2);
     EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     // Reading the default memory register:
     EEPROM.get(g.addr_reg[0], g.reg);
     update_backlash();
     update_save_energy();
   }  // if factory_reset
-
-#ifdef TEMPERATURE
-  if (g.telescope)
-  {
-    for (byte i = 0; i < 4; i++)
-      g.Temp0[i] = compute_temperature(g.reg.raw_T[i]);
-    // Measuring current temperature and updating delta_pos[] values:
-    measure_temperature();
-  }
-#endif
 
   // Five possible floating point values for acceleration
   set_accel_v();
@@ -204,12 +135,11 @@ void initialize(byte factory_reset)
   g.start_stacking = 0;
   g.make_shot = 0;
   g.paused = 0;
-  g.starting_point = g.reg.point[0];
+  g.starting_point = g.reg.point[FOREGROUND];
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
-  if (factory_reset || g.telescope)
-    // Not doing this in telescope mode (so we can hand-calibrate the coordinates by manually putting the focuser at the 0 position initially)
+  if (factory_reset)
   {
     g.BL_counter = 0;
     g.backlash_init = 0;
@@ -255,23 +185,6 @@ void initialize(byte factory_reset)
   g.calibrate_flag = 0;
 #endif
 
-  if (g.telescope)
-  {
-    // No rail reverse in telescope mode:
-    g.reg.straight = 0;
-    g.ipos = 0;
-    g.limit2 = (COORD_TYPE)TEL_LENGTH;
-#ifdef TELE_SWITCH
-    // Initiating telescope calibration:
-    g.calibrate_flag = 10;
-#else // TELE_SWITCH
-    g.calibrate_flag = 0;
-    g.error = 0;
-    // Moving focuser into safe area:
-    go_to(TEL_INIT, g.speed_limit);
-#endif // TELE_SWITCH
-  }
-
 #ifdef CAMERA_DEBUG
   shutter_status(0);
   AF_status(0);
@@ -300,12 +213,6 @@ void initialize(byte factory_reset)
   g.reg.straight = 1;
   // This will help to park the rail properly (at the next full step position) at the end:
   g.pos0_test = g.ipos;
-#endif
-
-#ifdef TEST_HALL
-  tft.fillScreen(TFT_BLACK);
-  g.backlight = 0;
-  set_backlight();
 #endif
 
 #ifdef BUZZER

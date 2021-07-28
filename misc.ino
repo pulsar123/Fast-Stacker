@@ -41,10 +41,10 @@ float target_speed ()
 
 short Nframes ()
 /* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
-   g.reg.point[0], or g.reg.point[3] changes.
+   g.reg.point[FOREGROUND], or g.reg.point[BACKGROUND] changes.
 */
 {
-  return short(((float)(g.reg.point[3] - g.reg.point[0])) / (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame]) + 1;
+  return short(((float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND])) / (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame]) + 1;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -138,10 +138,6 @@ void rail_reverse(byte fix_points)
 {
   COORD_TYPE d_ipos, ipos_target;
 
-  // Disabling rail reverse in telescope mode:
-  if (g.telescope)
-    return;
-
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
@@ -161,9 +157,9 @@ void rail_reverse(byte fix_points)
   if (fix_points)
   {
     // Updating the current two points positions:
-    ipos_target = d_ipos - g.reg.point[3];
-    g.reg.point[3] = d_ipos - g.reg.point[0];
-    g.reg.point[0] = ipos_target;
+    ipos_target = d_ipos - g.reg.point[BACKGROUND];
+    g.reg.point[BACKGROUND] = d_ipos - g.reg.point[FOREGROUND];
+    g.reg.point[FOREGROUND] = ipos_target;
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
@@ -186,28 +182,14 @@ COORD_TYPE frame_coordinate()
 
 void read_params(byte n)
 /*
-   Read register n (1...g.n_regs) from EEPROM
+   Read register n (1...N_REGS) from EEPROM
 */
 {
   byte straight_old = g.reg.straight;
   EEPROM.get( g.addr_reg[n], g.reg);
-  if (g.telescope)
-  {
-    g.ireg = n;
-    EEPROM.put( ADDR_IREG, g.ireg );
-#ifdef TEMPERATURE
-    for (byte i = 0; i < 4; i++)
-      g.Temp0[i] = compute_temperature(g.reg.raw_T[i]);
-    // This computes delta_pos[]:
-    measure_temperature();
-#endif
-  }
-  else
-  {
     // Memorizing as default environment:
     EEPROM.put( g.addr_reg[0], g.reg);
     g.Nframes = Nframes();
-  }
   display_all();
   sprintf(g.buffer, "   Loading Reg %2d   ", n);
   display_comment_line(g.buffer);
@@ -243,10 +225,7 @@ void update_backlash()
 {
   if (g.reg.backlash_on)
   {
-    if (g.telescope)
-      g.backlash = BACKLASH_TEL;
-    else
-      g.backlash = BACKLASH;
+    g.backlash = BACKLASH;
     g.BL_counter = g.backlash;
     g.backlash_init = 1;
   }
@@ -276,52 +255,6 @@ void update_save_energy()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-
-#ifdef TEMPERATURE
-float compute_temperature(float raw_T)
-// Computing Celsius temperature from raw temperature
-{
-  // Logarithm of the resistance of the thermistor (from voltage divider equation):
-  float lnR = log(R_pullup / (1024.0 / raw_T - 1.0));
-  // Using  Steinhart–Hart equation to compute the temperature (in K):
-  return 1.0 / (SH_a + SH_b * lnR + SH_c * lnR * lnR * lnR) - TEMP0_K;
-}
-
-
-void measure_temperature()
-// Measuring temperature in telescope mode. Needs Temp0[0..3] precomputed.
-{
-  if (!g.telescope)
-    return;
-
-  // reading the raw value at PIN_AF (which connects to a grounded thermistor in telescope mode):
-  float raw = 0.0;
-  for (byte i = 0; i < N_TEMP; i++)
-    raw = raw + (float)analogRead(PIN_AF);
-  raw = raw / N_TEMP;
-  g.raw_T = (int)(raw + 0.5);
-
-  // Current temperature (Celsius):
-  g.Temp = compute_temperature(raw);
-  for (byte i = 0; i < 4; i++)
-  {
-    if (g.reg.mirror_lock)
-      // Temperature-induced shift in the focal plane of the telescope caused by the thermal expansion of the telescope tube, in microsteps:
-      // +0.5 is for proper round-off
-      // It is minus CTE because for positive CTE (telescope tube expanding with temperature increasing) the focus point moves closer to the
-      // telescope (meaning coordinate becomes smaller).
-      g.delta_pos[i] = (COORD_STYPE)(-CTE * (g.Temp - g.Temp0[i]) / g.mm_per_microstep + 0.5);
-    else
-      g.delta_pos[i] = 0;
-  }
-
-  return;
-}
-#endif
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
 void move_to_next_frame(COORD_TYPE * pos_target, short * frame_counter0)
 /*
    Make a step to pos_target, update frame counter
@@ -343,8 +276,7 @@ void move_to_next_frame(COORD_TYPE * pos_target, short * frame_counter0)
 
 
 void set_memory_point(char n)
-// Setting one of the two (macro mode) or four (telescope mode) memory points - current coordinate and (telescope mode only)
-// current raw temperature. n=1...4
+// Setting one of the two memory points - current coordinate
 {
   if (g.paused || g.moving)
     return;
@@ -355,17 +287,6 @@ void set_memory_point(char n)
   }
   g.current_point = n - 1;
   g.reg.point[g.current_point] = g.ipos;
-#ifdef TEMPERATURE
-  if (g.telescope)
-  {
-    // Measuring current temperature g.raw_T / g.Temp
-    measure_temperature();
-    g.reg.raw_T[g.current_point] = g.raw_T;
-    g.Temp0[g.current_point] = g.Temp;
-    g.delta_pos[g.current_point] = 0;
-    g.delta_pos_curr = 0;
-  }
-#endif
   // Saving the changed register as default one (macro mode) or as the current (ireg) one:
   EEPROM.put( g.addr_reg[g.ireg], g.reg);
   g.Nframes = Nframes();
@@ -378,17 +299,10 @@ void set_memory_point(char n)
 
 
 void goto_memory_point(char n)
-// Go to memory point # n (1..4)
+// Go to memory point # n (1..2)
 {
   if (g.paused || n == 0)
     return;
-#ifdef TEMPERATURE
-  if (g.telescope)
-  {
-    // Computing delta_pos based on the current temperature
-    measure_temperature();
-  }
-#endif
   g.current_point = n - 1;
   g.delta_pos_curr = g.delta_pos[g.current_point];
   // Travelling to the memory point position corrected for the current temperature:
@@ -412,11 +326,6 @@ void Read_limiters()
   return;
 #else
   limit_on = digitalRead(PIN_LIMITERS);
-#ifdef HALL_SENSOR
-//!!!!
-//  g.limit_on = g.telescope - g.limit_on;
-  g.limit_on = 1 - g.limit_on;
-#endif
 #endif
 
 g.limit_on = limit_on;

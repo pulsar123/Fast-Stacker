@@ -81,15 +81,10 @@ void process_keypad()
         // Ignore if moving:
         if (g.moving == 1 || g.paused || g.limit_on)
           break;
-        if (g.telescope)
-          g.calibrate_flag = 10;
-        else
-        {
-          g.calibrate_flag = 1;
-          g.error = 4;
-          // Displaying the calibrate warning:
-          display_all();
-        }
+        g.calibrate_flag = 1;
+        g.error = 4;
+        // Displaying the calibrate warning:
+        display_all();
         break;
 
       case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
@@ -116,80 +111,50 @@ void process_keypad()
 #endif
         break;
 
-      case '2': // #2: Save parameters to first memory bank (read from reg 1 in telescope mode)
-        if (g.paused)
-          break;
-        if (g.telescope)
-          read_params(1);
-        else
+      case '2': // #2: Save parameters to first memory bank
+        if (!g.paused)
           save_params(1);
         break;
 
-      case '3': // #3: Read parameters from first memory bank (read from reg 4 in telescope mode)
-        if (g.paused)
-          break;
-        if (g.telescope)
-          read_params(4);
-        else
+      case '3': // #3: Read parameters from first memory bank
+        if (!g.paused)
           read_params(1);
         break;
 
-      case '5': // #5: Save parameters to second memory bank (read from reg 2 in telescope mode)
-        if (g.paused)
-          break;
-        if (g.telescope)
-          read_params(2);
-        else
+      case '5': // #5: Save parameters to second memory bank
+        if (!g.paused)
           save_params(2);
         break;
 
-      case '6': // #6: Read parameters from second memory bank (read from reg 5 in telescope mode)
-        if (g.paused)
-          break;
-        if (g.telescope)
-          read_params(5);
-        else
+      case '6': // #6: Read parameters from second memory bank
+        if (!g.paused)
           read_params(2);
         break;
 
-      case '8': // #8: Cycle through the table for FIRST_DELAY parameter (read from reg 3 in telescope mode)
+      case '8': // #8: Cycle through the table for FIRST_DELAY parameter
         if (g.paused)
           break;
-        if (g.telescope)
-        {
-          read_params(3);
-        }
+        if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
+          g.reg.i_first_delay++;
         else
-        {
-          if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
-            g.reg.i_first_delay++;
-          else
-            g.reg.i_first_delay = 0;
-          EEPROM.put( g.addr_reg[0], g.reg);
-          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-          delay_buffer();
-          display_comment_line(g.buffer);
-        }
+          g.reg.i_first_delay = 0;
+        EEPROM.put( g.addr_reg[0], g.reg);
+        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+        delay_buffer();
+        display_comment_line(g.buffer);
         break;
 
-      case '9': // #9: Cycle through the table for SECOND_DELAY parameter (read from reg 6 in telescope mode)
+      case '9': // #9: Cycle through the table for SECOND_DELAY parameter
         if (g.paused)
           break;
-        if (g.telescope)
-        {
-          read_params(6);
-        }
+        if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
+          g.reg.i_second_delay++;
         else
-        {
-          if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
-            g.reg.i_second_delay++;
-          else
-            g.reg.i_second_delay = 0;
-          EEPROM.put( g.addr_reg[0], g.reg);
-          // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-          delay_buffer();
-          display_comment_line(g.buffer);
-        }
+          g.reg.i_second_delay = 0;
+        EEPROM.put( g.addr_reg[0], g.reg);
+        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
+        delay_buffer();
+        display_comment_line(g.buffer);
         break;
 
       case '4': // #4: Backlighting control
@@ -208,7 +173,7 @@ void process_keypad()
         break;
 
       case '7': // #7: Manual camera shutter triggering
-        if (g.moving || g.telescope)
+        if (g.moving)
           break;
         g.make_shot = 1;
         g.single_shot = 1;
@@ -243,24 +208,24 @@ void process_keypad()
         break;
 
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
-        if (g.paused || g.telescope)
+        if (g.paused)
           break;
         go_to(g.starting_point, g.speed_limit);
         display_comment_line("    Going to P0     ");
         break;
 
       case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
-        if (g.paused || g.telescope)
+        if (g.paused)
           break;
         // Checking the correctness of point1/2
-        if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= 0 && g.reg.point[3] <= g.limit2)
+        if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
         {
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to(g.reg.point[0], g.speed_limit);
-          g.starting_point = g.reg.point[0];
-          g.destination_point = g.reg.point[3];
+          go_to(g.reg.point[FOREGROUND], g.speed_limit);
+          g.starting_point = g.reg.point[FOREGROUND];
+          g.destination_point = g.reg.point[BACKGROUND];
           g.stacker_mode = 1;
           // This is a non-continuous mode:
           g.continuous_mode = 0;
@@ -291,9 +256,6 @@ void process_keypad()
       switch (keypad.key[1].kchar)
       {
         case '1': // *1: Rail reverse
-          if (g.telescope)
-            // Rail reverse is disabled in telescope mode as its unsafe and is not needed:
-            break;
           g.reg.straight = 1 - g.reg.straight;
           EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
@@ -301,46 +263,28 @@ void process_keypad()
           rail_reverse(1);
           break;
 
-        case '2': // *2: Save parameters to third memory bank (read from reg 7 in telescope mode)
-          if (g.telescope)
-            read_params(7);
-          else
-            save_params(3);
+        case '2': // *2: Save parameters to third memory bank
+          save_params(3);
           break;
 
-        case '3': // *3: Read parameters from third memory bank (read from reg 10 in telescope mode)
-          if (g.telescope)
-            read_params(10);
-          else
-            read_params(3);
+        case '3': // *3: Read parameters from third memory bank
+          read_params(3);
           break;
 
-        case '5': // *5: Save parameters to fourth memory bank (read from reg 8 in telescope mode)
-          if (g.telescope)
-            read_params(8);
-          else
-            save_params(4);
+        case '5': // *5: Save parameters to fourth memory bank
+          save_params(4);
           break;
 
-        case '6': // *6: Read parameters from fourth memory bank (read from reg 11 in telescope mode)
-          if (g.telescope)
-            read_params(11);
-          else
-            read_params(4);
+        case '6': // *6: Read parameters from fourth memory bank
+          read_params(4);
           break;
 
-        case '8': // *8: Save parameters to fifth memory bank (read from reg 9 in telescope mode)
-          if (g.telescope)
-            read_params(9);
-          else
-            save_params(5);
+        case '8': // *8: Save parameters to fifth memory bank
+          save_params(5);
           break;
 
-        case '9': // *9: Read parameters from fifth memory bank (read from reg 12 in telescope mode)
-          if (g.telescope)
-            read_params(12);
-          else
-            read_params(5);
+        case '9': // *9: Read parameters from fifth memory bank
+          read_params(5);
           break;
 
         case 'A': // *A: Change accel_factor
@@ -362,9 +306,8 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        case 'C': // *C: Mirror lock: 0, 1, 2 (macro) or Temperature correction 0/1 (telescope)
-          if (g.reg.mirror_lock < 2 - g.telescope)
-            // This ensures that in telescope mode only two values (0/1) are allowed here:
+        case 'C': // *C: Mirror lock: 0, 1, 2 (macro)
+          if (g.reg.mirror_lock < 2)
             g.reg.mirror_lock++;
           else
           {
@@ -376,40 +319,29 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        
+
         case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
-        // Use this command if the rail gets confused and cannot be operated normally (e.g. false limiter trigger)
-        // Once the rail is moved into a safe position, reboot the controller
+          // Use this command if the rail gets confused and cannot be operated normally (e.g. false limiter trigger)
+          // Once the rail is moved into a safe position, reboot the controller
           g.uninterrupted2 = 1;
-          g.limit1 = 10000;          
+          g.limit1 = 10000;
           g.limit2 = 100000;
           g.ipos = 50000;
           g.error = 0; // To remove "Calibrate?" screen if present
           display_all();
           break;
-        
 
-        case '4': // *4: Change N_timelapse, or lock/unlock register (telescope mode)
-          if (g.telescope)
-          {
-            // Toggling the value g.locked flag:
-            g.locked[g.ireg - 1] = 1 - g.locked[g.ireg - 1];
-            EEPROM.put( ADDR_LOCK + g.ireg - 1, g.locked[g.ireg - 1] );
-          }
+
+        case '4': // *4: Change N_timelapse
+          if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
+            g.reg.i_n_timelapse++;
           else
-          {
-            if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
-              g.reg.i_n_timelapse++;
-            else
-              g.reg.i_n_timelapse = 0;
-          }
+            g.reg.i_n_timelapse = 0;
           EEPROM.put( g.addr_reg[0], g.reg);
           display_all();
           break;
 
         case '7': // *7: Change dt_timelapse
-          if (g.telescope)
-            break;
           if (g.reg.i_dt_timelapse < N_DT_TIMELAPSE - 1)
             g.reg.i_dt_timelapse++;
           else
@@ -473,7 +405,7 @@ void process_keypad()
                 break;
               }
               else if (g.paused > 1)
-                  break;
+                break;
               if (g.paused)
               {
                 if (g.moving)
@@ -485,8 +417,8 @@ void process_keypad()
               }
               else
               {
-                if (g.model_type==MODEL_NONE || g.model_type==MODEL_FF || g.model_type==MODEL_STOP)                
-                // Rewinding is done with small acceleration:
+                if (g.model_type == MODEL_NONE || g.model_type == MODEL_FF || g.model_type == MODEL_STOP)
+                  // Rewinding is done with small acceleration:
                 {
                   g.model_type = MODEL_REWIND;
                   g.model_init = 1;
@@ -509,8 +441,8 @@ void process_keypad()
               }
               else
               {
-                if (g.model_type==MODEL_NONE || g.model_type==MODEL_REWIND || g.model_type==MODEL_STOP)                
-                // Fastforwarding is done with small acceleration:
+                if (g.model_type == MODEL_NONE || g.model_type == MODEL_REWIND || g.model_type == MODEL_STOP)
+                  // Fastforwarding is done with small acceleration:
                 {
                   g.model_type = MODEL_FF;
                   g.model_init = 1;
@@ -523,8 +455,8 @@ void process_keypad()
               set_memory_point(1);
               break;
 
-            case 'B':  // B: Set background point (#4)
-              set_memory_point(4);
+            case 'B':  // B: Set background point (#2)
+              set_memory_point(2);
               break;
 
             case '7':  // 7: Go to the foreground point (#1)
@@ -532,78 +464,71 @@ void process_keypad()
               break;
 
             case 'C':  // C: Go to the background point (#4)
-              goto_memory_point(4);
+              goto_memory_point(2);
               break;
 
             case '0': // 0: Start shooting (2-point focus stacking) from the foreground point, or goto current memory point
               if (g.moving)
                 break;
               // Checking the correctness of point1/2
-              if (g.telescope)
+              if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
               {
-                goto_memory_point(g.current_point + 1);
+                if (g.paused == 1)
+                  // Resuming 2-point stacking from a paused state
+                {
+                  g.paused = 0;
+                  g.start_stacking = 1;
+                  if (g.continuous_mode)
+                  {
+                    // The flag means we just initiated stacking:
+                    letter_status(" ");
+                  }
+                  else
+                  {
+                    g.noncont_flag = 1;
+                    letter_status("S");
+                  }
+                  // Time when stacking was initiated:
+                  g.t0_stacking = g.t;
+                  g.ipos_to_shoot = g.ipos;
+                  g.stacker_mode = 2;
+                }
+                else if (g.paused == 3)
+                  // Restarting from a pause which happened between stacks (in timelapse mode)
+                {
+                  g.paused = 0;
+                  display_all();
+                }
+                else if (g.paused == 2)
+                  // Restarting from a pause which happened during the initial travel to the starting point
+                {
+                  go_to(g.reg.point[FOREGROUND], g.speed_limit);
+                  g.stacker_mode = 1;
+                  g.start_stacking = 0;
+                  g.paused = 0;
+                  display_all();
+                }
+                else
+                  // Initiating a new stack (or timelapse sequence of stacks)
+                {
+                  // Using the simplest approach which will result the last shot to always slightly undershoot
+                  g.Nframes = Nframes();
+                  go_to(g.reg.point[FOREGROUND], g.speed_limit);
+                  g.starting_point = g.reg.point[FOREGROUND];
+                  g.destination_point = g.reg.point[BACKGROUND];
+                  g.stacker_mode = 1;
+                  g.continuous_mode = 1;
+                  g.start_stacking = 0;
+                  g.timelapse_counter = 0;
+                  if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                    g.timelapse_mode = 1;
+                  display_comment_line("   2-points stack   ");
+                }
               }
               else
               {
-                if (g.reg.point[3] > g.reg.point[0] && g.reg.point[0] >= 0 && g.reg.point[3] <= g.limit2)
-                {
-                  if (g.paused == 1)
-                    // Resuming 2-point stacking from a paused state
-                  {
-                    g.paused = 0;
-                    g.start_stacking = 1;
-                    if (g.continuous_mode)
-                    {
-                      // The flag means we just initiated stacking:
-                      letter_status(" ");
-                    }
-                    else
-                    {
-                      g.noncont_flag = 1;
-                      letter_status("S");
-                    }
-                    // Time when stacking was initiated:
-                    g.t0_stacking = g.t;
-                    g.ipos_to_shoot = g.ipos;
-                    g.stacker_mode = 2;
-                  }
-                  else if (g.paused == 3)
-                    // Restarting from a pause which happened between stacks (in timelapse mode)
-                  {
-                    g.paused = 0;
-                    display_all();
-                  }
-                  else if (g.paused == 2)
-                    // Restarting from a pause which happened during the initial travel to the starting point
-                  {
-                    go_to(g.reg.point[0], g.speed_limit);
-                    g.stacker_mode = 1;
-                    g.start_stacking = 0;
-                    g.paused = 0;
-                    display_all();
-                  }
-                  else
-                    // Initiating a new stack (or timelapse sequence of stacks)
-                  {
-                    // Using the simplest approach which will result the last shot to always slightly undershoot
-                    g.Nframes = Nframes();
-                    go_to(g.reg.point[0], g.speed_limit);
-                    g.starting_point = g.reg.point[0];
-                    g.destination_point = g.reg.point[3];
-                    g.stacker_mode = 1;
-                    g.continuous_mode = 1;
-                    g.start_stacking = 0;
-                    g.timelapse_counter = 0;
-                    if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
-                      g.timelapse_mode = 1;
-                    display_comment_line("   2-points stack   ");
-                  }
-                }
-                else
-                {
-                  // Should print error message
-                  display_comment_line("   Bad 2 points!    ");
-                }
+                // Should print error message
+                display_comment_line("   Bad 2 points!    ");
               }
               break;
 
@@ -619,120 +544,97 @@ void process_keypad()
               }
               break;
 
-            case 'D':  // D: Initiate one-point focus stacking forward, or show points screen in telescope mode
+            case 'D':  // D: Initiate one-point focus stacking forward
               if (g.paused)
                 break;
               if (!g.moving)
               {
-                if (g.telescope)
-                {
-                  if (g.alt_flag == 0)
-                  {
-                    g.alt_flag = 1;
-                    // Kind=2 means "D" screen
-                    g.alt_kind = 2;
-                    display_all();
-                  }
-                }
-                else
-                {
-                  // The flag means we just initiated stacking:
-                  g.start_stacking = 1;
-                  // Time when stacking was initiated:
-                  g.t0_stacking = g.t;
-                  g.frame_counter = 0;
-                  display_frame_counter();
-                  g.ipos_to_shoot = g.ipos;
-                  g.starting_point = g.ipos;
-                  g.stacker_mode = 3;
-                  g.continuous_mode = 1;
-                  display_comment_line("   1-point stack    ");
-                }
+                // The flag means we just initiated stacking:
+                g.start_stacking = 1;
+                // Time when stacking was initiated:
+                g.t0_stacking = g.t;
+                g.frame_counter = 0;
+                display_frame_counter();
+                g.ipos_to_shoot = g.ipos;
+                g.starting_point = g.ipos;
+                g.stacker_mode = 3;
+                g.continuous_mode = 1;
+                display_comment_line("   1-point stack    ");
               }
               break;
 
-            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking), or save to register #2 (telescope mode)
+            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)
               // Also used for different debugging modes, to decrease debugged parameters
-              if (g.telescope)
-                set_memory_point(2);
-              else
-              {
-                if (g.paused)
-                  break;
+              if (g.paused)
+                break;
 #if defined(DELAY_DEBUG)
-                // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
-                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
-                if (SHUTTER_ON_DELAY2 < 0)
-                  SHUTTER_ON_DELAY2 = 0;
-                display_all();
+              // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
+              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
+              if (SHUTTER_ON_DELAY2 < 0)
+                SHUTTER_ON_DELAY2 = 0;
+              display_all();
 #elif defined(BL2_DEBUG)
-                // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
-                BACKLASH_2 = BACKLASH_2 - BL_STEP;
-                if (BACKLASH_2 < 0)
-                  BACKLASH_2 = 0;
-                display_all();
+              // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
+              BACKLASH_2 = BACKLASH_2 - BL_STEP;
+              if (BACKLASH_2 < 0)
+                BACKLASH_2 = 0;
+              display_all();
 #elif defined(BL_DEBUG)
-                // The meaning of "6" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
-                g.backlash = g.backlash - BL_STEP;
-                if (g.backlash < 1)
-                  g.backlash = 1;
-                display_all();
+              // The meaning of "6" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
+              g.backlash = g.backlash - BL_STEP;
+              if (g.backlash < 1)
+                g.backlash = 1;
+              display_all();
 #elif defined(BUZZER_DEBUG)
-                // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to decrease the buzzer timing:
-                g.dt1_buzz_us = g.dt1_buzz_us - DELTA_BUZZ_US;
-                if (g.dt1_buzz_us < 1)
-                  g.dt1_buzz_us = 1;
-                display_all();
+              // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to decrease the buzzer timing:
+              g.dt1_buzz_us = g.dt1_buzz_us - DELTA_BUZZ_US;
+              if (g.dt1_buzz_us < 1)
+                g.dt1_buzz_us = 1;
+              display_all();
 #else
-                if (g.reg.i_n_shots > 0)
-                  g.reg.i_n_shots--;
-                else
-                  break;
-                EEPROM.put( g.addr_reg[0], g.reg);
-                display_one_point_params();
+              if (g.reg.i_n_shots > 0)
+                g.reg.i_n_shots--;
+              else
+                break;
+              EEPROM.put( g.addr_reg[0], g.reg);
+              display_one_point_params();
 #endif
-              }
               break;
 
-            case '6':  // 6: Increase parameter n_shots (for 1-point sstacking), or save to register #3 (telescope mode)
+            case '6':  // 6: Increase parameter n_shots (for 1-point sstacking)
               // Also used for different debugging modes, to increase debugged parameters
-              if (g.telescope)
-                set_memory_point(3);
-              else
-              {
-                if (g.paused)
-                  break;
+              if (g.paused)
+                break;
 #if defined (DELAY_DEBUG)
-                // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
-                SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
-                if (SHUTTER_ON_DELAY2 > 10000000)
-                  SHUTTER_ON_DELAY2 = 10000000;
-                display_all();
+              // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
+              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
+              if (SHUTTER_ON_DELAY2 > 10000000)
+                SHUTTER_ON_DELAY2 = 10000000;
+              display_all();
 #elif defined (BL2_DEBUG)
-                // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
-                BACKLASH_2 = BACKLASH_2 + BL_STEP;
-                if (BACKLASH_2 > 10000)
-                  BACKLASH_2 = 10000;
-                display_all();
+              // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
+              BACKLASH_2 = BACKLASH_2 + BL_STEP;
+              if (BACKLASH_2 > 10000)
+                BACKLASH_2 = 10000;
+              display_all();
 #elif defined(BL_DEBUG)
-                // The meaning of "6" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
-                g.backlash = g.backlash + BL_STEP;
-                if (g.backlash > 10000)
-                  g.backlash = 10000;
-                display_all();
+              // The meaning of "6" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
+              g.backlash = g.backlash + BL_STEP;
+              if (g.backlash > 10000)
+                g.backlash = 10000;
+              display_all();
 #elif defined(BUZZER_DEBUG)
-                // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to increase the buzzer timing:
-                g.dt1_buzz_us = g.dt1_buzz_us + DELTA_BUZZ_US;
-                display_all();
+              // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to increase the buzzer timing:
+              g.dt1_buzz_us = g.dt1_buzz_us + DELTA_BUZZ_US;
+              display_all();
 #else
-                if (g.reg.i_n_shots < N_PARAMS - 1)
-                  g.reg.i_n_shots++;
-                else
-                  break;
-                EEPROM.put( g.addr_reg[0], g.reg);
-                display_one_point_params();
+              if (g.reg.i_n_shots < N_PARAMS - 1)
+                g.reg.i_n_shots++;
+              else
+                break;
+              EEPROM.put( g.addr_reg[0], g.reg);
+              display_one_point_params();
 #endif
-              }
               break;
 
             case '2':  // 2: Decrease parameter mm_per_frame
@@ -750,7 +652,7 @@ void process_keypad()
                 g.Nframes = Nframes();
                 break;
               }
-//              display_all();
+              //              display_all();
               display_u_per_f();
               display_two_point_params();
               EEPROM.put( g.addr_reg[0], g.reg);
@@ -775,61 +677,51 @@ void process_keypad()
                 break;
               g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
-//              display_all();
+              //              display_all();
               display_u_per_f();
               display_two_point_params();
               break;
 
-            case '8':  // 8: Decrease parameter fps, or go to memory point #2 (telescope mode)
-              if (g.telescope)
-                goto_memory_point(2);
+            case '8':  // 8: Decrease parameter fps
+              if (g.paused)
+                break;
+              if (g.reg.i_fps > 0)
+                g.reg.i_fps--;
               else
-              {
-                if (g.paused)
-                  break;
-                if (g.reg.i_fps > 0)
-                  g.reg.i_fps--;
-                else
-                  break;
-                EEPROM.put( g.addr_reg[0], g.reg);
-//                display_all();
-                display_fps();
-                display_two_point_params();
-                display_one_point_params();
-              }
+                break;
+              EEPROM.put( g.addr_reg[0], g.reg);
+              //                display_all();
+              display_fps();
+              display_two_point_params();
+              display_one_point_params();
               break;
 
-            case '9':  // 9: Increase parameter fps, or go to memory point #3 (telescope mode)
-              if (g.telescope)
-                goto_memory_point(3);
-              else
+            case '9':  // 9: Increase parameter fps
+              if (g.paused)
+                break;
+              if (g.reg.i_fps < N_PARAMS - 1)
               {
-                if (g.paused)
-                  break;
-                if (g.reg.i_fps < N_PARAMS - 1)
+                g.reg.i_fps++;
+                // Estimating the required speed in microsteps per microsecond
+                speed = target_speed();
+                // Reverting back if required speed > maximum allowed:
+                if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
                 {
-                  g.reg.i_fps++;
-                  // Estimating the required speed in microsteps per microsecond
-                  speed = target_speed();
-                  // Reverting back if required speed > maximum allowed:
-                  if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
-                  {
-                    g.reg.i_fps--;
-                    break;
-                  }
-                }
-                else
+                  g.reg.i_fps--;
                   break;
-                EEPROM.put( g.addr_reg[0], g.reg);
-//                display_all();
-                display_fps();
-                display_two_point_params();
-                display_one_point_params();
+                }
               }
+              else
+                break;
+              EEPROM.put( g.addr_reg[0], g.reg);
+              //                display_all();
+              display_fps();
+              display_two_point_params();
+              display_one_point_params();
               break;
 
             case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
-              if (g.moving || g.paused || g.telescope)
+              if (g.moving || g.paused)
                 break;
               delay_buffer();
               display_comment_line(g.buffer);
@@ -898,11 +790,11 @@ void process_keypad()
         // Breaking / stopping if 1/A keys were depressed
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
         {
-         g.model_type = MODEL_STOP;
-         g.model_init = 1;
+          g.model_type = MODEL_STOP;
+          g.model_init = 1;
         }
-        if (g.key_old == '*' || g.telescope && g.key_old == 'D')
-          // The '*' (or 'D' in telescope mode) key was just released: switch to default screen from the alternative one
+        if (g.key_old == '*')
+          // The '*' key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;
           display_all();

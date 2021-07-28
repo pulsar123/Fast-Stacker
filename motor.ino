@@ -527,7 +527,6 @@ void stop_now()
   g.dt_lost = 0; // Now at rest, so model time is identical to the real time
 
   /*
-    if (g.telescope == 0)
       if (g.error == 1)
       {
         unsigned char limit_on = digitalRead(PIN_LIMITERS);
@@ -546,8 +545,7 @@ void stop_now()
   }
 
   // Saving the current position to EEPROM:
-  if (!g.telescope)
-    EEPROM.put( ADDR_POS, g.ipos );
+  EEPROM.put( ADDR_POS, g.ipos );
 
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
   {

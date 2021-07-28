@@ -62,36 +62,22 @@ void display_all()
       my_setCursor(7, 0, 1);
       sprintf(g.buffer, "Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
       tft.print(g.buffer);
-      if (!g.telescope)
-      {
-        sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
-        my_setCursor(0, 0, 1);
-        tft.print(g.buf6);
-      }
+      sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
+      my_setCursor(0, 0, 1);
+      tft.print(g.buf6);
 
       // Line 2:
-      if (g.telescope)
-        sprintf(g.buffer, "Lock=%1d    BL=%1d", g.locked[g.ireg - 1], g.reg.backlash_on);
-      else
-      {
-        sprintf(g.buffer, "N=%-3d", N_TIMELAPSE[g.reg.i_n_timelapse]);
-        my_setCursor(0, 1, 1);
-        tft.print(g.buffer);
-        sprintf(g.buffer, "BL=%1d", g.reg.backlash_on);
-        my_setCursor(7, 1, 1);
-        tft.print(g.buffer);
-      }
+      sprintf(g.buffer, "N=%-3d", N_TIMELAPSE[g.reg.i_n_timelapse]);
+      my_setCursor(0, 1, 1);
+      tft.print(g.buffer);
+      sprintf(g.buffer, "BL=%1d", g.reg.backlash_on);
+      my_setCursor(7, 1, 1);
+      tft.print(g.buffer);
       // Line 3:
       my_setCursor(0, 2, 1);
-      if (!g.telescope)
-      {
-        sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
-        tft.print(g.buf6);
-      }
-      if (g.telescope)
-        sprintf(g.buf6, "TC");
-      else
-        sprintf(g.buf6, "Mir");
+      sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
+      tft.print(g.buf6);
+      sprintf(g.buf6, "Mir");
       sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
       my_setCursor(7, 2, 1);
       tft.print(g.buffer);
@@ -135,57 +121,10 @@ void display_all()
       //  Showing amount of EEPROM used:
       sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
 #else
-#ifdef TEMPERATURE
-      // Printing the temperature (Celcius), and version:
-      sprintf(g.buffer, "%4sC  s%s", ftoa(g.buf6, g.Temp, 1), VERSION);
-      //      sprintf(g.buffer, "%3d %4s", g.raw_T, ftoa(g.buf6, g.Temp, 1));
-#endif // TEMPERATURE
 #endif  // EEPROM
       tft.print(g.buffer);
     }
 
-    else
-      // Screen "D" (telescope mode only)
-    {
-      byte i = 0;
-      for (row = 0; row < 4; row = row + 3)
-        for (col = 0; col < 8; col = col + 7)
-        {
-          if (i == g.current_point)
-            // Marking the current point section of the screen with a "*":
-          {
-            my_setCursor(col, row, 1);
-            tft.print("*");
-          }
-          my_setCursor(col + 1, row, 1);
-#ifdef SHOW_RAW
-          sprintf(g.buffer, "%1d)%4d", i + 1, g.delta_pos[i]);
-#else
-          short p_int = g.mm_per_microstep * 1000 * (float)(g.delta_pos[i]) + 0.5;
-          // Showing delta_pos in microns:
-          sprintf(g.buffer, "%1d)%4d", i + 1, p_int);
-#endif
-          tft.print(g.buffer);
-          my_setCursor(col + 1, row + 1, 1);
-#ifdef TEMPERATURE
-#ifdef SHOW_RAW
-          sprintf(g.buffer, "%5d", g.reg.raw_T[i]);
-#else
-          sprintf(g.buffer, "%5sC", ftoa(g.buf6, g.Temp0[i], 1));
-#endif
-#endif
-          tft.print(g.buffer);
-          my_setCursor(col + 1, row + 2, 1);
-#ifdef SHOW_RAW
-          sprintf(g.buffer, "%6d", g.reg.point[i]);
-#else
-          p = g.mm_per_microstep * (float)(g.reg.point[i]);
-          sprintf(g.buffer, "%6s", ftoa(g.buf7, p, 3));
-#endif
-          tft.print(g.buffer);
-          i++;
-        }
-    }  // if alt_kind
   }
 
   else
@@ -243,7 +182,7 @@ void letter_status(char const * l)
   if (g.moving || g.model_init)
     return;
 #endif
-   if (g.error || g.alt_flag)
+  if (g.error || g.alt_flag)
     return;
   my_setCursor(0, 5, 1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -310,7 +249,7 @@ void display_frame_counter()
   if (g.moving || g.model_init)
     return;
 #endif
-  if (g.error || g.alt_flag || g.telescope)
+  if (g.error || g.alt_flag)
     return;
   // Printing frame counter:
   if (g.stacker_mode == 0 && g.paused == 0 || g.paused > 1)
@@ -319,8 +258,8 @@ void display_frame_counter()
     sprintf (g.buffer, "%4d ",  g.frame_counter + 1);
   my_setCursor(5, 5, 1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-//  tft.print (g.buffer);
-tft.drawString(g.buffer, g.x0, g.y0);
+  //  tft.print (g.buffer);
+  tft.drawString(g.buffer, g.x0, g.y0);
 
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
 
@@ -332,7 +271,7 @@ tft.drawString(g.buffer, g.x0, g.y0);
 
 
 void points_status()
-/* Displays F or B if the current coordinate is exactly the foreground (g.reg.point[0]) or background (g.reg.point[3]) point.
+/* Displays F or B if the current coordinate is exactly the foreground (g.reg.point[FOREGROUND]) or background (g.reg.point[BACKGROUND]) point.
 */
 {
 #ifdef NO_DISP
@@ -373,18 +312,10 @@ void points_status()
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
-  if (g.telescope)
-  {
-    sprintf (g.buffer, "%1d ", g.current_point + 1);
-    tft.print (g.buffer);
-  }
+  if (g.current_point == 0)
+    tft.print("F ");
   else
-  {
-    if (g.current_point == 0)
-      tft.print("F ");
-    else
-      tft.print("B ");
-  }
+    tft.print("B ");
 
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
 
@@ -434,10 +365,10 @@ void battery_status()
 
   // Disabling the rail once V goes below the critical V_LOW voltage
 #ifndef MOTOR_DEBUG
- #ifndef NO_CRITICAL_VOLTAGE
+#ifndef NO_CRITICAL_VOLTAGE
   if (V < V_LOW)
     g.error = 2;
- #endif    
+#endif
 #endif
 
   return;
@@ -482,7 +413,7 @@ void display_u_per_f()
 
   if (um_per_frame >= 10.0)
     // +0.5 is for proper round-off:
-    sprintf(g.buffer, "%4duf ", (int)(um_per_frame+0.5));
+    sprintf(g.buffer, "%4duf ", (int)(um_per_frame + 0.5));
   else
     // +0.05 is for proper round-off:
     sprintf(g.buffer, "%4suf ", ftoa(g.buf7, um_per_frame + 0.05, 1));
@@ -503,7 +434,7 @@ void display_fps()
   if (g.moving || g.model_init)
     return;
 #endif
-  if (g.error || g.alt_flag || g.telescope)
+  if (g.error || g.alt_flag)
     return;
   if (FPS[g.reg.i_fps] >= 1.0)
     sprintf(g.buffer, " %3sfps ", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
@@ -534,33 +465,22 @@ void display_one_point_params()
 
   my_setCursor(0, 0, 1);
 
-  if (g.telescope)
-  {
-    if (g.locked[g.ireg - 1])
-      g.tmp_char = 'L';
-    else
-      g.tmp_char = ' ';
-    sprintf(g.buffer, " Register %2d%1s ", g.ireg, g.tmp_char);
-  }
+  // +0.05 for proper round off:
+  float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+  short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
+  if (dt < 1000.0 && dt >= 0.0)
+    sprintf(g.buf6, "%3ds", dt);
+  else if (dt < 10000.0 && dt >= 0.0)
+    sprintf(g.buf6, "%4d", dt);
   else
-  {
-    // +0.05 for proper round off:
-    float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
-    short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
-    if (dt < 1000.0 && dt >= 0.0)
-      sprintf(g.buf6, "%3ds", dt);
-    else if (dt < 10000.0 && dt >= 0.0)
-      sprintf(g.buf6, "%4d", dt);
-    else
-      sprintf(g.buf6, "****");
+    sprintf(g.buf6, "****");
 
-    if (dx < 100.0)
-      ftoa(g.buf7, dx, 1);
-    else
-      sprintf(g.buf7, "****");
+  if (dx < 100.0)
+    ftoa(g.buf7, dx, 1);
+  else
+    sprintf(g.buf7, "****");
 
-    sprintf(g.buffer, "%4d %4s    %4s   ", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
-  }
+  sprintf(g.buffer, "%4d %4s    %4s   ", N_SHOTS[g.reg.i_n_shots], g.buf7 , g.buf6);
 
   tft.print(g.buffer);
   return;
@@ -586,28 +506,21 @@ void display_two_point_params()
 
   my_setCursor(0, 1, 1);
 
-  if (g.telescope)
-  {
-    sprintf(g.buffer, "%s", Name[g.ireg - 1]);
-  }
+  // +0.05 for proper round off:
+  dx = g.mm_per_microstep * (float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND]) + 0.05;
+  // +0.5 for proper round off:
+  short dt = (short)((float)(g.Nframes - 1) / FPS[g.reg.i_fps] + 0.5);
+  if (dt < 1000.0 && dt >= 0.0)
+    sprintf(g.buf6, "%3ds", dt);
+  else if (dt < 10000.0 && dt >= 0.0)
+    sprintf(g.buf6, "%4d", dt);
   else
-  {
-    // +0.05 for proper round off:
-    dx = g.mm_per_microstep * (float)(g.reg.point[3] - g.reg.point[0]) + 0.05;
-    // +0.5 for proper round off:
-    short dt = (short)((float)(g.Nframes - 1) / FPS[g.reg.i_fps] + 0.5);
-    if (dt < 1000.0 && dt >= 0.0)
-      sprintf(g.buf6, "%3ds", dt);
-    else if (dt < 10000.0 && dt >= 0.0)
-      sprintf(g.buf6, "%4d", dt);
-    else
-      sprintf(g.buf6, "****");
+    sprintf(g.buf6, "****");
 
-    if (g.reg.point[3] >= g.reg.point[0])
-      sprintf(g.buffer, "%4d  %4s   %4s   ", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
-    else
-      sprintf(g.buffer, "****  ****   ****   ");
-  }
+  if (g.reg.point[BACKGROUND] >= g.reg.point[FOREGROUND])
+    sprintf(g.buffer, "%4d  %4s   %4s   ", g.Nframes, ftoa(g.buf7, dx, 1), g.buf6);
+  else
+    sprintf(g.buffer, "****  ****   ****   ");
   tft.print(g.buffer);
   return;
 }
@@ -626,7 +539,7 @@ void display_two_points()
   if (g.moving || g.model_init)
     return;
 #endif
-  if (g.error || g.alt_flag || g.telescope)
+  if (g.error || g.alt_flag)
     return;
 
 #ifdef TEST_SWITCH
@@ -637,9 +550,9 @@ void display_two_points()
   tft.print(g.empty_buffer);  //erasing the line
 
 #ifdef SHOW_RAW
-  sprintf(g.buffer, "F%5d", g.reg.point[0]);
+  sprintf(g.buffer, "F%5d", g.reg.point[FOREGROUND]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[0]);
+  p = g.mm_per_microstep * (float)(g.reg.point[FOREGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
@@ -649,9 +562,9 @@ void display_two_points()
   tft.print(g.buffer);
 
 #ifdef SHOW_RAW
-  sprintf(g.buffer, "B%5d", g.reg.point[3]);
+  sprintf(g.buffer, "B%5d", g.reg.point[BACKGROUND]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[3]);
+  p = g.mm_per_microstep * (float)(g.reg.point[BACKGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -681,8 +594,8 @@ void display_current_position()
   return;
 #endif
 
-//!!! added  g.moving==1 || g.model_init==1
-//  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.model_init==1)
+  //!!! added  g.moving==1 || g.model_init==1
+  //  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.model_init==1)
   if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
     return;
 
@@ -757,8 +670,6 @@ void delay_buffer()
 // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
 {
   float y;
-  if (g.telescope)
-    return;
   y = (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame] / g.accel_limit;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);

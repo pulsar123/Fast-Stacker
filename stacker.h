@@ -2,7 +2,7 @@
 
    User header file. Contains user adjustable parameters (constants), and other stuff.
 
-   To be used with automated macro rail for focus stacking, and (since h1.3) for a telescope focuser
+   To be used with automated macro rail for focus stacking, and (h1.3+, discontinued in h2.0) for a telescope focuser
 */
 
 #ifndef STACKER_H
@@ -13,26 +13,12 @@
 #define VERSION "2.0"
 
 //++++++++++ Major features +++++++++++++++++
-// Use temperature sensor (only in telescope mode), to maintain accurate focus at different temperatures:
-//#define TEMPERATURE
-/* Use one (foreground) microswitch in telescope mode.
-   If undefined, you always have to manually move the focuser to the closest to the telescope position before powering up the controller.
-   If defined, the focuser will automatically self-calibrate: first it will move away from the telescope until the switch is off and more than one breaking distance away from the switch;
-   next, it will move full speed towards the telescope until the switch is triggered, at which point the emergency breaking will be engaged.
-   Finally, it will move away from the telescope until the switch is off again (which sets 0 for the coordinate) + some safety margin. This procedure ensures that regardless of the initial focuser position it will
-   always hit the switch at the same (maximum) speed, which should improve the switch accuracy (repeatability).
-*/
-//#define TELE_SWITCH
-// If defined, inverts the limiter switch logic (HIGH when triggered; LOW otherwise). Needed only in telescope mode if you use Hall effect sensor as the limiting switch
-//#define HALL_SENSOR
 //#define BUZZER
 
 //+++++++++++++ Data types +++++++++++++++++++
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE s32
-// Signed shorter type (only used for telescope):
-#define COORD_STYPE s16
 // Long signed type (for timers and such):
 #define TIME_TYPE s32
 
@@ -78,14 +64,10 @@ const COORD_TYPE BL_STEP = 1;
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
 //#define SHOW_RAW
-// Dumping the contents of the telescope memory registers to serial monitor, and optionally updating EEPROM with new values read from the monitor:
-//#define DUMP_REGS
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
 //#define TEST_SWITCH
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
 //#define SERIAL_SWITCH
-// Testing the Hall sensor (takes +5V from PIN_SHUTTER, sends signal to PIN_LIMITERS). Turns backlight on when the sensor is engaged, off otherwise
-//#define TEST_HALL
 //#define TEST_LIMITER // If defined, displays limiter state after the coordinate
 
 // Memory saving tricks:
@@ -188,7 +170,7 @@ byte colPins[cols] = {1, 2, 3, 4}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
 
 
-//////// Parameters related to the motor, the rail, and the telescope: ////////
+//////// Parameters related to the motor and the rail: ////////
 // Number of full steps per rotation for the stepper motor:
 const COORD_TYPE MOTOR_STEPS = 200;
 // M0, M1, M2 values determine the number of microsteps per step (see DRV8825 specs; all three HIGH correspond to 32 microsteps)
@@ -199,8 +181,6 @@ const byte MOTOR_M2 = HIGH;
 const COORD_TYPE N_MICROSTEPS = 32;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
 const float MM_PER_ROTATION = 3.98;
-// The value for alternative device (TELESCOPE mode):
-const float MM_PER_ROTATION_TEL = 24;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
 // Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full g.backlash amount,
@@ -210,8 +190,6 @@ const float MM_PER_ROTATION_TEL = 24;
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
 const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
-// The backlash value for the second device:
-const float BACKLASH_TEL_MM = 0.2; // 0.2mm for Celestron telescope focuser
 // This is the second backlash related parameter you need to measure for you rail (or just use the value provided if your rail is Velbon Super Mag Slider)
 // This parameter is only relevant for one operation - rail reversal (*1 function). Unlike the above parameter (BACKLASH_MM) which can be equal to or
 // larger than the actual backlash value for the rail movements to be perfectly accurate, the BACKLASH_2 parameter has to have a specific value (not larger, no smaller); if
@@ -221,7 +199,6 @@ const float BACKLASH_TEL_MM = 0.2; // 0.2mm for Celestron telescope focuser
 // Use the BL2_DEBUG mode to find the good value of this parameter. You should convert the displayed value of BL2_DEBUG from microsteps
 // to mm, by multiplying by MM_PER_ROTATION/(MOTOR_STEPS*N_MICROSTEPS).
 // Adjust this parameter only after you found a good value for BACKLASH_MM parameter.
-// No equivalent parameter for the TELESCOPE mode as one doesn't need to reverse the directional keys meaning with a telescope focuser.
 const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
@@ -230,15 +207,11 @@ const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
 // Macro rail speed limit:
 const float SPEED_LIMIT_MM_S = 10; // 10
-// The limit for TELESCOPE mode:
-const float SPEED_LIMIT_TEL_MM_S = 5;
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 1.0;
-// The value for TELESCOPE mode:
-const float BREAKING_DISTANCE_TEL_MM = 1.0;
 // Padding (in mm) for a soft limit, before hitting the limiters (increase if you constantly hit the limiter by accident)
 const float LIMITER_PAD_MM = 2.5;
 // A bit of extra padding (in mm) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
@@ -253,10 +226,6 @@ const float DELTA_LIMITER_MM = 4.0;
 const short STEP_LOW_DT = 2;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
-// Initial coordinate (mm) for telescope:
-const float TEL_INIT_MM = 1;
-// The maximum travel distance in telescope mode, starting from the closest position:
-const float TEL_LENGTH_MM = 45;
 // Number of consequitive HIGH values to set g.limit_on to HIGH
 // Set it to >1 if you get false limiter triggering when motor is in use. The larger the number, the more stable it is against the impulse noise
 // (the drawback - you'll start having a lag between the actual trigger and the reaction to it.)
@@ -272,10 +241,8 @@ const TIME_TYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refre
 
 
 //////// INPUT PARAMETERS: ////////
-// Number of custom memory registers; macro:
+// Number of custom memory registers:
 const byte N_REGS = 5;
-// telescope:
-const byte N_REGS_TEL = 1;
 // Number of backlight levels (not used in h2.0):
 #define N_BACKLIGHT 4
 // Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
@@ -284,7 +251,7 @@ const byte Backlight[] = {0, 110, 127, 255};
 //#define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
 const COORD_TYPE N_PARAMS = 25;
-// Now we are using microsteps per frame input table, for both macro and telescope modes:
+// Now we are using microsteps per frame input table:
 const COORD_TYPE MSTEP_PER_FRAME[] = {1,       2,          4,      6,    8,    12,   16,    20,   24,   32,   40,   48,   64,  80,  120, 160,  200, 240, 320, 400, 480, 640, 800, 1200, 1600};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
@@ -315,48 +282,6 @@ const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3
 const TIME_TYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
 #endif
 
-//////////////////////  Telescope stuff //////////////////////
-// Names for different focusing points.
-char const Name[N_REGS_TEL][15] = {
-  "              "
-};
-// Temperature related parameters
-#ifdef TEMPERATURE
-// Number of times temperature is measured in a loop (for better accuracy):
-const byte N_TEMP = 10;
-// Resistance of the pullup resistor at PIN_AF, kOhms. Should be determined by connecting a resistor with known resistance, R0, to PIN_AF in SHOW_RAW mode,
-// and pressing the * key: this will show the raw read value at PIN_AF, raw_T (bottom line, on the left). Now R_pullup can be computed from the voltage
-// divider equation:
-//    R_pullup = R0 * (1024/raw_T - 1)
-// Use R0 ~ R_pullup for the best measurement accuracy.
-// For now, as I only have a 10k thermistor, my hack is to use an external pullup resistor, and use PIN_SHUTTER to deliver the +5V to the voltage divider on the telescope:
-const float R_pullup = 10.045;  // 35.2K for my internal pullup resistor;
-// The three thermistor coefficients in Steinhart–Hart equation (https://en.wikipedia.org/wiki/Thermistor). Should be computed by solving a set of three linear
-// equations (three instances of Steinhart–Hart equation written for three different temperatures), with a,b,c being the unknowns. One can use online solvers,
-// e.g. this one: http://octave-online.net . One has to enter two lines there. The first one contains the three measured resistances of the thermistor (k), at
-// three different temperatures, and then the temperature values (C):
-// > R1=49; R2=51; R3=53; T1=5; T2=15; T3=25;
-// The second line solves the system of three Steinhart–Hart equations, and prints the solutions - coefficients a, b, c:
-// > A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3)]; x=A\b
-/*  Or one can use least squares method fore more accurate results (needs >3 measurements). E.g. for four measurements:
-  octave:22> R1=9.03; R2=11.94; R3=32.04; R4=9.99; T1=27.2; T2=21.3; T3=-1.05; T4=25.3;
-  octave:23> A=[1,log(R1),(log(R1))^3;1,log(R2),(log(R2))^3;1,log(R3),(log(R3))^3;1,log(R4),(log(R4))^3];T0=273.15;b=[1/(T0+T1);1/(T0+T2);1/(T0+T3);1/(T0+T4)];
-  octave:24> ols(b,A)
-*/
-const float SH_a = 2.777994e-03;
-const float SH_b = 2.403028e-04;
-const float SH_c = 1.551810e-06;
-// Thermal expansion coefficient for your telescope, in mm/K units. Focus moves by -CTE*(Temp-Temp0) when temperature changes.
-// This is not the official CTE (normalized per 1mm of the telescope length), but rather the product of the official CTE x length of the telescope.
-// It can be measured by focusing the same eyepice or camera on a star at two different temperatures, one of them designated as Temp0, the other one
-// termed Temp1. After each focusing the precise focusing positions x0 and x1 (in mm) and the temperatures (as measured by Arduino) are written down. Then CTE is computed as
-//   CTE = -(x1-x0) / (Temp1-Temp0)
-// (the minus sign is because when the telescope tube expands, focus point moves closer to the telescope, resulting in a smaller coordinate).
-const float CTE = 1.5e-2;
-#endif
-// Largest allowed focus shift due to changing temperature for the current memory point, in microsteps. If delta_pos becomes larger than this value,
-// the memory point index in the status line starts flashing (meaning we need to travel to that point again).
-const COORD_TYPE DELTA_POS_MAX = 2;
 const TIME_TYPE FLASHING_DELAY = 300000;
 
 
@@ -375,36 +300,20 @@ TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
-// TELESCOPE value:
-const float MM_PER_MICROSTEP_TEL = MM_PER_ROTATION_TEL / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
 // Number of microsteps per rotation
 const COORD_TYPE MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
 const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
-// TELESCOPE value:
-const float BREAKING_DISTANCE_TEL = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_TEL_MM / (1.0 * MM_PER_ROTATION_TEL);
 const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
-// TELESCOPE value:
-const float SPEED_SCALE_TEL = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION_TEL); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
 const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
-// TELESCOPE value:
-const float SPEED_LIMIT_TEL = SPEED_SCALE_TEL * SPEED_LIMIT_TEL_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
-// TELESCOPE value:
-const float ACCEL_LIMIT_TEL = SPEED_LIMIT_TEL * SPEED_LIMIT_TEL / (2.0 * BREAKING_DISTANCE_TEL);
 // Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
 // 2* - to make goto accurate, but with higher decelerations at the end
-// Currently not used
-const float SPEED_SMALL = 2 * sqrt(2.0 * ACCEL_LIMIT);
-// A small float (to detect zero speed):
-const float SPEED_TINY = 1e-5 * SPEED_LIMIT;
-const float ACCEL_TINY = 1e-5 * ACCEL_LIMIT;
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
-const COORD_TYPE BACKLASH_TEL = (COORD_TYPE)(BACKLASH_TEL_MM / MM_PER_MICROSTEP_TEL + 0.5);
 #ifdef BL2_DEBUG
 // Initial value for BACKLASH_2:
 COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
@@ -414,8 +323,6 @@ const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.
 #endif
 // Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
-const float TEL_INIT = TEL_INIT_MM / MM_PER_MICROSTEP_TEL;
-const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
 const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD = (COORD_TYPE)(LIMITER_PAD_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD2 = (COORD_TYPE)(LIMITER_PAD2_MM / MM_PER_MICROSTEP + 0.5);
@@ -435,10 +342,11 @@ struct regist
   byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
-  COORD_TYPE point[4];  // four memory points (only 0th - foreground, and 3rd - background, are used in macro mode; all four are used in telescope mode)
-  unsigned int raw_T[4]; // temperatures corresponding to the four memory points (only used in telescope mode), in raw units (so effectively resistance of the thermistor in relative units)
+  COORD_TYPE point[2];  // two memory points:
+    #define FOREGROUND 0
+    #define BACKGROUND 1
 };
-// Just in case adding a 1-byte if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
+// Add 1 (byte) if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist);
 
 const short dA = sizeof(COORD_TYPE);
@@ -448,10 +356,7 @@ const int ADDR_POS = 0;  // Current position (integer, 4 bytes)
 const int ADDR_LIMIT2 = ADDR_POS + 4; // pos_int for the background limiter (4 bytes)
 const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level (1 byte)
 const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
-const int ADDR_REG1_TEL = ADDR_REG1 + (N_REGS + 1) * SIZE_REG; // Start of default + N_REGS custom memory registers for telescope mode
-const int ADDR_LOCK = ADDR_REG1_TEL + (N_REGS_TEL + 1) * SIZE_REG; // Lock flags for N_REGS telescope registers
-const int ADDR_IREG = ADDR_LOCK + N_REGS_TEL; // The register currently in use (1 byte)
-const int ADDR_END = ADDR_IREG + 2;  // End of used EEPROM
+const int ADDR_END = ADDR_REG1 + (N_REGS + 1) * SIZE_REG;   // End of used EEPROM
 
 // 2-char bitmaps to display the battery status; 5 levels: 0 for empty, 4 for full:
 const uint8_t battery_char [][20] = {{
@@ -561,8 +466,6 @@ const uint8_t reverse_char[] = {
   0B00000000,0B00010000,0B00000000
 };
 
-const float TEMP0_K = 273.15;  // Zero Celcius in Kelvin
-
 // All global variables belong to one structure - global:
 struct global
 {
@@ -597,9 +500,9 @@ struct global
   COORD_TYPE ipos_next_step; // Absolute coordinate for the next step
   //-----------------
   struct regist reg; // Custom parameters register
-  int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
+  int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
   // Variables used to communicate between modules:
-  TIME_TYPE t;  // Model time in us measured at the beginning of motor_control() module
+  TIME_TYPE t;  // Model time in us, measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
@@ -615,7 +518,6 @@ struct global
     3: triggered limit1 and stopped, initiating move forward to calibrate limit1 on the first switch-off position
     4: moving forward to calibrate limit1 on the first switch-off position;
     5: end of calibration; updating coordinates;
-    10: initiating telescope calibration: moving forward until the switch goes off and the maximum speed is reached (accel=0)
    */
   byte calibrate_flag; 
   COORD_TYPE limit1; // ipos for the foreground limiter (temporary value, only used when accidently triggering foreground switch; normally it's 0)
@@ -659,7 +561,7 @@ struct global
   float speed_limit;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
-  byte alt_kind; // The kind of alternative display: 1: *; 2: # (telescope only)
+  byte alt_kind; // The kind of alternative display: 1: *
   char tmp_char;
   byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   char buf6[6]; // Buffer to store the stacking length for displaying
@@ -692,20 +594,9 @@ struct global
   int d_max;
   int N_insanity;
 #endif
-  byte telescope; // LOW if the controller is used with macro rail; HIGH if it's used with a telescope or another alternative device with PIN_SHUTTER unused.
-  byte ireg; // The register number to display on the top line in telescope mode (0 means nothing to display).
-  int raw_T;  // raw value measured at PIN_AF, used when calibrating temperature sensor (only in telescope mode; if TEMPERATURE is defined)
-#ifdef TEMPERATURE
-  float Temp; // Current temperature in Celsius; only in telescope mode
-  float Temp0[4]; // Temperature for the four memory points for the current register (Celsius)
-#endif
-  COORD_STYPE delta_pos[4]; // Shift of telescope's focal plane due to thermal expansion of the telescope, in microsteps, for each memory point
-  COORD_STYPE delta_pos_curr; // delta_pos value at the last goto memory point operation (used to determine when T is drifting away too much and mempoint # should flash)
-  signed char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode), 0...3 for telescope mode. -1 means no point has been loaded/saved yet.
+  signed char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode). -1 means no point has been loaded/saved yet.
   TIME_TYPE t_status; // time variable used in generating memory point flashing
   byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
-  byte locked[N_REGS_TEL]; // locked (1) / unlocked (0) flags for N_REGS registers (telescope mode)
-  byte n_regs; // The current value of number of memory registers (=N_REGS in macro mode and N_REGS_TEL in telescope mode)
 #ifdef TEST_SWITCH
   // Number of tests to perform:
 #define TEST_N_MAX 50
@@ -728,9 +619,6 @@ struct global
   float test_limit;
   char buf9[10];
   COORD_TYPE pos0_test;
-#endif
-#ifdef TEST_HALL
-  byte hall_on = 0;
 #endif
 #ifdef BUZZER
   TIME_TYPE dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us

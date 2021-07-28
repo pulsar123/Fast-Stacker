@@ -29,7 +29,7 @@
     New in h1.3: motor driver upgrade EasyDriver -> BigEasyDriver (16 microsteps/step), more powerful motor (1.3A/coil). Added telescope focuser module (second identical stepper motor
        plus a voltage divider consisting of a thermistor and regular resistor with a similar resistance - both 10k in my case). Added 10uF capacitor for LCD backlighting (to fix the
        LCD instability due to PWM ripples in backlighting control).
-    h2.0: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers
+    h2.0: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers.
 
    I am using the following libraries:
 
@@ -49,7 +49,8 @@
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
    h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2, and 6 with A2. Increased N_MICROSTEPS to 16. Added thermometer (10k resistor + 10k thermistor).
                   Using Hall sensor instead of micro switch in telescope mode.
-   h2.0 [s2.00 and up]: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers
+   h2.0 [s2.00 and up]: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers. Nire motion algorithm (prediction-correction).
+                  Removed the telescope mode.
 */
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
@@ -90,21 +91,6 @@ void setup() {
   g.t_buzz = micros();
 #endif
 
-#ifdef DUMP_REGS
-  Serial.begin(9600);
-  Serial.setTimeout(5000);
-  // Dumping the old reg values from EEPROM to serial monitor:
-  dump_regs();
-  //  Serial.println("Dump is done. Send new regs data if needed.");
-  // Optionally reading the new values from the serial monitor and updating EEPROM:
-  write_regs();
-  //  Serial.println("New regs values in EEPROM:");
-  // Sending the new EEPROM values to serial monitor:
-  dump_regs();
-  Serial.end();
-  return;
-#endif
-
 //!!!
 //  Serial.begin(115200);
 
@@ -123,41 +109,6 @@ void setup() {
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   g.error = 0;
-
-/* !!!! for now, telescope mode is disabled
-  // Temporarily borrowing the AF pin to check if we are connected to the telescope, macro rail, or nothing
-  pinMode(PIN_AF, INPUT_PULLUP);
-  // Dynamically detecting whether we are connected to the macro rail
-  int raw = analogRead(PIN_AF);
-  if (raw < 100)
-    // If the resistance is low we are grounded via 500 Ohm relay -> it is macro rail;
-    g.telescope = 0;
-  else if (raw < 1000)
-    // if it's higher (but not close to infinity), we are grounded via thermistor (~10k or higher) -> telescope mode:
-    g.telescope = 1;
-    */
-  g.telescope = 0; // For now    
-#ifndef MOTOR_DEBUG
-/*
-  else
-    // if the resistance is very high, assuming that no cable is connectedn_limiters
-  {
-    g.error = 1;
-    // If cable is disconnected, by default using macro rail mode:
-    g.telescope = 0;
-  }
-  */
-#endif
-
-  if (g.telescope)
-  {
-#ifdef TEMPERATURE
-    // In telescope mode, PIN_AF will be used to measure the temperature on the telescope
-    //    pinMode(PIN_AF, INPUT_PULLUP);
-    // Without pullup, as for now I am using an external pullup resistor:
-// !!!   pinMode(PIN_AF, INPUT);
-#endif
-  }
 
 // Initializing the display
   tft.init();
@@ -221,11 +172,6 @@ delay(10000);
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void loop()
 {
-#ifndef DUMP_REGS
-#ifdef TEST_HALL
-  Testing_Hall();
-  return;
-#endif
 #ifdef TEST_SWITCH
   test_switch();
 #endif
@@ -258,6 +204,5 @@ void loop()
   // Cleaning up at the end of each loop:
   cleanup();
   
-#endif // DUMP_REGS
 }
 
