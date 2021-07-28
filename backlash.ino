@@ -22,7 +22,7 @@ void backlash()
   if (g.BL_counter > 0)
   {
     // Backlash compensation.
-    go_to(g.ipos + g.BL_counter, g.speed_limit);
+    go_to(g.ipos + g.BL_counter, SPEED_LIMIT);
 
     // !!! Should handle the problem when g.ipos + g.BL_counter > g.limit2 . A calibration triggered?
 
@@ -34,7 +34,7 @@ void backlash()
   if (g.backlash_init == 3)
   {
     // Backlash compensation.
-    go_to(g.ipos + BACKLASH_2, g.speed_limit);
+    go_to(g.ipos + BACKLASH_2, SPEED_LIMIT);
 
     // This should be done after go_to call:
     g.backlashing = 1;

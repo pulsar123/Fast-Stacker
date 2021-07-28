@@ -47,11 +47,11 @@ void test_switch()
   switch (g.test_flag)
   {
     case 0:
-      g.speed_test = g.speed_limit;
-      breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
+      g.speed_test = SPEED_LIMIT;
+      breaking_distance = 0.5 * g.speed_test * g.speed_test / ACCEL_LIMIT;
       // Initial positioning; padding extra 5mm to make sure the switch lever is touched while moving at the maximum speed
       x = g.ipos + 2 * breaking_distance + 5.0 / MM_PER_MICROSTEP;
-      go_to(x, g.speed_limit);
+      go_to(x, SPEED_LIMIT);
       g.test_flag = 1;
       g.test_limit_on[1] = 0;
       break;
@@ -128,7 +128,7 @@ void test_switch()
           // The next full step coordinate:
           float next_step = g.ipos + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
           // Parking macro rail at the next full step position after the test:
-          go_to(next_step, g.speed_limit);
+          go_to(next_step, SPEED_LIMIT);
         }
       }
       else

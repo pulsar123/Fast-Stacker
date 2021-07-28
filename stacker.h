@@ -213,13 +213,15 @@ const float SPEED_LIMIT_MM_S = 10; // 10
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
 const float BREAKING_DISTANCE_MM = 1.0;
 // Padding (in mm) for a soft limit, before hitting the limiters (increase if you constantly hit the limiter by accident)
-const float LIMITER_PAD_MM = 2.5;
+const float LIMITER_PAD_MM = 0.5;
 // A bit of extra padding (in mm) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
 // (increase if you constantly hit the limiter by accident)
 const float LIMITER_PAD2_MM = 0.6;
 // During calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
 // travel this many mm, before starting checking the limiter again (should be large enough that the limiter is guaranteed to go off by that point)
 const float DELTA_LIMITER_MM = 4.0;
+// Final calibratio leg (after hitting limit1); should be long enogh for limiter1 to go off, but smaller than 0.5 of the rail length
+const float CALIBRATE_FINAL_LEG_MM = 4.0; 
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP
 // For DRV8825 stepper driver it should be at least 1.9 us. Form my measurements, setting STEP_LOW_DT to 2 us results
 // in 2.8 us impulses, to 1 us - in 1.7 us impulses, so I choose to use 2 us:
@@ -326,6 +328,7 @@ const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHU
 const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD = (COORD_TYPE)(LIMITER_PAD_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD2 = (COORD_TYPE)(LIMITER_PAD2_MM / MM_PER_MICROSTEP + 0.5);
+const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_PER_MICROSTEP + 0.5);
 
 // Structure to have custom parameters saved to EEPROM
 struct regist
@@ -558,7 +561,6 @@ struct global
   byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
-  float speed_limit;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *
@@ -572,7 +574,6 @@ struct global
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
-  float mm_per_microstep; // Rail specific setting
 //  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
   TIME_TYPE t_buzz; // timer for the buzzer
@@ -595,8 +596,6 @@ struct global
   int N_insanity;
 #endif
   signed char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode). -1 means no point has been loaded/saved yet.
-  TIME_TYPE t_status; // time variable used in generating memory point flashing
-  byte status_flag; // Flag used to establish blinking of the current point when delta_pos becomes larger than DELTA_POS_MAX
 #ifdef TEST_SWITCH
   // Number of tests to perform:
 #define TEST_N_MAX 50

@@ -4,25 +4,19 @@ void initialize(byte factory_reset)
 {
   int address;
 
-  for (byte i = 0; i < 4; i++)
-  {
-    g.delta_pos[i] = 0;
-  }
-  g.delta_pos_curr = 0;
-
 #ifndef DISABLE_SHUTTER
   iochip.digitalWrite(EPIN_SHUTTER, LOW);
 #endif
   iochip.digitalWrite(EPIN_AF, LOW);
-  
+
   // Assigning the limiters' state to g.limit_on:
   Read_limiters();
 
 #ifdef TEST_LIMITER
   g.limiter_i = 0;
-//  g.limiter_ini = g.limit_on;
+  //  g.limiter_ini = g.limit_on;
   g.limiter_ini = 0;
-#endif  
+#endif
 
   // Keypad stuff:
   // No locking for keys:
@@ -30,11 +24,8 @@ void initialize(byte factory_reset)
   keypad.setDebounceTime(50);
   g.key_old = '=';
 
-    g.speed_limit = SPEED_LIMIT;
-    g.ireg = 0;
-    g.accel_limit = ACCEL_LIMIT;
-    g.mm_per_microstep = MM_PER_MICROSTEP;
-    address = ADDR_REG1;
+  g.ireg = 0;
+  address = ADDR_REG1;
 
   // EEPROM addresses for memory registers, including the 0th (default) register:
   for (unsigned char jj = 0; jj <= N_REGS; jj++)
@@ -44,14 +35,16 @@ void initialize(byte factory_reset)
 
   // Initializing program parameters:
   g.moving = 0;
+  g.model_init = 0;
+  g.model_type = MODEL_NONE;
+  g.dt_lost = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
   g.AF_on = 0;
   g.single_shot = 0;
   g.direction = 1;
-  g.dir = 1;
+  g.dir = 0; // 0 so it's guaranteed to execute the proper direction command at first motor_direction() call
   g.comment_flag = 0;
-  g.status_flag = 0;
   g.current_point = -1;
   g.limit1 = 0;
   g.accident = 0;
@@ -123,8 +116,8 @@ void initialize(byte factory_reset)
   g.t_shutter = g.t;
   g.t_shutter_off = g.t;
   g.t_AF = g.t;
-  g.t_status = g.t;
   g.t_mil = millis();
+  g.t_next_step = g.t;
 
   g.N_repeats = 0;
   g.uninterrupted = 0;
@@ -150,8 +143,7 @@ void initialize(byte factory_reset)
     g.BL_counter = g.backlash;
     g.backlash_init = 1;
   }
-  g.model_init = 0;
-  g.dt_lost = 0;
+  
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
@@ -160,7 +152,7 @@ void initialize(byte factory_reset)
   g.Nframes = Nframes();
 
   // Default lcd layout:
-  // This sets g.speed_limit, among other things:
+  // This sets SPEED_LIMIT, among other things:
   display_all();
 
 #ifdef TIMING
@@ -174,11 +166,11 @@ void initialize(byte factory_reset)
     g.moving_old = 0;
     g.dt_timing = 0;
   }
-    g.d_sum += 0.0;
-    g.d_N = 0;
-    g.d_Nbad = 0;
-    g.d_max = 0;
-    g.N_insanity = 0;
+  g.d_sum += 0.0;
+  g.d_N = 0;
+  g.d_Nbad = 0;
+  g.d_max = 0;
+  g.N_insanity = 0;
 #endif
 
 #ifdef MOTOR_DEBUG
@@ -220,9 +212,9 @@ void initialize(byte factory_reset)
 #endif
 
   sprintf(g.empty_buffer, "                    ");  // 20 spaces, used to clear one LCD row
-  
-EEPROM.commit();
-  
+
+  EEPROM.commit();
+
   return;
 }
 

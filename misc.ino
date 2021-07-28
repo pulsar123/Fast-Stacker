@@ -120,11 +120,11 @@ void coordinate_recalibration()
 void set_accel_v()
 {
   // Five possible floating point values for acceleration
-  g.accel_v[0] = -g.accel_limit;
-  g.accel_v[1] = -g.accel_limit / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
+  g.accel_v[0] = -ACCEL_LIMIT;
+  g.accel_v[1] = -ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[2] = 0.0;
-  g.accel_v[3] =  g.accel_limit / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
-  g.accel_v[4] =  g.accel_limit;
+  g.accel_v[3] =  ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
+  g.accel_v[4] =  ACCEL_LIMIT;
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -268,7 +268,7 @@ void move_to_next_frame(COORD_TYPE * pos_target, short * frame_counter0)
     g.frame_counter = *frame_counter0;
     return;
   }
-  go_to(*pos_target, g.speed_limit);
+  go_to(*pos_target, SPEED_LIMIT);
   display_frame_counter();
   return;
 }
@@ -304,9 +304,8 @@ void goto_memory_point(char n)
   if (g.paused || n == 0)
     return;
   g.current_point = n - 1;
-  g.delta_pos_curr = g.delta_pos[g.current_point];
-  // Travelling to the memory point position corrected for the current temperature:
-  go_to(g.reg.point[g.current_point] + g.delta_pos[g.current_point], g.speed_limit);
+  // Travelling to the memory point position
+  go_to(g.reg.point[g.current_point], SPEED_LIMIT);
   sprintf(g.buffer, "    Going to P%1d     ", n);
   display_comment_line(g.buffer);
   return;

@@ -283,32 +283,11 @@ void points_status()
 
   my_setCursor(10, 5, 1);
 
-
-  if (g.status_flag == 2 && g.t > g.t_status + FLASHING_DELAY)
+  if (g.current_point < 0)
   {
-    g.status_flag = 0;
-  }
-
-  if (g.current_point < 0 || abs(g.delta_pos_curr - g.delta_pos[g.current_point]) > DELTA_POS_MAX && g.status_flag < 2)
-  {
-    if (g.current_point >= 0)
-    {
-      if (g.status_flag == 0)
-      {
-        g.status_flag = 1;
-        g.t_status = g.t;
-      }
-      if (g.status_flag == 1 && g.t > g.t_status + FLASHING_DELAY)
-      {
-        g.status_flag = 2;
-        g.t_status = g.t;
-      }
-    }
     tft.print("  ");
     return;
   }
-  else
-    g.status_flag = 0;
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
@@ -409,7 +388,7 @@ void display_u_per_f()
   if (g.error || g.alt_flag)
     return;
 
-  float um_per_frame = 1e3 * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  float um_per_frame = 1e3 * MM_PER_MICROSTEP * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 
   if (um_per_frame >= 10.0)
     // +0.5 is for proper round-off:
@@ -466,7 +445,7 @@ void display_one_point_params()
   my_setCursor(0, 0, 1);
 
   // +0.05 for proper round off:
-  float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * g.mm_per_microstep * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+  float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_MICROSTEP * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
   short dt = (short)roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
   if (dt < 1000.0 && dt >= 0.0)
     sprintf(g.buf6, "%3ds", dt);
@@ -507,7 +486,7 @@ void display_two_point_params()
   my_setCursor(0, 1, 1);
 
   // +0.05 for proper round off:
-  dx = g.mm_per_microstep * (float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND]) + 0.05;
+  dx = MM_PER_MICROSTEP * (float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND]) + 0.05;
   // +0.5 for proper round off:
   short dt = (short)((float)(g.Nframes - 1) / FPS[g.reg.i_fps] + 0.5);
   if (dt < 1000.0 && dt >= 0.0)
@@ -552,7 +531,7 @@ void display_two_points()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "F%5d", g.reg.point[FOREGROUND]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[FOREGROUND]);
+  p = MM_PER_MICROSTEP * (float)(g.reg.point[FOREGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf7, p, 2));
   else
@@ -564,7 +543,7 @@ void display_two_points()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "B%5d", g.reg.point[BACKGROUND]);
 #else
-  p = g.mm_per_microstep * (float)(g.reg.point[BACKGROUND]);
+  p = MM_PER_MICROSTEP * (float)(g.reg.point[BACKGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf7, p, 2));
   else
@@ -626,7 +605,7 @@ void display_current_position()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "  %c  %6d    %3s  ", g.tmp_char, g.ipos, g.buf6);
 #else
-  p = g.mm_per_microstep * g.ipos;
+  p = MM_PER_MICROSTEP * g.ipos;
   sprintf(g.buffer, "  %c  %6smm  %3s  ", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
 #endif
 
@@ -670,7 +649,7 @@ void delay_buffer()
 // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
 {
   float y;
-  y = (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame] / g.accel_limit;
+  y = (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame] / ACCEL_LIMIT;
   // Time to travel one frame (s), with fixed acceleration:
   float dt_goto = 2e-6 * sqrt(y);
   float delay1 = FIRST_DELAY[g.reg.i_first_delay];

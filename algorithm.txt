@@ -1,17 +1,39 @@
 = New algorith (v2.0) =
-COORD_STYPE
-DUMP_REGS
-MM_PER_ROTATION_TEL
-BACKLASH_TEL
-SPEED_LIMIT_TEL
-BREAKING_DISTANCE_TEL
-TEL_INIT
-TEL_LENGTH
-N_REGS_TEL
-ACCEL_LIMIT_TEL
-regist COORD_TYPE point[4]; -> [2]
-ADDR_REG1_TEL
-g.current_point
+
+
+
+initialize:
+  g.moving = 0;
+  g.model_init = 0;
+  g.model_type = MODEL_NONE;
+  g.dt_lost = 0;
+  g.direction = 1;
+  g.dir = 1;
+
+keypad:
+                  g.model_type = MODEL_REWIND;
+                  g.model_init = 1;
+
+motor:
+speed0 = 0
+  g.model_ipos0 = g.ipos;  // Initial absolute coordinate
+  g.model_t0 = g.t;  // Initial absolute time
+     g.model_ipos1 = g.limit1;
+    COORD_TYPE dx = g.model_ipos1 - g.ipos;  <0
+      dx_prime = (float)dx - OVERSHOOT;  overshooting g.limit1!
+        g.direction = -1;
+		g.dir = -1;
+     accel = g.accel_v[1]; -small_accel
+      Vmax0 = SPEED_LIMIT;
+      dx1 = 0.0;
+    float Vmax2 = accel * (dx_prime);  >0
+ 		
+
+
+
+
+status_flag
+t_status
 
 To take care of:
 

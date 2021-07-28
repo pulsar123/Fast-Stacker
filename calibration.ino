@@ -20,31 +20,34 @@ void calibration()
   {
     case 1: // Initiating full calibration
       // Moving towards switch 2 for its calibration, with maximum speed and acceleration:
-      go_to(g.limit2, g.speed_limit);
+      go_to(g.limit2, SPEED_LIMIT);
       display_all();
       letter_status("C");
       break;
 
     case 2: // Triggered limit2 and stopped, will now move towards limit1
-      go_to(g.limit1, g.speed_limit);
+      go_to(g.limit1, SPEED_LIMIT);
       display_all();
       g.calibrate_flag = 3;
       break;
 
     case 3: // Triggered limit1 and stopped, will now move forward to calibrate limit1 on the first switch-off position
-    // Warning: here we should move far enough, so by the time we stop the limiter has to be off again (the "4" multiplier) !!!
-      go_to(g.ipos + 4 * BREAKING_DISTANCE, g.speed_limit);
+    //!!!! This is wrong - limit1 should be recorded when turned on, during the previous move!
+      // Warning: here we should move far enough, so by the time we stop the limiter has to be off again (CALIBRATE_FINAL_LEG)
+      go_to(g.ipos + CALIBRATE_FINAL_LEG, SPEED_LIMIT);
       display_all();
       g.calibrate_flag = 4;
       break;
 
     case 5: // End of calibration; updating coordinates
       letter_status(" ");
-      g.ipos = g.ipos + g.coords_change;
-        g.limit2 = g.limit2 + g.coords_change;
-        EEPROM.put( ADDR_LIMIT2, g.limit2);
-        // Saving the current position to EEPROM:
-        EEPROM.put( ADDR_POS, g.ipos );
+      // Adding LIMITER_PAD padding to both hard limits:
+      g.ipos = g.ipos + g.coords_change - LIMITER_PAD;
+      g.limit2 = g.limit2 + g.coords_change - 2 * LIMITER_PAD;
+      g.limit1 = 0;
+      EEPROM.put( ADDR_LIMIT2, g.limit2);
+      // Saving the current position to EEPROM:
+      EEPROM.put( ADDR_POS, g.ipos );
       g.calibrate_flag = 0;
       g.accident = 0;
       display_all();

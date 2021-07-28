@@ -38,7 +38,7 @@ void limiters()
   /////////////////////////////////////////////// Hard limits ///////////////////////////////////////////////////////////////////
   // If a limiter is on:
   if (g.limit_on == HIGH)
-    // Triggering the limiter is an exceptional event, should rarely happen, and will
+    // Triggering the limiter is an exceptional event, should rarely happen (unless we are calibrating), and will
     // trigger an automatic re-calibration of the rail
     // This happens by design during the rail calibration.
   {
@@ -73,8 +73,9 @@ void limiters()
     // Accidental limiter triggering module:
     if (g.calibrate_flag == 0)
     {
+      g.accident = 1;
       // Calibration initiated by hitting limit2 switch by accident:
-      else if (g.direction == 1)
+      if (g.direction == 1)
       {
         g.calibrate_flag = 2;
         g.limit2 = g.ipos;
@@ -85,7 +86,6 @@ void limiters()
         g.calibrate_flag = 1;
         // Temporary value for limit1 coordinate:
         g.limit1 = g.ipos;
-        g.accident = 1;
       }
       g.error = 4;
     }
@@ -99,7 +99,7 @@ void limiters()
     }
 
     // Moving forward right before calibrating limit1, switch is still on
-    if (g.calibrate_flag == 4 || !g.error && g.calibrate_flag == 10)
+    if (g.calibrate_flag == 4)
       return;
 
     // Emergency breaking (cannot be interrupted):

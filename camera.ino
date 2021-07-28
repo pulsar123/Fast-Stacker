@@ -75,7 +75,7 @@ void camera()
       {
         g.noncont_flag = 4;
         // Travelling to the next frame position in non-continuous stacking:
-        go_to(g.ipos_to_shoot, g.speed_limit);
+        go_to(g.ipos_to_shoot, SPEED_LIMIT);
       }
       else
       {
@@ -218,7 +218,7 @@ void camera()
         g.end_of_stacking = 0;
         g.t0_mil = g.t_mil;
         g.timelapse_counter++;
-        go_to(g.reg.point[FOREGROUND], g.speed_limit);
+        go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
         g.stacker_mode = 1;
         g.start_stacking = 0;
       }

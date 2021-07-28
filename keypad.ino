@@ -210,7 +210,7 @@ void process_keypad()
       case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
         if (g.paused)
           break;
-        go_to(g.starting_point, g.speed_limit);
+        go_to(g.starting_point, SPEED_LIMIT);
         display_comment_line("    Going to P0     ");
         break;
 
@@ -223,7 +223,7 @@ void process_keypad()
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to(g.reg.point[FOREGROUND], g.speed_limit);
+          go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
           g.starting_point = g.reg.point[FOREGROUND];
           g.destination_point = g.reg.point[BACKGROUND];
           g.stacker_mode = 1;
@@ -310,11 +310,7 @@ void process_keypad()
           if (g.reg.mirror_lock < 2)
             g.reg.mirror_lock++;
           else
-          {
             g.reg.mirror_lock = 0;
-            //            for (byte i = 0; i < 4; i++)
-            //              g.delta_pos[i] = 0;
-          }
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
@@ -502,7 +498,7 @@ void process_keypad()
                 else if (g.paused == 2)
                   // Restarting from a pause which happened during the initial travel to the starting point
                 {
-                  go_to(g.reg.point[FOREGROUND], g.speed_limit);
+                  go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
                   g.stacker_mode = 1;
                   g.start_stacking = 0;
                   g.paused = 0;
@@ -513,7 +509,7 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  go_to(g.reg.point[FOREGROUND], g.speed_limit);
+                  go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
                   g.starting_point = g.reg.point[FOREGROUND];
                   g.destination_point = g.reg.point[BACKGROUND];
                   g.stacker_mode = 1;
@@ -667,7 +663,7 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > g.speed_limit)
+                if (speed > SPEED_LIMIT)
                 {
                   g.reg.i_mm_per_frame--;
                   break;
@@ -705,7 +701,7 @@ void process_keypad()
                 // Estimating the required speed in microsteps per microsecond
                 speed = target_speed();
                 // Reverting back if required speed > maximum allowed:
-                if (speed > g.speed_limit || FPS[g.reg.i_fps] > MAXIMUM_FPS)
+                if (speed > SPEED_LIMIT || FPS[g.reg.i_fps] > MAXIMUM_FPS)
                 {
                   g.reg.i_fps--;
                   break;
@@ -754,7 +750,7 @@ void process_keypad()
                 g.frame_counter--;
                 // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
                 ipos_target = frame_coordinate();
-                go_to(ipos_target, g.speed_limit);
+                go_to(ipos_target, SPEED_LIMIT);
               }
             }
             // Paused while travelling to the starting point
