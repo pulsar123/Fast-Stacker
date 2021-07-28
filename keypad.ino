@@ -5,7 +5,7 @@ void process_keypad()
 {
   float speed, dx_stop;
   short frame_counter0;
-  COORD_TYPE pos_target;
+  COORD_TYPE ipos_target;
 
 
   // Ignore keypad during emergency breaking
@@ -222,9 +222,9 @@ void process_keypad()
         frame_counter0 = g.frame_counter;
         g.frame_counter--;
         if (g.paused)
-          pos_target = frame_coordinate();
+          ipos_target = frame_coordinate();
         else
-          pos_target = (COORD_TYPE)g.pos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+          ipos_target = g.ipos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
         move_to_next_frame(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -235,9 +235,9 @@ void process_keypad()
         frame_counter0 = g.frame_counter;
         g.frame_counter++;
         if (g.paused)
-          pos_target = frame_coordinate();
+          ipos_target = frame_coordinate();
         else
-          pos_target = (COORD_TYPE)g.pos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+          ipos_target = g.ipos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
         move_to_next_frame(&pos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -383,8 +383,7 @@ void process_keypad()
           g.uninterrupted2 = 1;
           g.limit1 = 10000;          
           g.limit2 = 100000;
-          g.pos = 50000;
-          g.pos_int_old = (COORD_TYPE)floor(g.pos);
+          g.ipos = 50000;
           g.error = 0; // To remove "Calibrate?" screen if present
           display_all();
           break;
@@ -473,34 +472,31 @@ void process_keypad()
                 initialize(1);
                 break;
               }
-              else if (g.pos_int_old <= 0 || g.paused > 1)
-                break;
+              else if (g.paused > 1)
+                  break;
               if (g.paused)
               {
                 if (g.moving)
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter - 10;
-                pos_target = frame_coordinate();
-                move_to_next_frame(&pos_target, &frame_counter0);
+                ipos_target = frame_coordinate();
+                move_to_next_frame(&ipos_target, &frame_counter0);
               }
               else
               {
-#ifdef EXTENDED_REWIND
-                // Fixing a bug in extended rewind: disabling this feature if "1" was pressed when rail was moving
-                if (g.moving || g.model_init)
-                  g.no_extended_rewind = 1;
-#endif
-                g.direction = -1;
-                motion_status();
+                if (g.model_type==MODEL_NONE || g.model_type==MODEL_FF || g.model_type==MODEL_STOP)                
                 // Rewinding is done with small acceleration:
-                change_speed(-g.speed_limit, 0, 1);
-                g.current_point = -1;
+                {
+                  g.model_type = MODEL_REWIND;
+                  g.model_init = 1;
+                  g.current_point = -1;
+                }
               }
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
-              if (g.pos_int_old >= g.limit2 || g.paused > 1)
+              if (g.paused > 1)
                 break;
               if (g.paused)
               {
@@ -508,16 +504,18 @@ void process_keypad()
                   break;
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
-                pos_target = frame_coordinate();
-                move_to_next_frame(&pos_target, &frame_counter0);
+                ipos_target = frame_coordinate();
+                move_to_next_frame(&ipos_target, &frame_counter0);
               }
               else
               {
-                g.direction = 1;
-                motion_status();
-                // Rewinding is done with small acceleration:
-                change_speed(g.speed_limit, 0, 1);
-                g.current_point = -1;
+                if (g.model_type==MODEL_NONE || g.model_type==MODEL_REWIND || g.model_type==MODEL_STOP)                
+                // Fastforwarding is done with small acceleration:
+                {
+                  g.model_type = MODEL_FF;
+                  g.model_init = 1;
+                  g.current_point = -1;
+                }
               }
               break;
 
@@ -566,7 +564,7 @@ void process_keypad()
                     }
                     // Time when stacking was initiated:
                     g.t0_stacking = g.t;
-                    g.pos_to_shoot = g.pos_int_old;
+                    g.ipos_to_shoot = g.ipos;
                     g.stacker_mode = 2;
                   }
                   else if (g.paused == 3)
@@ -644,8 +642,8 @@ void process_keypad()
                   g.t0_stacking = g.t;
                   g.frame_counter = 0;
                   display_frame_counter();
-                  g.pos_to_shoot = g.pos_int_old;
-                  g.starting_point = g.pos_int_old;
+                  g.ipos_to_shoot = g.ipos;
+                  g.starting_point = g.ipos;
                   g.stacker_mode = 3;
                   g.continuous_mode = 1;
                   display_comment_line("   1-point stack    ");
@@ -744,14 +742,11 @@ void process_keypad()
                 g.reg.i_mm_per_frame--;
               else
                 break;
-              // Required microsteps per frame:
-              //              g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
               g.Nframes = Nframes();
               if (g.Nframes > 9999)
                 // Too many frames; recovering the old values
               {
                 g.reg.i_mm_per_frame++;
-                //                g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
                 g.Nframes = Nframes();
                 break;
               }
@@ -778,8 +773,6 @@ void process_keypad()
               }
               else
                 break;
-              // Required microsteps per frame:
-              //              g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
               g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
 //              display_all();
@@ -852,7 +845,10 @@ void process_keypad()
         {
           // Any key press in stacking mode interrupts stacking
           if (g.moving)
-            change_speed(0.0, 0, 2);
+          {
+            g.model_type = MODEL_BREAK;
+            g.model_init = 1;
+          }
           // All situations when we pause: during 2-point stacking, while travelling to the starting point, and while waiting between stacks in timelaspe mode:
           if (g.stacker_mode == 2 || g.stacker_mode == 1 || g.stacker_mode == 4)
           {
@@ -865,7 +861,7 @@ void process_keypad()
                 // Switches the frame counter back to the last accomplished frame
                 g.frame_counter--;
                 // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-                pos_target = frame_coordinate();
+                ipos_target = frame_coordinate();
                 go_to(ipos_target, g.speed_limit);
               }
             }
@@ -899,26 +895,11 @@ void process_keypad()
       {
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
-        // Breaking / stopping if no keys pressed (only after rewind/fastforward)
+        // Breaking / stopping if 1/A keys were depressed
         if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
         {
-#ifdef EXTENDED_REWIND
-          if (g.key_old == '1' && g.speed < 0.0 && g.reg.backlash_on && !g.no_extended_rewind)
-            // Moving in the bad (negative) direction
-          {
-            // Estimating how much rail would travel if the maximum breaking started now (that's how much
-            // rail would actually travel if moving in the good direction, or if backlash was zero):
-            // Stopping distance in the current direction:
-            dx_stop = g.speed * g.speed / (2.0 * g.accel_limit);
-            // The physical coordinate where we have to stop:
-            float pos1 = g.pos - dx_stop;
-            // To mimick the good direction (key "A") behaviour, we replace emergency breaking with a go_to call:
-            // (All technicalities - backlash compensation, limit of decceleration - will be handled by go_to)
-            go_to(ipos1, g.speed_limit);
-          }
-          else
-#endif
-            change_speed(0.0, 0, 2);
+         g.model_type = MODEL_STOP;
+         g.model_init = 1;
         }
         if (g.key_old == '*' || g.telescope && g.key_old == 'D')
           // The '*' (or 'D' in telescope mode) key was just released: switch to default screen from the alternative one

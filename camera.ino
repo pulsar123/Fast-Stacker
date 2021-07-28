@@ -32,7 +32,7 @@ void camera()
     g.t0_stacking = g.t;
     g.frame_counter = 0;
     display_frame_counter();
-    g.pos_to_shoot = g.pos_int_old;
+    g.ipos_to_shoot = g.ipos;
     g.stacker_mode = 2;
   }
 
@@ -43,8 +43,6 @@ void camera()
 
     if (g.continuous_mode)
     {
-      // Required microsteps per frame:
-//      g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
       // Estimating the required speed in microsteps per microsecond
       speed = target_speed();
       if (g.stacker_mode == 3)
@@ -97,7 +95,7 @@ void camera()
   // This block is shared between continuous and non-continuous modes (in the latter case, it does the first shutter trigger, to lock the mirror)
   if (g.stacker_mode >= 2 && g.backlashing == 0 && g.start_stacking == 3)
   {
-    if (g.pos_int_old == g.pos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
+    if (g.ipos == g.ipos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
       // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
@@ -111,11 +109,12 @@ void camera()
       display_frame_counter();
       g.frame_counter++;
       // Position at which to shoot the next shot:
-      g.pos_to_shoot = frame_coordinate();
+      g.ipos_to_shoot = frame_coordinate();
       if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.reg.i_n_shots])
       {
         // End of one-point stacking
-        change_speed(0.0, 0, 2);
+        g.model_type = MODEL_STOP;
+        g.model_init = 1;
         g.stacker_mode = 0;
         g.frame_counter = 0;
         display_frame_counter();

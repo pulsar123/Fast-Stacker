@@ -18,16 +18,12 @@ void timing()
 
   g.i_timing++;
 
-  // Last loop length:
-//  int dt = g.t - g.t_old;
-
-
   // Counting the number of loops longer than the shortest microstep interval allowed, for the last movement:
   if ((float)g.dt_timing > (1.0 / SPEED_LIMIT))
     g.bad_timing_counter++;
 
   // Finding the longest loop length, for the last movement:
-  //  float dpos = g.pos - (float)g.pos_int_old;
+  //  float dpos = g.pos - (float)g.ipos;
   //  dt = 10.0 * (abs(dpos));
   if (g.dt_timing > g.dt_max)
     g.dt_max = g.dt_timing;
@@ -136,7 +132,7 @@ void test_switch()
       g.speed_test = g.speed_limit;
       breaking_distance = 0.5 * g.speed_test * g.speed_test / g.accel_limit;
       // Initial positioning; padding extra 5mm to make sure the switch lever is touched while moving at the maximum speed
-      x = g.pos + 2 * breaking_distance + 5.0 / MM_PER_MICROSTEP;
+      x = g.ipos + 2 * breaking_distance + 5.0 / MM_PER_MICROSTEP;
       go_to(x, g.speed_limit);
       g.test_flag = 1;
       g.test_limit_on[1] = 0;
@@ -173,7 +169,7 @@ void test_switch()
       display_all();
 
       // Moving toward foreground switch with current speed:
-      change_speed(-g.speed_test, 0, 2);
+      go_to(g.limit1, g.speed_test);
       g.test_flag = 3;
       g.test_limit_on[0] = 0;
       g.on_init = 0;
@@ -208,11 +204,11 @@ void test_switch()
         // Stuff to do after the test is done
       {
         g.test_flag = 10;
-        COORD_TYPE d = g.pos_int_old - g.pos0_test;
+        COORD_TYPE d = g.ipos - g.pos0_test;
         if (d % N_MICROSTEPS > 0)
         {
           // The next full step coordinate:
-          float next_step = g.pos_int_old + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
+          float next_step = g.ipos + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
           // Parking macro rail at the next full step position after the test:
           go_to(next_step, g.speed_limit);
         }

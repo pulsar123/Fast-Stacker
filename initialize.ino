@@ -73,12 +73,6 @@ void initialize(byte factory_reset)
 
   // Initializing program parameters:
   g.moving = 0;
-  g.speed1 = 0.0;
-  g.accel = 0;
-  g.accel_old = 0;
-  g.speed0 = 0.0;
-  g.speed = 0.0;
-  g.pos_stop_flag = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
   g.AF_on = 0;
@@ -191,23 +185,20 @@ void initialize(byte factory_reset)
   set_backlight();
 
   g.model_ipos0 = g.ipos;
-  g.t0 = micros();
-  g.t = g.t0;
-  g.t_old = g.t0;
-  g.t_key_pressed = g.t0;
-  g.t_last_repeat = g.t0;
-  g.t_display = g.t0;
-  g.t_shutter = g.t0;
-  g.t_shutter_off = g.t0;
-  g.t_AF = g.t0;
-  g.t_status = g.t0;
+  g.t = micros();
+  g.t_key_pressed = g.t;
+  g.t_last_repeat = g.t;
+  g.t_display = g.t;
+  g.t_shutter = g.t;
+  g.t_shutter_off = g.t;
+  g.t_AF = g.t;
+  g.t_status = g.t;
   g.t_mil = millis();
 
   g.N_repeats = 0;
   g.uninterrupted = 0;
   g.uninterrupted2 = 0;
   g.backlashing = 0;
-  g.pos_stop_flag = 0;
   g.frame_counter = 0;
   g.coords_change = 0;
   g.start_stacking = 0;
@@ -235,11 +226,7 @@ void initialize(byte factory_reset)
   g.noncont_flag = 0;
   g.alt_flag = 0;
   g.alt_kind = 1;
-#ifdef EXTENDED_REWIND
-  g.no_extended_rewind = 0;
-#endif
 
-  //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
   g.Nframes = Nframes();
 
   // Default lcd layout:
@@ -272,10 +259,7 @@ void initialize(byte factory_reset)
   {
     // No rail reverse in telescope mode:
     g.reg.straight = 0;
-    g.pos = 0.0;
-    g.pos_int_old = 0;
-    g.pos0 = 0.0;
-    g.pos_old = g.pos;
+    g.ipos = 0;
     g.limit2 = (COORD_TYPE)TEL_LENGTH;
 #ifdef TELE_SWITCH
     // Initiating telescope calibration:
@@ -315,7 +299,7 @@ void initialize(byte factory_reset)
   }
   g.reg.straight = 1;
   // This will help to park the rail properly (at the next full step position) at the end:
-  g.pos0_test = g.pos_int_old;
+  g.pos0_test = g.ipos;
 #endif
 
 #ifdef TEST_HALL

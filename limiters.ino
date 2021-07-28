@@ -27,7 +27,7 @@ void limiters()
 #else
   // If we are moving towards the second limiter (after hitting the first one), don't test for the limiter sensor until we moved DELTA_LIMITER beyond the point where we hit the first limiter:
   // This ensures that we don't accidently measure the original limiter as the second one.
-  if (g.calibrate_flag == 3 && g.pos_int_old > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.pos_int_old < g.limit1 + DELTA_LIMITER )
+  if (g.calibrate_flag == 3 && g.ipos > g.limit2 - DELTA_LIMITER || g.accident && g.calibrate_flag == 1 && g.ipos < g.limit1 + DELTA_LIMITER )
     return;
 #endif
 
@@ -56,8 +56,9 @@ void limiters()
         if (g.on_init == 0)
         {
           // Memoryzing the very first switch-on position:
-          g.pos_tmp = g.pos;
-          change_speed(0.0, 0, 2);
+          g.pos_tmp = g.ipos;
+          g.model_type = MODEL_BREAK;
+          g.model_init = 1;
           g.on_init = 1;
         }
       }
@@ -76,21 +77,19 @@ void limiters()
       if (g.telescope)
         g.calibrate_flag = 10;
       // Calibration initiated by hitting limit2 switch by accident:
-      else if (g.speed > SPEED_TINY)
+      else if (g.direction == 1)
       {
         g.calibrate_flag = 2;
-        g.limit2 = g.pos_int_old;
+        g.limit2 = g.ipos;
       }
-      else if (g.speed < -SPEED_TINY)
+      else
         // Calibration initiated by hitting limit1 switch by accident:
       {
         g.calibrate_flag = 1;
         // Temporary value for limit1 coordinate:
-        g.limit1 = g.pos_int_old;
+        g.limit1 = g.ipos;
         g.accident = 1;
       }
-      else
-        return;
       g.error = 4;
     }
 
@@ -99,7 +98,7 @@ void limiters()
       // when stopped after the calibration is done)
     {
       g.calibrate_flag = 2;
-      g.limit2 = g.pos_int_old;
+      g.limit2 = g.ipos;
     }
 
     // Moving forward right before calibrating limit1, switch is still on
@@ -113,12 +112,11 @@ void limiters()
   else
 
 
-    /////////////////////////////////////////////// Soft limits ///////////////////////////////////////////////////////////////////
 #ifdef TEST_SWITCH
   {
     if (g.test_N > 0 && g.test_flag == 1)
     {
-      g.pos_tmp2 = g.pos;
+      g.pos_tmp2 = g.ipos;
       g.test_flag = 5;
     }
 
@@ -144,7 +142,7 @@ void limiters()
       // Making sure only the very first turn of of limit one is registered (and used for calibration); ignoring the subsequent switch noise
       g.uninterrupted = 1;
       // At the end of calibration new coordinates will be derived from old by adding this parameter to the old ones:
-      g.coords_change = -g.pos_int_old;
+      g.coords_change = -g.ipos;
     }
 
     // While calibration telescope, during the first move (away from the telescope) switch is off and we reached the maximum speed, so we start breaking
@@ -153,52 +151,10 @@ void limiters()
       // Initiating limit1 calibration loop:
       g.calibrate_flag = 2;
       // Preliminary value for limit2, just in case:
-      g.limit2 = g.pos_int_old + (COORD_TYPE)TEL_LENGTH;
+      g.limit2 = g.ipos + (COORD_TYPE)TEL_LENGTH;
       start_breaking();
     }
 
-    // No soft limits enforced when doing calibration:
-    // Because limit1 is calibrated when moving in good (backlash-compensated direction) at the moment switch goes off
-    // for the first time, when approaching limit1 (moving in the bad direction), backlash playes a positive role - as an extra
-    // safety margin. (If switch has zero internal hysteresis, backlash causes the soft limit to be reached g.backlash microsteps
-    // further from the switch.)
-    if (g.calibrate_flag == 0)
-    {
-      // Checking how far we are from a limiter in the direction we are moving
-      // If current speed is non-zero, we use its sign to determine the direction we are moving to      
-      if (g.speed < -SPEED_TINY || g.speed > SPEED_TINY)
-      {
-        if (g.speed < 0.0)
-          dx = g.pos_int_old - LIMITER_PAD2;
-        else
-          dx = g.limit2 - g.pos_int_old - LIMITER_PAD2;
-      }
-      else
-        // Otherwise, we use the target direction sign, speed1:
-      {
-        if (g.speed1 < -SPEED_TINY)
-          dx = g.pos_int_old - LIMITER_PAD2;
-        else if (g.speed1 > SPEED_TINY)
-          dx = g.limit2 - g.pos_int_old - LIMITER_PAD2;
-        else
-          return;
-      }
-
-      // Something went wrong:
-      if (dx < 0)
-        return;
-
-      // Preliminary test (for highest possible speed):
-      if (g.telescope == 0 && dx <= roundMy(BREAKING_DISTANCE) || g.telescope == 1 && dx <= roundMy(BREAKING_DISTANCE_TEL))
-      {
-        // Breaking distance at the current speed:
-        dx_break = roundMy(0.5 * g.speed * g.speed / g.accel_limit);
-        // Accurate test (for the current speed):
-        if (dx <= dx_break)
-          // Emergency breaking, to avoid hitting the limiting switch
-          start_breaking();
-      }
-    }
   }
 #endif // TEST_SWITCH  
 

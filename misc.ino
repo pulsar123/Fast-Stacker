@@ -41,7 +41,7 @@ float target_speed ()
 
 short Nframes ()
 /* Computing the "Nframes" parameter (only for 2-point stacking) - redo this every time either of
-   g.msteps_per_frame, g.reg.point[0], or g.reg.point[3] changes.
+   g.reg.point[0], or g.reg.point[3] changes.
 */
 {
   return short(((float)(g.reg.point[3] - g.reg.point[0])) / (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame]) + 1;
@@ -136,7 +136,7 @@ void rail_reverse(byte fix_points)
    If fix_points=1, update the current point1,2 accordingly.
 */
 {
-  COORD_TYPE d_pos, pos_target;
+  COORD_TYPE d_ipos, ipos_target;
 
   // Disabling rail reverse in telescope mode:
   if (g.telescope)
@@ -145,10 +145,10 @@ void rail_reverse(byte fix_points)
   // We need to do a full backlash compensation loop when reversing the rail operation:
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
-  d_pos = g.limit2 + g.backlash;
+  d_ipos = g.limit2 + g.backlash;
   if (g.reg.backlash_on)
   {
-    d_pos = d_pos - BACKLASH_2;
+    d_ipos = d_ipos - BACKLASH_2;
     g.backlash_init = 2;
   }
   else
@@ -156,17 +156,14 @@ void rail_reverse(byte fix_points)
     g.backlash_init = 1;
   }
   // Updating the current coordinate in the new (reversed) frame of reference:
-  g.pos = d_pos - g.pos;
+  g.ipos = d_ipos - g.ipos;
   EEPROM.put( ADDR_POS, g.ipos );
-  g.pos0 = g.pos;
-  g.pos_old = g.pos;
-  g.pos_int_old = (COORD_TYPE)floor(g.pos);
   if (fix_points)
   {
     // Updating the current two points positions:
-    pos_target = d_pos - g.reg.point[3];
-    g.reg.point[3] = d_pos - g.reg.point[0];
-    g.reg.point[0] = pos_target;
+    ipos_target = d_ipos - g.reg.point[3];
+    g.reg.point[3] = d_ipos - g.reg.point[0];
+    g.reg.point[0] = ipos_target;
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
@@ -180,7 +177,7 @@ void rail_reverse(byte fix_points)
 COORD_TYPE frame_coordinate()
 // Coordinate (COORD_TYPE type) of a frame given by g.frame_number, in 2-point stacking
 {
-  return g.starting_point + (COORD_TYPE)g.frame_counter * (COORD_TYPE)MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  return g.starting_point + g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -209,7 +206,6 @@ void read_params(byte n)
   {
     // Memorizing as default environment:
     EEPROM.put( g.addr_reg[0], g.reg);
-    //  g.msteps_per_frame = MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
     g.Nframes = Nframes();
   }
   display_all();
@@ -358,7 +354,7 @@ void set_memory_point(char n)
     return;
   }
   g.current_point = n - 1;
-  g.reg.point[g.current_point] = g.pos_int_old;
+  g.reg.point[g.current_point] = g.ipos;
 #ifdef TEMPERATURE
   if (g.telescope)
   {
@@ -403,16 +399,6 @@ void goto_memory_point(char n)
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-void start_breaking()
-// Initiating breaking at the highest deceleration allowed
-{
-  change_speed(0.0, 0, 2);
-  g.uninterrupted = 1;
-  letter_status("B");
-  return;
-}
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 void Read_limiters()

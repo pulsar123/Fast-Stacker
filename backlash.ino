@@ -19,10 +19,12 @@ void backlash()
   if (g.calibrate_flag || g.uninterrupted || g.moving || g.backlashing || g.BL_counter == 0)
     return;
 
-  if (g.backlash_init == 0)
+  if (g.BL_counter > 0)
   {
     // Backlash compensation.
     go_to(g.ipos + g.BL_counter, g.speed_limit);
+
+    // !!! Should handle the problem when g.ipos + g.BL_counter > g.limit2 . A calibration triggered?
 
     // This should be done after go_to call:
     g.backlashing = 1;
@@ -38,22 +40,6 @@ void backlash()
     g.backlashing = 1;
     g.backlash_init = 0;
   }
-
-  // First move - only done once, initiated in the very first loop, and only if it's not calibrating, breaking, or moving:
-  if (g.backlash_init > 0)
-  {
-    // First move (only when the rail is powered on), before backlash compensation, in the bad direction:
-    // Go_to the current position, with BL>0, will result in a full backlash compensation
-    go_to(g.ipos, g.speed_limit);
-
-    // This should be done after go_to call:
-    g.backlashing = 1;
-    if (g.backlash_init == 1)
-      g.backlash_init = 0;
-    else
-      g.backlash_init = 3;
-  }
-
 
   return;
 }

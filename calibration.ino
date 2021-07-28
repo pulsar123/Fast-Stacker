@@ -25,13 +25,13 @@ void calibration()
   {
     case 1: // Initiating full calibration
       // Moving towards switch 2 for its calibration, with maximum speed and acceleration:
-      change_speed(g.speed_limit, 0, 2);
+      go_to(g.limit2, g.speed_limit);
       display_all();
       letter_status("C");
       break;
 
     case 2: // Triggered limit2 and stopped, will now move towards limit1
-      change_speed(-g.speed_limit, 0, 2);
+      go_to(g.limit1, g.speed_limit);
       display_all();
       g.calibrate_flag = 3;
       break;
@@ -45,11 +45,7 @@ void calibration()
 
     case 5: // End of calibration; updating coordinates
       letter_status(" ");
-      g.pos = g.pos + (float)g.coords_change;
-      g.pos_int_old = g.pos_int_old + g.coords_change;
-      g.t0 = g.t;
-      g.pos0 = g.pos;
-      g.pos_old = g.pos;
+      g.ipos = g.ipos + g.coords_change;
       if (g.telescope)
       {
         g.limit2 = (COORD_TYPE)TEL_LENGTH;
@@ -68,7 +64,7 @@ void calibration()
 
     // Telescope specific mode:
     case 10: // Initiating telescope calibration: moving forward until the switch goes off and the maximum speed is reached (accel=0)
-      change_speed(g.speed_limit, 0, 2);
+      go_to(g.limit2, g.speed_limit);
       display_all();
       break;
   }

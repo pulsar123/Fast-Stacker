@@ -1,42 +1,37 @@
 void motor_control()
-/* Controlling the stepper motor, based on current time, target speed (speed1), acceleration (accel),
-   values at the last accel change (t0, pos0, speed0), and old integer position pos_int_old.
+/* Controlling the stepper motor.
 
-   Important: g.moving can be set to zero only here (by calling stop_now())! Also, it should be set to 1 only outside of this function.
+   v2.0: A complete rewrite of the motion algorithm. Instead of trying to be a "real time", with some attempts to fix backwards (which didn't
+         really work), now this is an accurate prediction - correction algorithm.
 
-   v2.0: I plan to completely re-write this algorithm. It should become one of a "prediction-correction" type. The main points:
-
-     There is only one model special event requiring syncing the model and real times:
-     - The moment when a step should be taken
      I have two time lines - the real time (as returned by micros() ), and the model time: micros() - g.dt_lost
-     The real and model times are only synced when we overshoot a special event (making a step). Sync is achieved by increasing g.dt_lost accordingly,
-       so all special events happen exactly as planned (in the model timeline).
-     If a model change comes from a real time event (hit a limiter; pressed/depressed a key while moving), the action is taken only when we overshoot the next special event
+     The real and model times are only synced when we overshoot a special event - making a step. Sync is achieved by increasing g.dt_lost accordingly,
+       so steps happen exactly as planned (in the model timeline), on integer values of the position.
+     If a model change comes from a real time event (hit a limiter; pressed/depressed a key while moving), the action is taken only when we overshoot the next step
        (when we the real and model times are synced via g.dt_lost).
-     Every time we discover that a special event has just happened:
+     Every time we discover that a step should have just happened:
      - First we adjust (sync) the model time (g.dt_lost)
      - We carry out the action (make a step plus optionally change direction)
      - The model is updated/changed as needed (e.g. there was a key press/depress, limiter hit, between the previous step and the current one)
-     - And then we predict the model time when the next special event
-       (step) should happen.
+     - And then we predict the model time when the next step should happen.
 
-  This way, all motions happen exactly according to the model equations (in terms of position), with speeds a bit slower than in the model. If properly implemented,
-  this should result in zero missed steps even if some Arduino loops are significantly longer than a time between adjacent steps (because of displaying data, or some internal
+  This way, all motions happen exactly according to the model equations (in terms of position), with speeds a bit slower than in the model.
+  This should result in zero missed steps even if some Arduino loops are significantly longer than a time between adjacent steps (because of displaying data, or some internal
   microprocessor delays - happens to ESP8266 regularly).
 
   Overall strategy:
-  1) An event (external, internal) triggers a call to one of the three motion model generators. This assigns values to all model parameters and vectors, fully describing
-  the motion until it stops. If there was a prior model, the new one replaces it.
-   - go_to: always starting from rest, go to a specific coordinate, stop there.
-   - accelerate: accelerate until hitting the speed limit (optionally), then hit a soft limit, decelerate and stop. Can be initiated while moving. This is the only model
+  1) An event (external, internal) submits a request to initialize a new model of motion, of the following types:
+   - GOTO: always starting from rest, go to a specific coordinate, stop there.
+   - FF / REWIND: accelerate until hitting the speed limit (optionally), then hit a soft limit, decelerate and stop. Can be initiated while moving. This is the only model
       allowing for a direction change.
-   - stop: break using the prescribed accceleration until it stops. Can only be called if moving.
-  2) Inside motor_control, use the model to predict the next motor controlling event: a step.
+   - STOP / BREAK: break using the prescribed accceleration until it stops. Can only be called if moving. (STOP uses an intermediate acceleration, BREAK - maximum one)
+  2) Inside motor_control, we use the model to predict the next step.
    - If currently at rest, start processing the model during the first call of the function
    - If currently moving, start processing the new model at the next step (when model and physical times are synced)
   3) Inside motor_control, execute the next event (step with an optional dir change) after the predicted time, while syncing the model and physical times.
   4) Make sure stop event is handled reliably.
-   - Overshoot slightly all moves (by 1-3 microsteps) to account for floating point errors, and stop abruptly when reaching the target coordinate in the last model leg.
+   - Overshoot slightly all moves (by 0.5-1 microsteps) to account for floating point errors, and stop abruptly when reaching the target coordinate in the last model leg.
+  5) Backlash is handled by overshooting the final leg of the model by a backlash amount - only if the leg is in the bad (negative) direction.
 */
 
 {
@@ -50,12 +45,8 @@ void motor_control()
   // Model time (can be behind or ahead of the physical time):
   g.t = micros() - g.dt_lost;
 
-  // no motion, so simply returning:
+  // no motion and no change of model, so simply returning:
   if (g.moving == 0 && g.model_init == 0)
-    return;
-
-  // If we are moving, but not at a sync point yet - return:
-  if (g.moving == 1 && g.t < g.t_next_step)
     return;
 
   // Checking just in case (should never happen:
@@ -65,12 +56,18 @@ void motor_control()
     return;
   }
 
-  // Moving, and reached a sync point. Time to make a step, and sync the times.
+  // If we are moving, but not at a sync (make a step) point yet - return:
+  if (g.moving == 1 && g.t < g.t_next_step)
+    return;
+
+  // Reached a sync point while moving. Time to make a step, and sync the times, optionally update the model, and either stop or predict the next step.
   if (g.moving == 1 && g.t >= g.t_next_step)
   {
     // Executing one step:
     make_step();
+    
     g.ipos = g.ipos_next_step; // Updating the current coordinate
+    
     // Measuring backlash (it gets larger as we move in the bad - negative - direction,
     // and gets smaller as we move in the good - positive - direction):
     g.BL_counter -= g.direction;
@@ -81,24 +78,25 @@ void motor_control()
     if (g.BL_counter > g.backlash)
       g.BL_counter = g.backlash;
 
-    // Syncing time
+    // Syncing times
     g.dt_lost += g.t - g.t_next_step; // Adding the current step's time mismatch to the total mismatch
     g.t = g.t_next_step; // This syncs the model time. We are now at exactly the next_event point, from the model's point of view
   }
 
   // At this point, model and real times are guaranteed to be in sync (via g.dt_lost)
 
-  if (g.model_init == 1)
+  if (g.model_init == 1 && g.uninterrupted == 0)
     // Optionally updating the model
   {
-    g.moving = 1;
-    g.model_t0 = g.t;
     // Generating the new model:
     generate_model();
+    
     /// If the above command set model_type to NONE, exit:
     if (g.model_type == MODEL_NONE)
       return;
+      
     g.model_init = 0;
+    g.moving = 1;
   }
 
   // Finding the model leg for the current point:
@@ -184,7 +182,7 @@ void motor_control()
         dt0 = 0.0;
       }
 
-      if (g.model_ptype[i] == ACCEL_ZERO_POINT)
+      if (g.model_ptype[i] == ZERO_ACCEL_POINT)
         // Zero current acceleration = linear leg.
       {
         t_step = d_pos_next / g.model_speed[i] + g.model_time[i] + g.model_t0;  // Absolute time
@@ -195,7 +193,7 @@ void motor_control()
         // Solving a quadratic equation
         // Discriminant square:
         float D2 = g.model_speed[i] * g.model_speed[i] + 2.0 * g.model_accel[i] * d_pos_next;
-        // This should always be true. the only times it would be untrue if there is a direction change before the next step;
+        // This should always be true. The only times it would be untrue if there is a direction change before the next step;
         // This was handled above, so should never happen.
         if (D2 .ge. 0.0)
         {
@@ -225,7 +223,7 @@ void motor_control()
   }
 
   // Failed to predict the next step. This should never happen. Emergency stop
-  if (t_step == 0 || i_next == -1)
+  if (t_step == 0 || i_next == -1 || t_step-g.t < 0)
   {
     stop_now();
     return;
@@ -249,7 +247,7 @@ void generate_model()
     This function can only be called inside motor_control, and only after the model and real times are synced.
     (This happenes if at rest, or right after making a step.)
 
-    The following model are supported (values of g.model_type):
+    The following models are supported (values of g.model_type):
     MODEL_NONE 0 : No model, no motion
     MODEL_GOTO 1 : GoTo model, can only start from rest, cannot be interrupted by FF, REWIND, STOP. Needs model_speed and model_ipos1
     MODEL_FF 2 : Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
@@ -259,7 +257,7 @@ void generate_model()
 
     Soft limits have to be enforced here!
 
-    We apply here backlash compensation for STOP, BREAK, and GOTO models moving in the bad (negative) direction.
+    We apply here backlash compensation for STOP, BREAK, and GOTO models moving in the bad (negative) direction at the final model leg.
 
 */
 {
@@ -273,8 +271,15 @@ void generate_model()
     return;
   }
 
-  // We are already at the destination, and no need for backlash compensation, so just returning:
-  if (g.ipos == g.model_ipos1 && g.BL_counter == 0 && g.moving == 0)
+  // We are already at the destination, so just returning:
+  if (g.ipos == g.model_ipos1 && g.moving == 0)
+  {
+    stop_now();  // This also will be a signal to immediately exit from motor_control
+    return;
+  }
+
+  // Soft limits enforced
+  if (g.model_type==MODEL_FF && g.ipos>=g.limit2 || g.model_type==MODEL_REWIND && g.ipos<=g.limit1)
   {
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
@@ -283,12 +288,13 @@ void generate_model()
   speed0 = current_speed();  // Current speed (signed), based on the current model; will be the initial speed in the new model
 
   // First model point (direction and acceleration will be defined later):
-  g.Npoints = 0;
-  model_time[g.Npoints] = 0.0;
-  g.model_speed[g.Npoints] = speed0;
+  g.Npoints = 0;  // Point counter
+  model_time[g.Npoints] = 0.0;  // Time relative to the initial model time (model_t0)
+  g.model_speed[g.Npoints] = speed0;  // Speed at this point
   g.model_pos[g.Npoints] = 0.0; // Model position (float) relative to the initial point (g.model_ipos0)
-  g.model_ptype[g.Npoints] = INIT_POINT;
+  g.model_ptype[g.Npoints] = INIT_POINT;  // Point type
 
+  // Global model parameters:
   g.model_ipos0 = g.ipos;  // Initial absolute coordinate
   g.model_t0 = g.t;  // Initial absolute time
 
@@ -296,19 +302,21 @@ void generate_model()
   //++++++++++++++++++++  STOP and BREAK models +++++++++++++++++++++++
   if (g.model_type == MODEL_STOP || g.model_type == MODEL_BREAK)
   {
-    // Acceleration (we are deccelerating):
+    // Acceleration vector (we are deccelerating):
     if (g.model_type == MODEL_STOP)
+    // Interemediate deceleration value:
       accel = -g.direction * g.accel_v[3];
     else
+    // Maximum deceleration:
       accel = -g.direction * g.accel_v[4];
     // Breaking travel vector with the current speed and accel:
     dx_break = -0.5 * speed0 * speed0 / accel;
-    COORD_TYPE dx_break_int = myRound(dx_break);
+    COORD_TYPE dx_break_int = myRound(dx_break);  // Rounding to the nearest integer
     g.model_ipos1 = g.ipos + dx_break_int;  // The target coordinate is integer, nearest to the true number
     // Backlash compensation:
     if (g.direction == -1)
       g.model_ipos1 = g.model_ipos1 - g.backlash;
-    // Revised value for dx_break, after making it integer and adding overshoot:
+    // Revised value for dx_break, after making it integer and adding a small overshoot (0.5-1 steps):
     dx_break = (float)dx_break_int + g.direction * OVERSHOOT;
     // Revised acceleration, for the revised dx_break:
     accel = -0.5 * speed0 * speed0 / dx_break;
@@ -321,7 +329,7 @@ void generate_model()
     g.Npoints++;
     g.model_dir[g.Npoints] = g.direction;
     g.model_accel[g.Npoints] = 0;
-    model_time[g.Npoints] = roundMy(-speed0 / accel); // Time corrected for overshoot
+    model_time[g.Npoints] = -speed0 / accel; // Time corrected for overshoot
     g.model_speed[g.Npoints] = 0;
     g.model_pos[g.Npoints] = dx_break; // Coordinate corrected for overshoot
     g.model_ptype[g.Npoints] = STOP_POINT;
@@ -349,7 +357,7 @@ void generate_model()
 
     // Accurate travel vector (if no accel limit existed):
     COORD_TYPE dx = g.model_ipos1 - g.ipos;
-    // Travel vector with overshoot applied:
+    // Travel vector with a small overshoot applied:
     float dx_prime;
     if (dx >= 0)
       dx_prime = (float)dx + OVERSHOOT;
@@ -359,10 +367,11 @@ void generate_model()
     // Determining the direction of the motion for the first leg of the new model:
     if (g.moving == 0)
     {
-      if (dx >= 0)
+      if (dx_prime >= 0)
         g.direction = 1;
       else
         g.direction = -1;
+        
       motion_status();
       motor_direction(); // Explicitly sending the proper direction command to the motor
     }
@@ -373,7 +382,7 @@ void generate_model()
     else if (g.model_type == MODEL_REWIND)
       accel = g.accel_v[1];
     else if (g.model_type == MODEL_GOTO)
-      accel = g.direction * g.accel_v[4];
+      accel = g.direction * g.accel_v[4];  // Maximum acceleration used for all GOTO moves
     else
       // Just in case (should never happen)
     {
@@ -386,6 +395,7 @@ void generate_model()
     g.model_dir[g.Npoints] = g.direction;
     g.model_accel[g.Npoints] = accel;
 
+    // Maximum allowed speed for the move (positive):
     if (g.model_type == MODEL_GOTO)
       Vmax0 = g.model_speed_max;
     else
@@ -494,7 +504,7 @@ float current_speed()
     }
   }
   
-  return  g.model_speed[i0] + g.model_accel[i0]*(g.t - g.model_time[i0] - g.model_t0);
+  return  g.model_speed[i0] + g.model_accel[i0]*(dt - g.model_time[i0]);
 }
 
 
@@ -512,7 +522,6 @@ void stop_now()
 #endif
 
   g.moving = 0;
-  g.t_old = g.t;
   g.model_init = 0;
   g.model_type = MODEL_NONE;
   g.dt_lost = 0; // Now at rest, so model time is identical to the real time
@@ -549,7 +558,6 @@ void stop_now()
   // We can lower the breaking flag now, as we already stopped:
   g.uninterrupted = 0;
   g.backlashing = 0;
-  g.speed = 0.0;
   // Refresh the whole display:
   display_all();
   if (g.noncont_flag > 0)
@@ -562,9 +570,6 @@ void stop_now()
   if (g.noncont_flag == 4)
     g.noncont_flag = 1;
 
-#ifdef EXTENDED_REWIND
-  g.no_extended_rewind = 0;
-#endif
 #ifdef TEST_SWITCH
   if (g.test_flag == 1 || g.test_flag == 5)
     g.test_flag = 2;
@@ -623,4 +628,41 @@ void make_step()
 
   return;
 }
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void go_to(COORDS_TYPE ipos1, float speed_max)
+/* 
+  This command can be issued anywhere. It submits a request to generate a new motion model, at the next real/model time sync inside motor_control().
+   
+  - ipos1: integer destination coordinate for the move
+  - speed_limit: maximum allowed speed during the move (float)
+ 
+ */
+{
+
+  g.model_init = 1;
+  g.model_type= MODEL_GOTO;
+  g.model_speed_max = speed_max;
+  g.model_ipos1 = ipos1;
+
+  return;
+}
+
+
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void start_breaking()
+// Initiating breaking at the highest deceleration allowed
+{
+  g.model_type = MODEL_BREAK;
+  g.model_init = 1;
+  g.uninterrupted = 1;
+  letter_status("B");
+  return;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 

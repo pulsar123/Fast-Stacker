@@ -711,9 +711,9 @@ void display_current_position()
 #endif
 
 #ifdef SHOW_RAW
-  sprintf(g.buffer, "  %c  %6d    %3s  ", g.tmp_char, g.pos_int_old, g.buf6);
+  sprintf(g.buffer, "  %c  %6d    %3s  ", g.tmp_char, g.ipos, g.buf6);
 #else
-  p = g.mm_per_microstep * g.pos;
+  p = g.mm_per_microstep * g.ipos;
   sprintf(g.buffer, "  %c  %6smm  %3s  ", g.tmp_char, ftoa(g.buf7, p, 3), g.buf6);
 #endif
 

@@ -1,5 +1,17 @@
 = New algorith (v2.0) =
 
+To take care of:
+
+ - backlashing - remove
+ backlash_init???
+ - limiters()
+ - EEPROM, parking
+
+
+New backlashing model:
+ - In generate_model, all last leg negative moves have backlashing added
+ - In backlash(), when not moving, initiate go_to backlash compensation move.
+
 == Remaking motor_control() ==
 
 The newest approach:

@@ -414,11 +414,6 @@ const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.
 #endif
 // Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
-// Only matters if BACKLASH is non-zero. If defined, pressing the rewind key ("1") for a certain length of time will result in the travel by the same
-// amount as when pressing fast-forward ("A") for the same period of time, with proper backlash compensation. This should result in smoother user experience.
-// If undefined, to rewind by the same amount,
-// one would have to press the rewind key longer (compared to pressing fast-forward key), to account for backlash compensation.
-#define EXTENDED_REWIND
 const float TEL_INIT = TEL_INIT_MM / MM_PER_MICROSTEP_TEL;
 const float TEL_LENGTH = TEL_LENGTH_MM / MM_PER_MICROSTEP_TEL;
 const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
@@ -592,10 +587,10 @@ struct global
   float model_speed[N_POINTS_MAX]; // Model speed (signed)
   float model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
   byte model_ptype[N_POINTS_MAX]; // Model point type:
-    #define INIT_POINT 0  // Starting moving from rest
-    #define ZERO_ACCEL 1  // Acceleration becomes zero
-    #define ACCEL 2  // Acceleration becomes non-zero
-    #define STOP_POINT 3  // Final (stop) point
+    #define INIT_POINT 0  // Starting moving from rest; currently not used
+    #define ZERO_ACCEL_POINT 1  // Acceleration becomes zero
+    #define ACCEL_POINT 2  // Acceleration becomes non-zero; currently not used
+    #define STOP_POINT 3  // Final (stop) point; currently not used
     #define DIR_CHANGE_POINT 4  // Changing direction point
   char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
   TIME_TYPE t_next_step; // Absolute timing prediction for the next step
@@ -604,23 +599,11 @@ struct global
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers (different for macro and telescope modes), including the default (0th) one
   // Variables used to communicate between modules:
-  TIME_TYPE t;  // Time in us measured at the beginning of motor_control() module
-  TIME_TYPE t_predict; // Predicted time (in us) for the next event (make a step, change direction, or change acceleration)
-  signed char t_type; // Type of the next event: 0 (make a step), 1 (change direction), 2 (change acceleration)
+  TIME_TYPE t;  // Model time in us measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
-  float speed1; // Target speed, in microsteps per microsecond
-  float speed;  // Current speed (negative, 0 or positive)
-  signed char accel; // Current acceleration index. Allowed values: -2,1,0,1,2 . +-2 correspond to ACCEL_LIMIT, +-1 correspond to ACCEL_SMALL
-  signed char accel_old; // Previous loop acceleration index.
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
-  COORD_TYPE ipos;  // Current position (in microsteps). Should be stored in EEPROM before turning the controller off, and read from there when turned on
-  COORD_TYPE ipos0;  // Last position when accel changed
-  TIME_TYPE t0; // Last time when accel changed
-  float speed0; // Last speed when accel changed
-  float speed_old; // speed at the previous step
-  float pos_stop; // Current stop position if breaked
-  float pos_stop_old; // Previously computed stop position if breaked
+  COORD_TYPE ipos;  // Current position (in microsteps).
   TIME_TYPE t_key_pressed; // Last time when a key was pressed
   TIME_TYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   int N_repeats; // Counter of key repeats
@@ -635,23 +618,19 @@ struct global
     10: initiating telescope calibration: moving forward until the switch goes off and the maximum speed is reached (accel=0)
    */
   byte calibrate_flag; 
-  COORD_TYPE limit1; // pos_int for the foreground limiter (temporary value, only used when accidently triggering foreground switch)
-  COORD_TYPE limit2; // pos_int for the background limiter; limit2 > limit1
+  COORD_TYPE limit1; // ipos for the foreground limiter (temporary value, only used when accidently triggering foreground switch; normally it's 0)
+  COORD_TYPE limit2; // ipos for the background limiter; limit2 > limit1
   byte accident;  // =1 if we accidently triggered limit1; 0 otherwise
   byte limit_on; //  The last recorded state of the limiter switches
   byte uninterrupted;  // =1 disables checking for limits (hard and soft); used for emergency breaking and during calibration
   byte uninterrupted2;  // =1 disables checking for limits (hard and soft); used for recovering rail when it's confused (#D command)
-  byte travel_flag; // =1 when travel was initiated
-  byte moving_mode; // =0 when using speed_change, =1 when using go_to
-  byte pos_stop_flag; // flag to detect when motor_control is run first time
   char key_old;  // peviously pressed key; used in keypad()
   COORD_TYPE starting_point; // The starting point in the focus stacking with two points
   COORD_TYPE destination_point; // The destination point in the focus stacking with two points
   byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
-  float msteps_per_frame; // Microsteps per frame for focus stacking
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
-  COORD_TYPE pos_to_shoot; // Position to shoot the next shot during focus stacking
+  COORD_TYPE ipos_to_shoot; // Position to shoot the next shot during focus stacking
   byte shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
   byte AF_on; // flag for camera AF state: 0/1 corresponds to off/on
   byte single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
@@ -664,7 +643,7 @@ struct global
   char empty_buffer[21];  // char buffer to be used to clear one row of the LCD; 1 more element than the lcd width (20)
   TIME_TYPE t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
-  byte x0, y0;  // Displey pixel coordinates, set in misc/my_setCursor
+  byte x0, y0;  // Display pixel coordinates, set in misc/my_setCursor
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
   byte backlight; // backlight level;
   COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
@@ -677,7 +656,6 @@ struct global
   byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
-  TIME_TYPE t_old;
   float speed_limit;  // Current speed limit, in internal units. Determined once, when the device is powered up
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
@@ -693,15 +671,12 @@ struct global
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   float mm_per_microstep; // Rail specific setting
-  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
+//  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
   TIME_TYPE t_buzz; // timer for the buzzer
   byte buzz_state; // HIGH or LOW for the buzzer state
 #endif  
   TIME_TYPE dt_lost;
-#ifdef EXTENDED_REWIND
-  byte no_extended_rewind;
-#endif
 #ifdef TIMING
   TIME_TYPE i_timing;
   TIME_TYPE t0_timing;
