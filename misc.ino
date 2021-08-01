@@ -280,15 +280,10 @@ void set_memory_point(char n)
 {
   if (g.paused || g.moving)
     return;
-  if (g.locked[g.ireg - 1])
-  {
-    display_comment_line("       Locked       ");
-    return;
-  }
   g.current_point = n - 1;
   g.reg.point[g.current_point] = g.ipos;
-  // Saving the changed register as default one (macro mode) or as the current (ireg) one:
-  EEPROM.put( g.addr_reg[g.ireg], g.reg);
+  // Saving the changed register as default one:
+  EEPROM.put( g.addr_reg[0], g.reg);
   g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "     P%1d was set     ", n);

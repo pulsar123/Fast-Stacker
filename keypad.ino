@@ -190,7 +190,7 @@ void process_keypad()
           ipos_target = frame_coordinate();
         else
           ipos_target = g.ipos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-        move_to_next_frame(&pos_target, &frame_counter0);
+        move_to_next_frame(&ipos_target, &frame_counter0);
         g.current_point = -1;
         break;
 
@@ -203,7 +203,7 @@ void process_keypad()
           ipos_target = frame_coordinate();
         else
           ipos_target = g.ipos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-        move_to_next_frame(&pos_target, &frame_counter0);
+        move_to_next_frame(&ipos_target, &frame_counter0);
         g.current_point = -1;
         break;
 

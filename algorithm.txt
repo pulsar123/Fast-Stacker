@@ -1,5 +1,14 @@
 = New algorith (v2.0) =
 
+POtential issues:
+ - micros() returns unsigned long (uint32), but my TIME_TYPE is a signed int (s32) - I'll have issues with negative times!
+
+Final corrections:
+ * All stops are at maximum acceleration
+ * The final leg of FF/REWIND is at maximum acceleration
+ * The final leg of FF/REWIND is marked uninterrupted in runtime (when predicting the next step)
+ - limit1 is calibrated on "switch on"
+ - When turning on the rail, and we are too close to a limiter, first move to a safe spot, then execute the backlash compensation loop.
 
 
 initialize:
@@ -18,17 +27,39 @@ motor:
 speed0 = 0
   g.model_ipos0 = g.ipos;  // Initial absolute coordinate
   g.model_t0 = g.t;  // Initial absolute time
-     g.model_ipos1 = g.limit1;
+  g.model_ipos1 = g.limit1;
     COORD_TYPE dx = g.model_ipos1 - g.ipos;  <0
-      dx_prime = (float)dx - OVERSHOOT;  overshooting g.limit1!
+      dx_prime = (float)dx - OVERSHOOT;  overshooting g.limit1! <0
         g.direction = -1;
 		g.dir = -1;
      accel = g.accel_v[1]; -small_accel
+     accel_last = g.accel_v[4];  +large accel
       Vmax0 = SPEED_LIMIT;
       dx1 = 0.0;
-    float Vmax2 = accel * (dx_prime);  >0
+    float Vmax2 = 2*accel * (x1 - dx1); >0
+    Vmax = sqrt(Vmax2);
  		
+  g.model_init = 0;
+  g.moving = 1;
+  
+   g.Npoints = 5 (4)
+   g.model_dir[g.Npoints]
+    g.model_accel[g.Npoints]
+    g.model_time[g.Npoints]
+    g.model_speed[g.Npoints
+    g.model_pos[g.Npoints]
+    g.model_ptype[g.Npoints]
 
+dt = 0
+i0 = 0
+d_pos = 0
+d_pos_next = -1
+dt0 = 0
+t_step = 0
+d_pos0_next = -1;
+i_next = 0
+  g.t_next_step
+  g.ipos_next_step = g.ipos -1
 
 
 

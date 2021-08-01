@@ -19,8 +19,10 @@
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE s32
-// Long signed type (for timers and such):
-#define TIME_TYPE s32
+// Long unsigned type (for times and such):
+#define TIME_UTYPE uint32
+// Long signed type (for time differences and such):
+#define TIME_STYPE s32
 
 //////// Debugging options ////////
 // If defined, no display updates when moving
@@ -57,7 +59,7 @@ const COORD_TYPE BL_STEP = 1;
 // Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
 //#define DELAY_DEBUG
 // Step used durinmg DELAY_DEBUG (in us)
-//const TIME_TYPE DELAY_STEP = 50000;
+//const TIME_STYPE DELAY_STEP = 50000;
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
@@ -84,10 +86,10 @@ s16 IO_PULLUP = 0B1111111111111111;
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
 // (If your continuous focus stacking skips the very first shot, increase this parameter)
-const TIME_TYPE CONT_STACKING_DELAY = 100000;  // 100000
-const TIME_TYPE SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
-const TIME_TYPE SHUTTER_ON_DELAY = 5000; // Delay in microseconds between setting AF on and shutter on  5000
-const TIME_TYPE SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between setting shutter off and AF off  5000
+const TIME_STYPE CONT_STACKING_DELAY = 100000;  // 100000
+const TIME_STYPE SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
+const TIME_STYPE SHUTTER_ON_DELAY = 5000; // Delay in microseconds between setting AF on and shutter on  5000
+const TIME_STYPE SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between setting shutter off and AF off  5000
 // The mode of AF synching with the shutter:
 //  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
@@ -96,8 +98,8 @@ const short AF_SYNC = 0;
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
 // The SHUTTER_ON_DELAY2 value can be modified during debugging (keys 2/3); the SHUTTER_OFF_DELAY2 value is fixed
-TIME_TYPE SHUTTER_ON_DELAY2 = 1100000;
-TIME_TYPE SHUTTER_OFF_DELAY2 = 100000;
+TIME_STYPE SHUTTER_ON_DELAY2 = 1100000;
+TIME_STYPE SHUTTER_OFF_DELAY2 = 100000;
 #else
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture - FRSP - for Canon with Magic Lantern firmware).
 // For FRSP to work, the AF relay should be connected as usual (to the AF camera circuit), but the shutter relay should operate the external flash
@@ -109,8 +111,8 @@ TIME_TYPE SHUTTER_OFF_DELAY2 = 100000;
 // The camera exposure also should be long enough (at least 0.25s for Canon 50D) to capture the flash.
 // FRSP should only be used with non-continuous stacking, with DELAY1+DELAY2 long enough for multiple silent pictures to be taken successfully.
 // (For Canon 50D at least 5.5s: DELAY1=4s, DELAY2=1.5s)
-const TIME_TYPE SHUTTER_ON_DELAY2 = 500000; // !!! 1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
-const TIME_TYPE SHUTTER_OFF_DELAY2 = 100000; // 100000
+const TIME_STYPE SHUTTER_ON_DELAY2 = 500000; // !!! 1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
+const TIME_STYPE SHUTTER_OFF_DELAY2 = 100000; // 100000
 #endif
 
 //////// Pin assignment ////////
@@ -236,10 +238,10 @@ const float OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by 
 
 
 //////// User interface parameters: ////////
-const TIME_TYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
-const TIME_TYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
-const TIME_TYPE T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
-const TIME_TYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
+const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
+const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
+const TIME_STYPE T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
+const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
 
 
 //////// INPUT PARAMETERS: ////////
@@ -281,10 +283,10 @@ const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3
 
 // Buzzer stuff:
 #ifdef BUZZER
-const TIME_TYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
+const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
 #endif
 
-const TIME_TYPE FLASHING_DELAY = 300000;
+const TIME_STYPE FLASHING_DELAY = 300000;
 
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -474,7 +476,7 @@ struct global
 {
   // New vars in v2.0
   byte model_init; // 0: default. 1: a new model has just been requested (will be reset to 0 in motor_control, once the new model is generated)
-  TIME_TYPE model_t0; // Absolute (model) time for the first model point.
+  TIME_UTYPE model_t0; // Absolute (model) time for the first model point.
   COORD_TYPE model_ipos0; // The coordinate at the start of a movement.
   byte model_type; // Code for the current (or requested) model. Codes:
     #define MODEL_NONE 0 // No model, no motion
@@ -489,7 +491,7 @@ struct global
   byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes. (Normally do not coincide with steps.)
   #define N_POINTS_MAX 5  // Largest possible value for Npoints
   float model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
-  TIME_TYPE model_time[N_POINTS_MAX]; // Model time for each model point (relative to the 0-th point)
+  TIME_UTYPE model_time[N_POINTS_MAX]; // Model time for each model point (relative to the 0-th point)
   float model_speed[N_POINTS_MAX]; // Model speed (signed)
   float model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
   byte model_ptype[N_POINTS_MAX]; // Model point type:
@@ -499,21 +501,27 @@ struct global
     #define STOP_POINT 3  // Final (stop) point; currently not used
     #define DIR_CHANGE_POINT 4  // Changing direction point
   char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
-  TIME_TYPE t_next_step; // Absolute timing prediction for the next step
+  TIME_UTYPE t_next_step; // Absolute timing prediction for the next step
   COORD_TYPE ipos_next_step; // Absolute coordinate for the next step
+  byte motion_status_code; // Used for displaying motion status. Possible values:
+    #define STATUS_NONE 0 // no motion
+    #define STATUS_REWIND 1
+    #define STATUS_REVERSE 2
+    #define STATUS_FORWARD 3
+    #define STATUS_STRAIGHT 4
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
   // Variables used to communicate between modules:
-  TIME_TYPE t;  // Model time in us, measured at the beginning of motor_control() module
+  TIME_UTYPE t;  // Model time in us, measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
   COORD_TYPE ipos;  // Current position (in microsteps).
-  TIME_TYPE t_key_pressed; // Last time when a key was pressed
-  TIME_TYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)
+  TIME_UTYPE t_key_pressed; // Last time when a key was pressed
+  TIME_UTYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   int N_repeats; // Counter of key repeats
-  TIME_TYPE t_display; // time since the last display refresh (only when not moving)
+  TIME_UTYPE t_display; // time since the last display refresh (only when not moving)
   /* a flag for each leg of calibration: 
     0: no calibration; 
     1: initiating full calibration: moving towards switch 2 for its calibration, with maximum speed and acceleration;
@@ -539,14 +547,14 @@ struct global
   byte shutter_on; // flag for camera shutter state: 0/1 corresponds to off/on
   byte AF_on; // flag for camera AF state: 0/1 corresponds to off/on
   byte single_shot; // flag for a single shot (made with #7): =1 when the shot is in progress, 0 otherwise
-  TIME_TYPE t_shutter; // Time when the camera shutter was triggered
-  TIME_TYPE t_shutter_off; // Time when the camera shutter was switched off
-  TIME_TYPE t_AF; // Time when the camera AF was triggered
+  TIME_UTYPE t_shutter; // Time when the camera shutter was triggered
+  TIME_UTYPE t_shutter_off; // Time when the camera shutter was switched off
+  TIME_UTYPE t_AF; // Time when the camera AF was triggered
   signed char direction; // -1/1 for reverse/forward directions of moving (request to change direction)
   signed char dir; // -1/1 for reverse/forward directions of moving (the actual state of the motor)
   char buffer[21];  // char buffer to be used for lcd print; 1 more element than the lcd width (20)
   char empty_buffer[21];  // char buffer to be used to clear one row of the LCD; 1 more element than the lcd width (20)
-  TIME_TYPE t_comment; // time when commment line was triggered
+  TIME_UTYPE t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   byte x0, y0;  // Display pixel coordinates, set in misc/my_setCursor
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
@@ -554,8 +562,8 @@ struct global
   COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
-  TIME_TYPE t_shot; // the time shot was initiated
-  TIME_TYPE t0_stacking; // time when stacking was initiated;
+  TIME_UTYPE t_shot; // the time shot was initiated
+  TIME_UTYPE t0_stacking; // time when stacking was initiated;
   byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
@@ -569,20 +577,20 @@ struct global
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
   short timelapse_counter; // Counter for the time lapse feature
-  TIME_TYPE t_mil; // millisecond accuracy timer; used to set up timelapse stacks
-  TIME_TYPE t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
+  TIME_UTYPE t_mil; // millisecond accuracy timer; used to set up timelapse stacks
+  TIME_UTYPE t0_mil; // millisecond accuracy timer; used to set up timelapse stacks
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
 //  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
-  TIME_TYPE t_buzz; // timer for the buzzer
+  TIME_UTYPE t_buzz; // timer for the buzzer
   byte buzz_state; // HIGH or LOW for the buzzer state
 #endif  
-  TIME_TYPE dt_lost;
+  TIME_STYPE dt_lost;
 #ifdef TIMING
-  TIME_TYPE i_timing;
-  TIME_TYPE t0_timing;
+  TIME_UTYPE i_timing;
+  TIME_UTYPE t0_timing;
   int dt_max;
   int dt_min;
   int bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
@@ -620,7 +628,7 @@ struct global
   COORD_TYPE pos0_test;
 #endif
 #ifdef BUZZER
-  TIME_TYPE dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us
+  TIME_STYPE dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us
 #endif
 #ifdef TEST_LIMITER
   int limiter_i; // counter for the false limiter readings

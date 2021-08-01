@@ -24,7 +24,6 @@ void initialize(byte factory_reset)
   keypad.setDebounceTime(50);
   g.key_old = '=';
 
-  g.ireg = 0;
   address = ADDR_REG1;
 
   // EEPROM addresses for memory registers, including the 0th (default) register:
@@ -37,6 +36,7 @@ void initialize(byte factory_reset)
   g.moving = 0;
   g.model_init = 0;
   g.model_type = MODEL_NONE;
+  g.motion_status_code = STATUS_NONE;
   g.dt_lost = 0;
   g.stacker_mode = 0;
   g.shutter_on = 0;
@@ -48,7 +48,7 @@ void initialize(byte factory_reset)
   g.current_point = -1;
   g.limit1 = 0;
   g.accident = 0;
-  g.limiter_counter = 0;
+//  g.limiter_counter = 0;
 
   if (factory_reset)
   {

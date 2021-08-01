@@ -210,30 +210,62 @@ void motion_status()
   if (g.error || g.alt_flag)
     return;
   uint8_t i;
-
-  my_setCursor(2, 5, 1);
+  
+  byte motion_status_new = STATUS_NONE;
 
   if (g.moving == 0 && g.model_init == 0)
   {
-    tft.print("   ");
+    motion_status_new = STATUS_NONE;
   }
   else
   {
     if (g.direction == -1)
     {
       if (g.stacker_mode < 2)
-        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, rewind_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        motion_status_new = STATUS_REWIND;
       else
-        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, reverse_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        motion_status_new = STATUS_REVERSE;
     }
     else
     {
       if (g.stacker_mode < 2)
-        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, forward_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        motion_status_new = STATUS_FORWARD;
       else
-        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, straight_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        motion_status_new = STATUS_STRAIGHT;
     }
   }
+
+  // Only if the motion status changed since the last check, we do the expensive operation - updating th display:
+  if (motion_status_new != g.motion_status_code)
+  {
+    my_setCursor(2, 5, 1);
+    g.motion_status_code = motion_status_new;
+    
+    switch (g.motion_status_code)
+    {
+      case STATUS_NONE:
+        tft.print("   ");
+        break;
+
+      case STATUS_REWIND:
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, rewind_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        break;
+
+      case STATUS_REVERSE:
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, reverse_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        break;
+        
+      case STATUS_FORWARD:
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, forward_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        break;
+        
+      case STATUS_STRAIGHT:
+        tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, straight_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
+        break;
+    }
+  }
+
+
 
   return;
 }
