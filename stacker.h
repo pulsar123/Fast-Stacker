@@ -25,6 +25,7 @@
 #define TIME_STYPE s32
 
 //////// Debugging options ////////
+#define SER_DEBUG  // Debugging using serial interface
 // If defined, no display updates when moving
 //#define NO_DISP
 // For timing the main loop:
@@ -235,6 +236,7 @@ const short ENABLE_DELAY_MS = 3;
 // (the drawback - you'll start having a lag between the actual trigger and the reaction to it.)
 //const byte N_LIMITER = 1;  // Not used
 const float OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
+const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microsteps for the whole rail length
 
 
 //////// User interface parameters: ////////
@@ -256,7 +258,7 @@ const byte Backlight[] = {0, 110, 127, 255};
 // Number of values for the input parameters (mm_per_frame etc):
 const COORD_TYPE N_PARAMS = 25;
 // Now we are using microsteps per frame input table:
-const COORD_TYPE MSTEP_PER_FRAME[] = {1,       2,          4,      6,    8,    12,   16,    20,   24,   32,   40,   48,   64,  80,  120, 160,  200, 240, 320, 400, 480, 640, 800, 1200, 1600};
+const COORD_TYPE MSTEP_PER_FRAME[] = {1, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 120, 160, 200, 240, 320, 400, 480, 640, 800, 1200, 1600};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
 const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
@@ -500,7 +502,7 @@ struct global
     #define ACCEL_POINT 2  // Acceleration becomes non-zero; currently not used
     #define STOP_POINT 3  // Final (stop) point; currently not used
     #define DIR_CHANGE_POINT 4  // Changing direction point
-  char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
+  signed char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
   TIME_UTYPE t_next_step; // Absolute timing prediction for the next step
   COORD_TYPE ipos_next_step; // Absolute coordinate for the next step
   byte motion_status_code; // Used for displaying motion status. Possible values:

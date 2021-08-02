@@ -81,6 +81,8 @@ void process_keypad()
         // Ignore if moving:
         if (g.moving == 1 || g.paused || g.limit_on)
           break;
+        g.limit1 = -HUGE;
+        g.limit2 = HUGE;
         g.calibrate_flag = 1;
         g.error = 4;
         // Displaying the calibrate warning:
@@ -738,6 +740,7 @@ void process_keypad()
             g.model_init = 1;
           }
           // All situations when we pause: during 2-point stacking, while travelling to the starting point, and while waiting between stacks in timelaspe mode:
+          // !!! v2.0: The below has to be handled separately, after the above MODEL_BREAK is complete
           if (g.stacker_mode == 2 || g.stacker_mode == 1 || g.stacker_mode == 4)
           {
             // Paused during 2-point stacking

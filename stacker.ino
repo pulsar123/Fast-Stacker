@@ -91,8 +91,9 @@ void setup() {
   g.t_buzz = micros();
 #endif
 
-//!!!
-//  Serial.begin(115200);
+#ifdef SER_DEBUG
+  Serial.begin(115200);
+#endif
 
 #ifdef TEST_SWITCH
 #ifdef SERIAL_SWITCH

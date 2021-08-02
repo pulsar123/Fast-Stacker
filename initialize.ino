@@ -52,7 +52,7 @@ void initialize(byte factory_reset)
 
   if (factory_reset)
   {
-    g.calibrate_flag = 1;
+    g.calibrate_flag = 0; //!!!! 1
     g.error = 4;
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;

@@ -35,7 +35,6 @@ void motor_control()
 */
 
 {
-
   // Current time in microseconds (might not be synced yet in the current Arduino loop):
   // Model time (can be behind or ahead of the physical time):
   g.t = micros() - g.dt_lost;
@@ -47,6 +46,9 @@ void motor_control()
   // Checking just in case (should never happen):
   if (g.model_init == 1 && g.model_type == MODEL_NONE)
   {
+    #ifdef SER_DEBUG
+    Serial.println("g.model_init == 1 && g.model_type == MODEL_NONE!");
+    #endif
     g.model_init == 0;
     return;
   }
@@ -80,7 +82,8 @@ void motor_control()
 
   // At this point, model and real times are guaranteed to be in sync (via g.dt_lost)
 
-  if (g.model_init == 1 && g.uninterrupted == 0)
+//!!!  if (g.model_init == 1 && g.uninterrupted == 0)
+  if (g.model_init == 1)
     // Optionally updating the model
   {
     // Generating the new model:
@@ -92,27 +95,42 @@ void motor_control()
   }
 
   // Finding the model leg for the current point:
-  char i0 = -1;
+  signed char i0 = -1;
   TIME_STYPE dt = g.t - g.model_t0; // Current (already synced) model time, relative to the initial model time
   for (byte i = 0; i < g.Npoints - 1; i++)
   {
     if (dt >= g.model_time[i] && dt < g.model_time[i + 1])
     {
       i0 = i;
+      /*
+    #ifdef SER_DEBUG
+    if (g.model_type==MODEL_GOTO)
+    {
+      Serial.print("i = ");
+      Serial.println(i);
+    }
+    #endif
+    */
       break;
     }
   }
   if (i0 == -1)
     // Couldn't find a leg; a problem, should never happen. Emergency stop
   {
+    #ifdef SER_DEBUG
+    Serial.println("***********Couldn't find a leg!");
+    #endif
     stop_now();
     return;
   }
 
   // Immediate stop condition - if we are the the last leg of the model, and at the target coordinate:
   // This is where all normal motions should end
-  if (i0 == g.Npoints - 1 && g.ipos == g.model_ipos1)
+  if (i0 == g.Npoints - 2 && g.ipos == g.model_ipos1)
   {
+    #ifdef SER_DEBUG
+    Serial.println("Proper stop");
+    #endif
     stop_now();
     return;
   }
@@ -123,11 +141,20 @@ void motor_control()
 
   // Optional direction change
   // Direction change always happenes right after making a step (above)
-  char i_dir = -1;
-  for (byte i = i0 + 1; i++; i < g.Npoints - 1)
+  signed char i_dir = -1;
+  for (byte i = i0 + 1; i < g.Npoints - 1; i++)
   {
-    float delta = g.direction * (g.model_pos[i] - g.ipos); // How far is the leg's starting point, in the direction of motion
+    float delta = g.direction * (g.model_ipos0 + g.model_pos[i] - g.ipos); // How far is the leg's starting point, in the direction of motion
     // If a direction change happenes before the next step, we change direction now
+    /*
+    #ifdef SER_DEBUG
+    if (g.model_ptype[i]==DIR_CHANGE_POINT)
+    {
+      Serial.print("delta = ");
+      Serial.println(delta);
+    }
+    #endif
+    */
     if (g.model_ptype[i] == DIR_CHANGE_POINT && delta < 1.0 && delta >= 0.0)
     {
       i_dir = i;
@@ -143,6 +170,13 @@ void motor_control()
       d_pos_next = g.ipos + g.direction - g.model_pos[i] - g.model_ipos0;
       d_pos = 0.0;   // Updating the current position in the updated leg
 
+      #ifdef SER_DEBUG
+      Serial.print("Dir change; ipos=");
+      Serial.print(g.ipos);
+      Serial.print(", delta=");
+      Serial.println(delta);
+      #endif
+
       break;
     }
   }
@@ -156,7 +190,7 @@ void motor_control()
   // The next step coordinate relative to the initial (first leg) model coordinate
   // It is a float, but it is effectively an integer
   float d_pos0_next = d_pos_next + g.model_pos[i0];
-  char i_next = -1;
+  signed char i_next = -1;
 
   for (byte i = i0; i < g.Npoints - 1; i++)
   {
@@ -203,8 +237,11 @@ void motor_control()
           }
         }
         else
-          // This should never happen. Emergency stop
+          // This should never happen. Couldn't find a leg for the next step. Emergency stop
         {
+          #ifdef SER_DEBUG
+          Serial.println("***********Couldn't find a leg for the next step!");
+          #endif
           stop_now();
           return;
         }
@@ -217,6 +254,12 @@ void motor_control()
   // Failed to predict the next step. This should never happen. Instant stop
   if (t_step == 0 || i_next == -1 || t_step < g.t)
   {
+    #ifdef SER_DEBUG
+    Serial.println("***********Failed to predict the next step!");
+    Serial.print(t_step); Serial.print("  "); Serial.print(i_next); Serial.print("  "); Serial.println(g.t);
+    Serial.print(g.ipos); Serial.print("  ");  Serial.println(d_pos0_next);
+    Serial.print(dt); Serial.print("  ");  Serial.println(i0);
+    #endif
     stop_now();
     return;
   }
@@ -262,6 +305,9 @@ void generate_model()
 
   if (g.model_type == MODEL_NONE || g.model_init == 0)
   {
+    #ifdef SER_DEBUG
+    Serial.println("***********g.model_type == MODEL_NONE || g.model_init == 0");
+    #endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -269,6 +315,9 @@ void generate_model()
   // We are already at the destination, so just returning (only for GOTO model):
   if (g.model_type == MODEL_GOTO && g.ipos == g.model_ipos1 && g.moving == 0)
   {
+    #ifdef SER_DEBUG
+    Serial.println("We are already at the destination!");
+    #endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -276,6 +325,10 @@ void generate_model()
   // Limits enforced
   if (g.model_type == MODEL_FF && g.ipos >= g.limit2 || g.model_type == MODEL_REWIND && g.ipos <= g.limit1)
   {
+    #ifdef SER_DEBUG
+    Serial.println("Limits enforced");
+    Serial.print(g.model_type);  Serial.print("  "); Serial.println(g.ipos);
+    #endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -283,11 +336,11 @@ void generate_model()
   speed0 = current_speed();  // Current speed (signed), based on the current model; will be the initial speed in the new model
 
   // First model point (direction and acceleration will be defined later):
-  g.Npoints = 0;  // Point counter
-  model_time[g.Npoints] = 0.0;  // time spent in the previous leg of the model
-  g.model_speed[g.Npoints] = speed0;  // Speed at this point
-  g.model_pos[g.Npoints] = 0.0; // Model position (float) relative to the initial point (g.model_ipos0)
-  g.model_ptype[g.Npoints] = INIT_POINT;  // Point type
+  byte i_point = 0;  // Point counter
+  model_time[i_point] = 0.0;  // time spent in the previous leg of the model
+  g.model_speed[i_point] = speed0;  // Speed at this point
+  g.model_pos[i_point] = 0.0; // Model position (float) relative to the initial point (g.model_ipos0)
+  g.model_ptype[i_point] = INIT_POINT;  // Point type
 
   // Global model parameters:
   g.model_ipos0 = g.ipos;  // Initial absolute coordinate
@@ -304,26 +357,29 @@ void generate_model()
     dx_break = -0.5 * speed0 * speed0 / accel;
     COORD_TYPE dx_break_int = roundMy(dx_break);  // Rounding to the nearest integer
     g.model_ipos1 = g.ipos + dx_break_int;  // The target coordinate is integer, nearest to the true number
-    // Backlash compensation:
-    if (g.direction == -1)
-      g.model_ipos1 = g.model_ipos1 - g.backlash;
     // Revised value for dx_break, after making it integer and adding a small overshoot (0.5-1 steps):
     dx_break = (float)dx_break_int + g.direction * OVERSHOOT;
+    // Backlash compensation:
+    if (g.direction == -1)
+    {
+      g.model_ipos1 = g.model_ipos1 - g.backlash;
+      dx_break = dx_break - g.backlash;
+    }
     // Revised acceleration, for the revised dx_break:
     accel = -0.5 * speed0 * speed0 / dx_break;
 
     // Missing data for the first point:
-    g.model_dir[g.Npoints] = g.direction; // Maintaining the current direction
-    g.model_accel[g.Npoints] = accel;  // Acceleration corrected for overshoot
+    g.model_dir[i_point] = g.direction; // Maintaining the current direction
+    g.model_accel[i_point] = accel;  // Acceleration corrected for overshoot
 
     // The second (and final) point:
-    g.Npoints++;
-    g.model_dir[g.Npoints] = g.direction;
-    g.model_accel[g.Npoints] = 0;
-    model_time[g.Npoints] = -speed0 / accel; // Time corrected for overshoot
-    g.model_speed[g.Npoints] = 0;
-    g.model_pos[g.Npoints] = dx_break; // Coordinate corrected for overshoot
-    g.model_ptype[g.Npoints] = STOP_POINT;
+    i_point++;
+    g.model_dir[i_point] = g.direction;
+    g.model_accel[i_point] = 0;
+    model_time[i_point] = -speed0 / accel; // Time corrected for overshoot
+    g.model_speed[i_point] = 0;
+    g.model_pos[i_point] = dx_break; // Coordinate corrected for overshoot
+    g.model_ptype[i_point] = STOP_POINT;
   }
 
   else
@@ -388,8 +444,8 @@ void generate_model()
 
     // Describing the motion model.
     // First point (the other parameters were assigned above):
-    g.model_dir[g.Npoints] = g.direction;
-    g.model_accel[g.Npoints] = accel;
+    g.model_dir[i_point] = g.direction;
+    g.model_accel[i_point] = accel;
 
     // Maximum allowed speed for the move (positive):
     if (g.model_type == MODEL_GOTO)
@@ -397,7 +453,7 @@ void generate_model()
     else
       Vmax0 = SPEED_LIMIT;
 
-    char direction = g.direction;
+    signed char direction = g.direction;
 
     float dx1;
     if (g.moving == 0)
@@ -411,14 +467,14 @@ void generate_model()
     // Direction change point (never happens when starting from rest)
     if (g.moving == 1 && (accel > 0.0 && speed0 < 0.0 || accel < 0.0 && speed0 > 0.0))
     {
-      g.Npoints++;
+      i_point++;
       direction = -direction;  // Flipping the direction
-      g.model_dir[g.Npoints] = direction;
-      g.model_accel[g.Npoints] = accel;  // Maintaining the same acceleration
-      model_time[g.Npoints] = -speed0 / accel;
-      g.model_speed[g.Npoints] = 0.0;
-      g.model_pos[g.Npoints] = dx1;
-      g.model_ptype[g.Npoints] = DIR_CHANGE_POINT;
+      g.model_dir[i_point] = direction;
+      g.model_accel[i_point] = accel;  // Maintaining the same acceleration
+      model_time[i_point] = -speed0 / accel;
+      g.model_speed[i_point] = 0.0;
+      g.model_pos[i_point] = dx1;
+      g.model_ptype[i_point] = DIR_CHANGE_POINT;
     }
 
     // As first and last legs are now allowed to use different accelerations, we first compute
@@ -430,6 +486,9 @@ void generate_model()
     if (Vmax2 < 0.0)
       // Should never happen
     {
+      #ifdef SER_DEBUG
+      Serial.println("***********Vmax2 < 0.0!");
+      #endif
       stop_now();
       return;
     }
@@ -439,49 +498,56 @@ void generate_model()
       // We'll hit the speed limit, so need two more model points
     {
       // Hitting the speed limit point
-      g.Npoints++;
-      g.model_dir[g.Npoints] = direction;
-      g.model_accel[g.Npoints] = 0;
-      model_time[g.Npoints] = (direction * Vmax0 - g.model_speed[g.Npoints - 1]) / accel;
-      g.model_speed[g.Npoints] = direction * Vmax0;
-      g.model_pos[g.Npoints] = 0.5 * Vmax0 * Vmax0 / accel + dx1;
-      g.model_ptype[g.Npoints] = ZERO_ACCEL_POINT;
+      i_point++;
+      g.model_dir[i_point] = direction;
+      g.model_accel[i_point] = 0;
+      model_time[i_point] = (direction * Vmax0 - g.model_speed[i_point - 1]) / accel;
+      g.model_speed[i_point] = direction * Vmax0;
+      g.model_pos[i_point] = 0.5 * Vmax0 * Vmax0 / accel + dx1;
+      g.model_ptype[i_point] = ZERO_ACCEL_POINT;
 
       // The travel vector for the final leg:
       float dx2 = -0.5 * Vmax0 * Vmax0 / accel_last;
 
       // Leaving the speed limit point
-      g.Npoints++;
-      g.model_dir[g.Npoints] = direction;
-      g.model_accel[g.Npoints] = accel_last;
-      model_time[g.Npoints] = direction * (dx_prime - dx2 - g.model_pos[g.Npoints - 1]) / Vmax0;
-      g.model_speed[g.Npoints] = direction * Vmax0;
-      g.model_pos[g.Npoints] = dx_prime - dx2;
-      g.model_ptype[g.Npoints] = ACCEL_POINT;
+      i_point++;
+      g.model_dir[i_point] = direction;
+      g.model_accel[i_point] = accel_last;
+      model_time[i_point] = direction * (dx_prime - dx2 - g.model_pos[i_point - 1]) / Vmax0;
+      g.model_speed[i_point] = direction * Vmax0;
+      g.model_pos[i_point] = dx_prime - dx2;
+      g.model_ptype[i_point] = ACCEL_POINT;
     }
     else
       // Not hitting the speed limit, only one more model point
     {
       // Vmax point
-      g.Npoints++;
-      g.model_dir[g.Npoints] = direction;
-      g.model_accel[g.Npoints] = accel_last;  // Switching from acceleration to decelaration
-      model_time[g.Npoints] = (direction * Vmax - g.model_speed[g.Npoints - 1]) / accel;
-      g.model_speed[g.Npoints] = direction * Vmax;
-      g.model_pos[g.Npoints] = x1;
-      g.model_ptype[g.Npoints] = ACCEL_POINT;
+      i_point++;
+      g.model_dir[i_point] = direction;
+      g.model_accel[i_point] = accel_last;  // Switching from acceleration to decelaration
+      model_time[i_point] = (direction * Vmax - g.model_speed[i_point - 1]) / accel;
+      g.model_speed[i_point] = direction * Vmax;
+      g.model_pos[i_point] = x1;
+      g.model_ptype[i_point] = ACCEL_POINT;
     }
 
     // The final point:
-    g.Npoints++;
-    g.model_dir[g.Npoints] = direction;
-    g.model_accel[g.Npoints] = 0;
-    model_time[g.Npoints] = -g.model_speed[g.Npoints - 1] / g.model_accel[g.Npoints - 1];
-    g.model_speed[g.Npoints] = 0;
-    g.model_pos[g.Npoints] = dx_prime;
-    g.model_ptype[g.Npoints] = STOP_POINT;
+    i_point++;
+    g.model_dir[i_point] = direction;
+    g.model_accel[i_point] = 0;
+    model_time[i_point] = -g.model_speed[i_point - 1] / g.model_accel[i_point - 1];
+    g.model_speed[i_point] = 0;
+    g.model_pos[i_point] = dx_prime;
+    g.model_ptype[i_point] = STOP_POINT;
 
   }  // else (non-breaking models)
+
+  g.Npoints = i_point + 1;  // Number of model points
+
+  #ifdef SER_DEBUG
+  Serial.print("Generated model #");
+  Serial.println(g.model_type);
+  #endif
 
   float time1 = 0.0;
   for (byte i = 0; i < g.Npoints; i++)
@@ -489,6 +555,11 @@ void generate_model()
     if (model_time[i] < 0.0)
       // This should never happen, something got messed up
     {
+      #ifdef SER_DEBUG
+      Serial.print("***********model_time[i] < 0.0");
+      Serial.println(i);
+      Serial.println(model_time[i]);
+      #endif
       stop_now();
       return;
     }
@@ -504,6 +575,24 @@ void generate_model()
   g.model_init = 0;
   g.moving = 1;
 
+  #ifdef SER_DEBUG
+  Serial.print(g.limit1);  Serial.print("  ");  Serial.println(g.limit2);
+  Serial.println(g.Npoints);
+  Serial.print(g.model_ipos0);  Serial.print("  ");    Serial.println(g.model_ipos1);
+  Serial.println(g.model_t0);
+  Serial.println(g.direction);
+  Serial.println(g.dt_lost);
+  for (byte i=0; i<g.Npoints; i++)
+  {
+    Serial.print(g.model_dir[i]);  Serial.print("  ");
+    Serial.print(1e9*g.model_accel[i]);  Serial.print("  ");
+    Serial.print(g.model_time[i]);  Serial.print("  ");
+    Serial.print(1000*g.model_speed[i]);  Serial.print("  ");
+    Serial.print(g.model_ipos0+g.model_pos[i]);  Serial.print("  ");
+    Serial.println(g.model_ptype[i]);
+  }
+  #endif
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -517,7 +606,7 @@ float current_speed()
     return 0.0;
 
   // Finding the model leg for the current point:
-  char i0 = -1;
+  signed char i0 = -1;
   TIME_STYPE dt = g.t - g.model_t0; // Current (already synced) model time, relative to the initial model time
   for (byte i = 0; i < g.Npoints - 1; i++)
   {
@@ -544,6 +633,10 @@ void stop_now()
   //  timing();
   //  g.total_dt_timing =+ micros() - g.t0_timing;
 #endif
+  #ifdef SER_DEBUG
+  Serial.print("stop_now; ipos=");
+  Serial.println(g.ipos);
+  #endif
 
   g.moving = 0;
   g.model_init = 0;

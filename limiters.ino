@@ -79,6 +79,7 @@ void limiters()
       {
         g.calibrate_flag = 2;
         g.limit2 = g.ipos;
+        g.limit1 = -HUGE;
       }
       else
         // Calibration initiated by hitting limit1 switch by accident:
@@ -86,6 +87,7 @@ void limiters()
         g.calibrate_flag = 1;
         // Temporary value for limit1 coordinate:
         g.limit1 = g.ipos;
+        g.limit2 = HUGE;
       }
       g.error = 4;
     }

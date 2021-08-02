@@ -240,12 +240,14 @@ void motion_status()
   {
     my_setCursor(2, 5, 1);
     g.motion_status_code = motion_status_new;
-    
+
+    tft.print("   ");
+
     switch (g.motion_status_code)
     {
-      case STATUS_NONE:
-        tft.print("   ");
-        break;
+//      case STATUS_NONE:
+//        tft.print("   ");
+//        break;
 
       case STATUS_REWIND:
         tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, rewind_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
