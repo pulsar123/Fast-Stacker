@@ -2,29 +2,29 @@
 
 void my_setCursor(byte pos, byte line, byte set)
 /*
- * Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new display pixel coordinates -
- * stored in global vars g.x0, g.y0. If set=1, also execute tft.setCursor with these coordinates
- */
+   Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new display pixel coordinates -
+   stored in global vars g.x0, g.y0. If set=1, also execute tft.setCursor with these coordinates
+*/
 {
 
-  if (line < TFT_NY-1)
-    g.y0 = TOP_GAP - 1 + line*(LINE_GAP+FONT_HEIGHT);
-    else
+  if (line < TFT_NY - 1)
+    g.y0 = TOP_GAP - 1 + line * (LINE_GAP + FONT_HEIGHT);
+  else
     // Bottom (status) line is special, separated from the rest:
-    g.y0 = 128 - TOP_GAP - 1 - FONT_HEIGHT -3;
+    g.y0 = 128 - TOP_GAP - 1 - FONT_HEIGHT - 3;
 
 #ifdef TIMING
   if (line == TFT_NY)
-    g.y0 = 128 - TOP_GAP - 1 - 2*FONT_HEIGHT -6;
+    g.y0 = 128 - TOP_GAP - 1 - 2 * FONT_HEIGHT - 6;
 #endif
 
   if (pos < 7)
-    g.x0 = LEFT_GAP + pos*FONT_WIDTH;
-    else
-    g.x0 = LEFT_GAP + (pos+4)*FONT_WIDTH;
+    g.x0 = LEFT_GAP + pos * FONT_WIDTH;
+  else
+    g.x0 = LEFT_GAP + (pos + 4) * FONT_WIDTH;
 
-//  if (set == 1)
-    tft.setCursor(g.x0, g.y0);
+  //  if (set == 1)
+  tft.setCursor(g.x0, g.y0);
 
   return;
 }
@@ -89,9 +89,9 @@ void set_backlight()
 {
   byte level;
 
-//  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
+  //  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
 
-//  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
+  //  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
   return;
 }
@@ -187,9 +187,9 @@ void read_params(byte n)
 {
   byte straight_old = g.reg.straight;
   EEPROM.get( g.addr_reg[n], g.reg);
-    // Memorizing as default environment:
-    EEPROM.put( g.addr_reg[0], g.reg);
-    g.Nframes = Nframes();
+  // Memorizing as default environment:
+  EEPROM.put( g.addr_reg[0], g.reg);
+  g.Nframes = Nframes();
   display_all();
   sprintf(g.buffer, "   Loading Reg %2d   ", n);
   display_comment_line(g.buffer);
@@ -213,7 +213,7 @@ void save_params(byte n)
   EEPROM.put( g.addr_reg[n], g.reg);
   sprintf(g.buffer, "   Saved to Reg%1d    ", n);
   display_comment_line(g.buffer);
-//  tft.print("       ");
+  //  tft.print("       ");
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -244,11 +244,17 @@ void update_save_energy()
   return;
 #else
   if (g.reg.save_energy)
+  {
     // Not using the holding torque feature (to save batteries)
-    iochip.digitalWrite(EPIN_ENABLE, HIGH);
+    g.enable_flag = HIGH;
+    iochip.digitalWrite(EPIN_ENABLE, g.enable_flag);
+  }
   else
+  {
     // Using the holding torque feature (bad for batteries; good for holding torque and accuracy)
-    iochip.digitalWrite(EPIN_ENABLE, LOW);
+    g.enable_flag = LOW;
+    iochip.digitalWrite(EPIN_ENABLE, g.enable_flag);
+  }
   return;
 #endif
 }
@@ -322,24 +328,24 @@ void Read_limiters()
   limit_on = digitalRead(PIN_LIMITERS);
 #endif
 
-g.limit_on = limit_on;
-/*
-// Impulse noise suppression:
-  if (limit_on == 1)
-    {
-      g.limiter_counter++;
-      if (g.limiter_counter >= N_LIMITER)
+  g.limit_on = limit_on;
+  /*
+    // Impulse noise suppression:
+    if (limit_on == 1)
       {
-        g.limit_on = 1;
+        g.limiter_counter++;
+        if (g.limiter_counter >= N_LIMITER)
+        {
+          g.limit_on = 1;
+        }
       }
-    }
-    else
-    {
-      g.limit_on = 0;
-      g.limiter_counter = 0;
-    }
-*/
-  
+      else
+      {
+        g.limit_on = 0;
+        g.limiter_counter = 0;
+      }
+  */
+
   return;
 }
 

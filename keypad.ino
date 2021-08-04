@@ -740,21 +740,13 @@ void process_keypad()
             g.model_init = 1;
           }
           // All situations when we pause: during 2-point stacking, while travelling to the starting point, and while waiting between stacks in timelaspe mode:
-          // !!! v2.0: The below has to be handled separately, after the above MODEL_BREAK is complete
           if (g.stacker_mode == 2 || g.stacker_mode == 1 || g.stacker_mode == 4)
           {
             // Paused during 2-point stacking
             if (g.stacker_mode == 2)
             {
               g.paused = 1;
-              if (g.t - g.t0_stacking > CONT_STACKING_DELAY)
-              {
-                // Switches the frame counter back to the last accomplished frame
-                g.frame_counter--;
-                // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-                ipos_target = frame_coordinate();
-                go_to(ipos_target, SPEED_LIMIT);
-              }
+              g.delayed_goto = 1; // A signal that once the breaking is finished, a goto move to the previous frame will be initiated in camera()
             }
             // Paused while travelling to the starting point
             else if (g.stacker_mode == 1)

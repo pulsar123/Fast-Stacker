@@ -11,6 +11,19 @@ void camera()
   if (g.error > 0 || g.uninterrupted == 1)
     return;
 
+  // Paused during 2-point stacking; rewinding to the last taken frame position
+  if (g.delayed_goto==1 && g.model_type==MODEL_NONE && g.t - g.t0_stacking > CONT_STACKING_DELAY)
+  {
+      g.delayed_goto = 0;
+      // Switches the frame counter back to the last accomplished frame
+      g.frame_counter--;
+      // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
+      #ifdef SER_DEBUG
+      Serial.println("--Delayed goto--");
+      #endif
+      go_to(frame_coordinate(), SPEED_LIMIT);
+  }
+
 
   if (g.stacker_mode == 1 && g.moving == 0 && g.model_init == 0 && g.backlashing == 0 && g.start_stacking == 0)
     // We are here if the rail had to travel to the starting point for stacking, and now is ready for stacking

@@ -25,7 +25,7 @@
 #define TIME_STYPE s32
 
 //////// Debugging options ////////
-#define SER_DEBUG  // Debugging using serial interface
+//#define SER_DEBUG  // Debugging using serial interface
 // If defined, no display updates when moving
 //#define NO_DISP
 // For timing the main loop:
@@ -66,7 +66,7 @@ const COORD_TYPE BL_STEP = 1;
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
-//#define SHOW_RAW
+#define SHOW_RAW
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
 //#define TEST_SWITCH
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
@@ -112,7 +112,7 @@ TIME_STYPE SHUTTER_OFF_DELAY2 = 100000;
 // The camera exposure also should be long enough (at least 0.25s for Canon 50D) to capture the flash.
 // FRSP should only be used with non-continuous stacking, with DELAY1+DELAY2 long enough for multiple silent pictures to be taken successfully.
 // (For Canon 50D at least 5.5s: DELAY1=4s, DELAY2=1.5s)
-const TIME_STYPE SHUTTER_ON_DELAY2 = 500000; // !!! 1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
+const TIME_STYPE SHUTTER_ON_DELAY2 = 500000; //  1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
 const TIME_STYPE SHUTTER_OFF_DELAY2 = 100000; // 100000
 #endif
 
@@ -511,6 +511,8 @@ struct global
     #define STATUS_REVERSE 2
     #define STATUS_FORWARD 3
     #define STATUS_STRAIGHT 4
+  byte delayed_goto; // set to 1 when pausing focus stacking - a signal to execute goto inside camera() after the breaking is finished
+  byte enable_flag; // Tracks down status of the motor enable pin: HIGH: disable motor, LOW: enable motor
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
@@ -542,7 +544,7 @@ struct global
   char key_old;  // peviously pressed key; used in keypad()
   COORD_TYPE starting_point; // The starting point in the focus stacking with two points
   COORD_TYPE destination_point; // The destination point in the focus stacking with two points
-  byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking
+  byte stacker_mode;  // 0: default (rewind etc.); 1: pre-winding for focus stacking; 2: 2-point focus stacking; 3: single-point stacking; 4: waiting between stacks in a timelapse sequence
   short Nframes; // Number of frames for 2-point focus stacking
   short frame_counter; // Counter for shots
   COORD_TYPE ipos_to_shoot; // Position to shoot the next shot during focus stacking

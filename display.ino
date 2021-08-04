@@ -32,8 +32,8 @@ void display_stuff()
     if (!g.alt_flag)
 //!!!      display_all();
 //    else
-      //       battery_status();
-      display_status_line();
+       battery_status();
+//      display_status_line();
   }
 
   return;

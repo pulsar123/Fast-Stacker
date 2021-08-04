@@ -48,11 +48,12 @@ void initialize(byte factory_reset)
   g.current_point = -1;
   g.limit1 = 0;
   g.accident = 0;
+  g.delayed_goto = 0;
 //  g.limiter_counter = 0;
 
   if (factory_reset)
   {
-    g.calibrate_flag = 0; //!!!! 1
+    g.calibrate_flag = 1;
     g.error = 4;
     // Parameters for the reg structure:
     g.reg.i_n_shots = 9;

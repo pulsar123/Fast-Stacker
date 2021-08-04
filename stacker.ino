@@ -106,7 +106,8 @@ void setup() {
   pinMode(PIN_DIR, OUTPUT);
   pinMode(PIN_STEP, OUTPUT);
 #endif
-  iochip.digitalWrite(EPIN_ENABLE, HIGH);
+  g.enable_flag = HIGH;
+  iochip.digitalWrite(EPIN_ENABLE, g.enable_flag);
   pinMode(PIN_LIMITERS, INPUT_PULLUP);
 
   g.error = 0;
@@ -140,7 +141,6 @@ void setup() {
   // Should be the last line in setup:
   g.setup_flag = 0;
 
-//!!!!
 /*
 int tmp1, tmp2;
 char buf21[21];

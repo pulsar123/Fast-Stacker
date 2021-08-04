@@ -46,9 +46,9 @@ void motor_control()
   // Checking just in case (should never happen):
   if (g.model_init == 1 && g.model_type == MODEL_NONE)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("g.model_init == 1 && g.model_type == MODEL_NONE!");
-    #endif
+#endif
     g.model_init == 0;
     return;
   }
@@ -82,7 +82,7 @@ void motor_control()
 
   // At this point, model and real times are guaranteed to be in sync (via g.dt_lost)
 
-//!!!  if (g.model_init == 1 && g.uninterrupted == 0)
+  //!!!  if (g.model_init == 1 && g.uninterrupted == 0)
   if (g.model_init == 1)
     // Optionally updating the model
   {
@@ -92,6 +92,15 @@ void motor_control()
     /// If the above command set model_type to NONE, exit:
     if (g.model_type == MODEL_NONE)
       return;
+
+    if (g.reg.save_energy && g.enable_flag==HIGH)
+    {
+#ifndef DISABLE_MOTOR
+      g.enable_flag = LOW;
+      iochip.digitalWrite(EPIN_ENABLE, g.enable_flag);
+      delay(ENABLE_DELAY_MS);
+#endif
+    }
   }
 
   // Finding the model leg for the current point:
@@ -103,23 +112,23 @@ void motor_control()
     {
       i0 = i;
       /*
-    #ifdef SER_DEBUG
-    if (g.model_type==MODEL_GOTO)
-    {
-      Serial.print("i = ");
-      Serial.println(i);
-    }
-    #endif
-    */
+        #ifdef SER_DEBUG
+        if (g.model_type==MODEL_GOTO)
+        {
+        Serial.print("i = ");
+        Serial.println(i);
+        }
+        #endif
+      */
       break;
     }
   }
   if (i0 == -1)
     // Couldn't find a leg; a problem, should never happen. Emergency stop
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("***********Couldn't find a leg!");
-    #endif
+#endif
     stop_now();
     return;
   }
@@ -128,9 +137,9 @@ void motor_control()
   // This is where all normal motions should end
   if (i0 == g.Npoints - 2 && g.ipos == g.model_ipos1)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("Proper stop");
-    #endif
+#endif
     stop_now();
     return;
   }
@@ -147,13 +156,13 @@ void motor_control()
     float delta = g.direction * (g.model_ipos0 + g.model_pos[i] - g.ipos); // How far is the leg's starting point, in the direction of motion
     // If a direction change happenes before the next step, we change direction now
     /*
-    #ifdef SER_DEBUG
-    if (g.model_ptype[i]==DIR_CHANGE_POINT)
-    {
+      #ifdef SER_DEBUG
+      if (g.model_ptype[i]==DIR_CHANGE_POINT)
+      {
       Serial.print("delta = ");
       Serial.println(delta);
-    }
-    #endif
+      }
+      #endif
     */
     if (g.model_ptype[i] == DIR_CHANGE_POINT && delta < 1.0 && delta >= 0.0)
     {
@@ -170,12 +179,12 @@ void motor_control()
       d_pos_next = g.ipos + g.direction - g.model_pos[i] - g.model_ipos0;
       d_pos = 0.0;   // Updating the current position in the updated leg
 
-      #ifdef SER_DEBUG
+#ifdef SER_DEBUG
       Serial.print("Dir change; ipos=");
       Serial.print(g.ipos);
       Serial.print(", delta=");
       Serial.println(delta);
-      #endif
+#endif
 
       break;
     }
@@ -239,9 +248,9 @@ void motor_control()
         else
           // This should never happen. Couldn't find a leg for the next step. Emergency stop
         {
-          #ifdef SER_DEBUG
+#ifdef SER_DEBUG
           Serial.println("***********Couldn't find a leg for the next step!");
-          #endif
+#endif
           stop_now();
           return;
         }
@@ -254,18 +263,18 @@ void motor_control()
   // Failed to predict the next step. This should never happen. Instant stop
   if (t_step == 0 || i_next == -1 || t_step < g.t)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("***********Failed to predict the next step!");
     Serial.print(t_step); Serial.print("  "); Serial.print(i_next); Serial.print("  "); Serial.println(g.t);
     Serial.print(g.ipos); Serial.print("  ");  Serial.println(d_pos0_next);
     Serial.print(dt); Serial.print("  ");  Serial.println(i0);
-    #endif
+#endif
     stop_now();
     return;
   }
 
   // The final leg (before hitting the limits) of FF and REWIND models is uninterrupted, to prevent issues:
-  if (i_next == g.Npoints-1 && (g.model_type == MODEL_FF || g.model_type == MODEL_REWIND))
+  if (i_next == g.Npoints - 1 && (g.model_type == MODEL_FF || g.model_type == MODEL_REWIND))
     g.uninterrupted = 1;
 
   g.t_next_step = t_step;  // Absolute time for the next step
@@ -305,9 +314,9 @@ void generate_model()
 
   if (g.model_type == MODEL_NONE || g.model_init == 0)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("***********g.model_type == MODEL_NONE || g.model_init == 0");
-    #endif
+#endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -315,9 +324,9 @@ void generate_model()
   // We are already at the destination, so just returning (only for GOTO model):
   if (g.model_type == MODEL_GOTO && g.ipos == g.model_ipos1 && g.moving == 0)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("We are already at the destination!");
-    #endif
+#endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -325,10 +334,10 @@ void generate_model()
   // Limits enforced
   if (g.model_type == MODEL_FF && g.ipos >= g.limit2 || g.model_type == MODEL_REWIND && g.ipos <= g.limit1)
   {
-    #ifdef SER_DEBUG
+#ifdef SER_DEBUG
     Serial.println("Limits enforced");
     Serial.print(g.model_type);  Serial.print("  "); Serial.println(g.ipos);
-    #endif
+#endif
     stop_now();  // This also will be a signal to immediately exit from motor_control
     return;
   }
@@ -479,16 +488,16 @@ void generate_model()
 
     // As first and last legs are now allowed to use different accelerations, we first compute
     // the coordinate of the point where the maximum speed (in the absence of speed limits) would be reached:
-    float x1 = (dx1*accel - dx_prime*accel_last) / (accel - accel_last);
+    float x1 = (dx1 * accel - dx_prime * accel_last) / (accel - accel_last);
 
     // Maximum attained speed (if there were no speed limits), squared
-    float Vmax2 = 2*accel * (x1 - dx1);
+    float Vmax2 = 2 * accel * (x1 - dx1);
     if (Vmax2 < 0.0)
       // Should never happen
     {
-      #ifdef SER_DEBUG
+#ifdef SER_DEBUG
       Serial.println("***********Vmax2 < 0.0!");
-      #endif
+#endif
       stop_now();
       return;
     }
@@ -544,10 +553,10 @@ void generate_model()
 
   g.Npoints = i_point + 1;  // Number of model points
 
-  #ifdef SER_DEBUG
+#ifdef SER_DEBUG
   Serial.print("Generated model #");
   Serial.println(g.model_type);
-  #endif
+#endif
 
   float time1 = 0.0;
   for (byte i = 0; i < g.Npoints; i++)
@@ -555,11 +564,11 @@ void generate_model()
     if (model_time[i] < 0.0)
       // This should never happen, something got messed up
     {
-      #ifdef SER_DEBUG
+#ifdef SER_DEBUG
       Serial.print("***********model_time[i] < 0.0");
       Serial.println(i);
       Serial.println(model_time[i]);
-      #endif
+#endif
       stop_now();
       return;
     }
@@ -571,27 +580,27 @@ void generate_model()
     g.model_time[i] = roundMy(time1);
   }
 
-// Threse should be at the very end. Now officially we are moving (even though we haven't made a single step yet).
+  // Threse should be at the very end. Now officially we are moving (even though we haven't made a single step yet).
   g.model_init = 0;
   g.moving = 1;
 
-  #ifdef SER_DEBUG
+#ifdef SER_DEBUG
   Serial.print(g.limit1);  Serial.print("  ");  Serial.println(g.limit2);
   Serial.println(g.Npoints);
   Serial.print(g.model_ipos0);  Serial.print("  ");    Serial.println(g.model_ipos1);
   Serial.println(g.model_t0);
   Serial.println(g.direction);
   Serial.println(g.dt_lost);
-  for (byte i=0; i<g.Npoints; i++)
+  for (byte i = 0; i < g.Npoints; i++)
   {
     Serial.print(g.model_dir[i]);  Serial.print("  ");
-    Serial.print(1e9*g.model_accel[i]);  Serial.print("  ");
+    Serial.print(1e9 * g.model_accel[i]);  Serial.print("  ");
     Serial.print(g.model_time[i]);  Serial.print("  ");
-    Serial.print(1000*g.model_speed[i]);  Serial.print("  ");
-    Serial.print(g.model_ipos0+g.model_pos[i]);  Serial.print("  ");
+    Serial.print(1000 * g.model_speed[i]);  Serial.print("  ");
+    Serial.print(g.model_ipos0 + g.model_pos[i]);  Serial.print("  ");
     Serial.println(g.model_ptype[i]);
   }
-  #endif
+#endif
 
   return;
 }
@@ -633,10 +642,10 @@ void stop_now()
   //  timing();
   //  g.total_dt_timing =+ micros() - g.t0_timing;
 #endif
-  #ifdef SER_DEBUG
+#ifdef SER_DEBUG
   Serial.print("stop_now; ipos=");
   Serial.println(g.ipos);
-  #endif
+#endif
 
   g.moving = 0;
   g.model_init = 0;
@@ -656,7 +665,8 @@ void stop_now()
   if (g.reg.save_energy)
   {
 #ifndef DISABLE_MOTOR
-    iochip.digitalWrite(EPIN_ENABLE, HIGH);
+    g.enable_flag = HIGH;
+    iochip.digitalWrite(EPIN_ENABLE, g.enable_flag);
 #endif
     delay(ENABLE_DELAY_MS);
   }
@@ -758,6 +768,9 @@ void go_to(COORD_TYPE ipos1, float speed_max)
 
 */
 {
+  // We can only initiate GoTo from rest:
+  if (g.model_type != MODEL_NONE)
+    return;
 
   g.model_init = 1;
   g.model_type = MODEL_GOTO;
