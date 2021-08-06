@@ -16,27 +16,27 @@ void backlash()
 
   // Should not be moving or breaking, and should need >0 backlash compensation:
   // Don't do anything while calibrating.
-  if (g.calibrate_flag || g.uninterrupted || g.moving || g.backlashing || g.BL_counter == 0)
+  if (g.calibrate_flag || g.uninterrupted || g.moving || g.Backlashing || g.BL_counter == 0)
     return;
 
-  if (g.BL_counter > 0)
+  if (g.reg.backlash_on*g.BL_counter > 0)
   {
     // Backlash compensation.
     go_to(g.ipos + g.BL_counter, SPEED_LIMIT);
 
     // This should be done after go_to call:
-    g.backlashing = 1;
+    g.Backlashing = 1;
   }
 
   // This is the special case, only used for the final move of backlash compensation after reversing the rail direction (*1):
-  if (g.backlash_init == 3)
+  if (g.Backlash_init == 3)
   {
     // Backlash compensation.
-    go_to(g.ipos + BACKLASH_2, SPEED_LIMIT);
+    go_to(g.ipos + g.reg.backlash_on*BACKLASH_2, SPEED_LIMIT);
 
     // This should be done after go_to call:
-    g.backlashing = 1;
-    g.backlash_init = 0;
+    g.Backlashing = 1;
+    g.Backlash_init = 0;
   }
 
   return;

@@ -69,10 +69,10 @@ void motor_control()
     // and gets smaller as we move in the good - positive - direction):
     g.BL_counter -= g.direction;
     // Backlash cannot be negative:
-    if (g.BL_counter < 0)
+    if (g.reg.backlash_on * g.BL_counter < 0)
       g.BL_counter = 0;
     // and cannot be larger than g.backlash:
-    if (g.BL_counter > g.backlash)
+    if (g.reg.backlash_on==1 && (g.BL_counter > g.backlash) || g.reg.backlash_on==-1 && (g.BL_counter < g.backlash))
       g.BL_counter = g.backlash;
 
     // Syncing times
@@ -368,8 +368,8 @@ void generate_model()
     g.model_ipos1 = g.ipos + dx_break_int;  // The target coordinate is integer, nearest to the true number
     // Revised value for dx_break, after making it integer and adding a small overshoot (0.5-1 steps):
     dx_break = (float)dx_break_int + g.direction * OVERSHOOT;
-    // Backlash compensation:
-    if (g.direction == -1)
+    // Backlash compensation when moving in the bad direction:
+    if (g.direction == -g.reg.backlash_on)
     {
       g.model_ipos1 = g.model_ipos1 - g.backlash;
       dx_break = dx_break - g.backlash;
@@ -396,7 +396,7 @@ void generate_model()
     //++++++++++++++++++++  GOTO, REWIND and FF models +++++++++++++++++++++++
   {
     // Backlash compensation for GOTO model:
-    if (g.model_type == MODEL_GOTO && g.model_ipos1 < g.ipos)
+    if (g.model_type == MODEL_GOTO && (g.reg.backlash_on==1 && (g.model_ipos1 < g.ipos) || g.reg.backlash_on==-1 && (g.model_ipos1 > g.ipos)))
       g.model_ipos1 = g.model_ipos1 - g.backlash;
 
     // Models FF and REWIND do not have explicit destination. We set it here to the corresponding soft limit
@@ -674,7 +674,7 @@ void stop_now()
   // Saving the current position to EEPROM:
   EEPROM.put( ADDR_POS, g.ipos );
 
-  if (g.stacker_mode >= 2 && g.backlashing == 0 && g.continuous_mode == 1)
+  if (g.stacker_mode >= 2 && g.Backlashing == 0 && g.continuous_mode == 1)
   {
     // Ending focus stacking
     g.stacker_mode = 0;
@@ -682,7 +682,7 @@ void stop_now()
 
   // We can lower the breaking flag now, as we already stopped:
   g.uninterrupted = 0;
-  g.backlashing = 0;
+  g.Backlashing = 0;
   // Refresh the whole display:
   display_all();
   if (g.noncont_flag > 0)

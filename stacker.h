@@ -346,7 +346,7 @@ struct regist
   byte i_n_timelapse; // counter for N_TIMELAPSE parameter
   byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
-  byte backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0
+  signed char backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0; =-1 when g.backlash=-BACKLASH
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
   COORD_TYPE point[2];  // two memory points:
@@ -570,14 +570,14 @@ struct global
   TIME_UTYPE t0_stacking; // time when stacking was initiated;
   byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
   COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
-  byte backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
+  byte Backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
   byte setup_flag; // Flag used to detect if we are in the setup section (then the value is 1; otherwise 0)
   byte alt_flag; // 0: normal display; 1: alternative display
   byte alt_kind; // The kind of alternative display: 1: *
   char tmp_char;
-  byte backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
+  byte Backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   char buf6[6]; // Buffer to store the stacking length for displaying
   char buf7[7];
   short timelapse_counter; // Counter for the time lapse feature
@@ -586,6 +586,8 @@ struct global
   byte end_of_stacking; // =1 when we are done with stacking (might still be moving, in continuoius mode)
   byte timelapse_mode; // =1 during timelapse mode, 0 otherwise
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
+  byte point1; // First point for stacking (either FOREGROUND or BACKGROUND, depending on the backlash direction)
+  byte point2; // Second point for stacking (either BACKGROUND or FOREGROUND, depending on the backlash direction)
 //  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
   TIME_UTYPE t_buzz; // timer for the buzzer

@@ -64,7 +64,7 @@ void initialize(byte factory_reset)
     g.reg.i_n_timelapse = 0;
     g.reg.i_dt_timelapse = 5;
     g.reg.mirror_lock = 1;
-    g.reg.backlash_on = 1;
+    g.reg.backlash_on = 0;
     update_backlash();
     g.reg.straight = 1;
     g.reg.save_energy = 1;
@@ -123,26 +123,26 @@ void initialize(byte factory_reset)
   g.N_repeats = 0;
   g.uninterrupted = 0;
   g.uninterrupted2 = 0;
-  g.backlashing = 0;
+  g.Backlashing = 0;
   g.frame_counter = 0;
   g.coords_change = 0;
   g.start_stacking = 0;
   g.make_shot = 0;
   g.paused = 0;
-  g.starting_point = g.reg.point[FOREGROUND];
+  g.starting_point = g.reg.point[g.point1];
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
 
   if (factory_reset)
   {
     g.BL_counter = 0;
-    g.backlash_init = 0;
+    g.Backlash_init = 0;
   }
   else
   {
     // As we cannot be sure about the initial state of the rail, we are assuming the worst: a need for the maximum backlash compensation:
-    g.BL_counter = g.backlash;
-    g.backlash_init = 1;
+    g.BL_counter = g.backlash;  // Can be + or -
+    g.Backlash_init = 1;
   }
   
   g.continuous_mode = 1;

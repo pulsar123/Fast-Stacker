@@ -225,9 +225,9 @@ void process_keypad()
           // Using the simplest approach which will result the last shot to always slightly undershoot
           g.Nframes = Nframes();
           // Always starting from the foreground point, for full backlash compensation:
-          go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
-          g.starting_point = g.reg.point[FOREGROUND];
-          g.destination_point = g.reg.point[BACKGROUND];
+          go_to(g.reg.point[g.point1], SPEED_LIMIT);
+          g.starting_point = g.reg.point[g.point1];
+          g.destination_point = g.reg.point[g.point2];
           g.stacker_mode = 1;
           // This is a non-continuous mode:
           g.continuous_mode = 0;
@@ -300,8 +300,11 @@ void process_keypad()
           set_accel_v();
           break;
 
-        case 'B': // *B: Backlash compensation on / off
-          g.reg.backlash_on = 1 - g.reg.backlash_on;
+        case 'B': // *B: Backlash compensation: -1, 0, 1 (camera looking down; no backlash; camera looking up)
+          if (g.reg.backlash_on < 1)
+            g.reg.backlash_on++;
+          else
+            g.reg.backlash_on = -1;
           g.current_point = -1;
           update_backlash();
           display_all();
@@ -465,7 +468,7 @@ void process_keypad()
               goto_memory_point(2);
               break;
 
-            case '0': // 0: Start shooting (2-point focus stacking) from the foreground point, or goto current memory point
+            case '0': // 0: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
               if (g.moving)
                 break;
               // Checking the correctness of point1/2
@@ -500,7 +503,7 @@ void process_keypad()
                 else if (g.paused == 2)
                   // Restarting from a pause which happened during the initial travel to the starting point
                 {
-                  go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
+                  go_to(g.reg.point[g.point1], SPEED_LIMIT);
                   g.stacker_mode = 1;
                   g.start_stacking = 0;
                   g.paused = 0;
@@ -511,9 +514,9 @@ void process_keypad()
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
-                  go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
-                  g.starting_point = g.reg.point[FOREGROUND];
-                  g.destination_point = g.reg.point[BACKGROUND];
+                  go_to(g.reg.point[g.point1], SPEED_LIMIT);
+                  g.starting_point = g.reg.point[g.point1];
+                  g.destination_point = g.reg.point[g.point2];
                   g.stacker_mode = 1;
                   g.continuous_mode = 1;
                   g.start_stacking = 0;

@@ -70,7 +70,7 @@ void display_all()
       sprintf(g.buffer, "N=%-3d", N_TIMELAPSE[g.reg.i_n_timelapse]);
       my_setCursor(0, 1, 1);
       tft.print(g.buffer);
-      sprintf(g.buffer, "BL=%1d", g.reg.backlash_on);
+      sprintf(g.buffer, "BL=%2d", g.reg.backlash_on);
       my_setCursor(7, 1, 1);
       tft.print(g.buffer);
       // Line 3:
@@ -609,7 +609,7 @@ void display_current_position()
 
   //!!! added  g.moving==1 || g.model_init==1
   //  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.model_init==1)
-  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag)
+  if (g.error || g.moving == 0 && g.reg.backlash_on*g.BL_counter > 0 || g.alt_flag)
     return;
 
   if (g.reg.straight)

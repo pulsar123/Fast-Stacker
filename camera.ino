@@ -25,7 +25,7 @@ void camera()
   }
 
 
-  if (g.stacker_mode == 1 && g.moving == 0 && g.model_init == 0 && g.backlashing == 0 && g.start_stacking == 0)
+  if (g.stacker_mode == 1 && g.moving == 0 && g.model_init == 0 && g.Backlashing == 0 && g.start_stacking == 0)
     // We are here if the rail had to travel to the starting point for stacking, and now is ready for stacking
   {
     g.t0_mil = millis();
@@ -59,9 +59,12 @@ void camera()
       // Estimating the required speed in microsteps per microsecond
       speed = target_speed();
       if (g.stacker_mode == 3)
-        // 1-point stacking
+        // 1-point stacking, in the good direction
       {
-        go_to(g.limit2, speed);
+        if (g.reg.backlash_on >= 0)
+          go_to(g.limit2, speed);
+          else
+          go_to(g.limit1, speed);
       }
       else if (g.stacker_mode == 2)
         // 2-point stacking (after moving to the starting point)
@@ -106,7 +109,7 @@ void camera()
 
   // Triggering camera shutter when needed
   // This block is shared between continuous and non-continuous modes (in the latter case, it does the first shutter trigger, to lock the mirror)
-  if (g.stacker_mode >= 2 && g.backlashing == 0 && g.start_stacking == 3)
+  if (g.stacker_mode >= 2 && g.Backlashing == 0 && g.start_stacking == 3)
   {
     if (g.ipos == g.ipos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
@@ -231,7 +234,7 @@ void camera()
         g.end_of_stacking = 0;
         g.t0_mil = g.t_mil;
         g.timelapse_counter++;
-        go_to(g.reg.point[FOREGROUND], SPEED_LIMIT);
+        go_to(g.reg.point[g.point1], SPEED_LIMIT);
         g.stacker_mode = 1;
         g.start_stacking = 0;
       }

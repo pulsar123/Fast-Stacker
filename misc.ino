@@ -142,14 +142,14 @@ void rail_reverse(byte fix_points)
   g.BL_counter = g.backlash;
   // This will instruct the backlash module to do BACKLASH_2 travel at the end, to compensate for BL in reveresed coordinates
   d_ipos = g.limit2 + g.backlash;
-  if (g.reg.backlash_on)
+  if (g.reg.backlash_on != 0)
   {
-    d_ipos = d_ipos - BACKLASH_2;
-    g.backlash_init = 2;
+    d_ipos = d_ipos - g.reg.backlash_on*BACKLASH_2;
+    g.Backlash_init = 2;
   }
   else
   {
-    g.backlash_init = 1;
+    g.Backlash_init = 1;
   }
   // Updating the current coordinate in the new (reversed) frame of reference:
   g.ipos = d_ipos - g.ipos;
@@ -157,9 +157,9 @@ void rail_reverse(byte fix_points)
   if (fix_points)
   {
     // Updating the current two points positions:
-    ipos_target = d_ipos - g.reg.point[BACKGROUND];
-    g.reg.point[BACKGROUND] = d_ipos - g.reg.point[FOREGROUND];
-    g.reg.point[FOREGROUND] = ipos_target;
+    ipos_target = d_ipos - g.reg.point[g.point2];
+    g.reg.point[g.point2] = d_ipos - g.reg.point[g.point1];
+    g.reg.point[g.point1] = ipos_target;
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
@@ -173,7 +173,11 @@ void rail_reverse(byte fix_points)
 COORD_TYPE frame_coordinate()
 // Coordinate (COORD_TYPE type) of a frame given by g.frame_number, in 2-point stacking
 {
-  return g.starting_point + g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  // Stacking direction depends on the backlash direction (we always move in the good direction)
+  if (g.reg.backlash_on >= 0)
+    return g.starting_point + g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+    else
+    return g.starting_point - g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -223,14 +227,27 @@ void save_params(byte n)
 void update_backlash()
 // Call this every time g.reg.backlash_on changes
 {
-  if (g.reg.backlash_on)
+  if (g.reg.backlash_on != 0)
   {
-    g.backlash = BACKLASH;
+    g.backlash = g.reg.backlash_on * BACKLASH; // Now can be + or -
     g.BL_counter = g.backlash;
-    g.backlash_init = 1;
+    g.Backlash_init = 1;
   }
   else
-    g.backlash = 1;
+    g.backlash = 0;
+
+  if (g.reg.backlash_on >= 0)
+  {
+    g.point1 = FOREGROUND;
+    g.point2 = BACKGROUND;
+  }
+  else
+  {
+    g.point2 = FOREGROUND;
+    g.point1 = BACKGROUND;   
+  }
+
+  
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
