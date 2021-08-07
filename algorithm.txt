@@ -60,6 +60,14 @@ d_pos0_next = -1;
 i_next = 0
   g.t_next_step
   g.ipos_next_step = g.ipos -1
+  
+----
+
+g.ipos =   g.ipos_next_step
+g.dt_lost updated
+g.t updated
+
+
 
 
 

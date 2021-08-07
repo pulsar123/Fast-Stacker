@@ -56,6 +56,7 @@ void initialize(byte factory_reset)
     g.calibrate_flag = 1;
     g.error = 4;
     // Parameters for the reg structure:
+    g.reg.i_mode = ONE_SHOT_MODE;
     g.reg.i_n_shots = 9;
     g.reg.i_fps = 16;
     g.reg.i_first_delay = 4;
@@ -75,12 +76,10 @@ void initialize(byte factory_reset)
     }
     g.limit2 = 32000;
     g.ipos = DELTA_LIMITER;
-    g.backlight = 0;
 
     g.reg.i_mm_per_frame = 5;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     EEPROM.put( ADDR_POS, g.ipos );
-    EEPROM.put( ADDR_BACKLIGHT, g.backlight);
 
     // Initializing all EEPROM registers (including the default one):
     for (byte jj = 0; jj <= N_REGS; jj++)
@@ -97,7 +96,6 @@ void initialize(byte factory_reset)
     // Reading the values from EEPROM:
     EEPROM.get( ADDR_POS, g.ipos );
     EEPROM.get( ADDR_LIMIT2, g.limit2);
-    EEPROM.get( ADDR_BACKLIGHT, g.backlight);
     // Reading the default memory register:
     EEPROM.get(g.addr_reg[0], g.reg);
     update_backlash();
@@ -106,8 +104,6 @@ void initialize(byte factory_reset)
 
   // Five possible floating point values for acceleration
   set_accel_v();
-
-  set_backlight();
 
   g.model_ipos0 = g.ipos;
   g.t = micros();

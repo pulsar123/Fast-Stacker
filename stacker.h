@@ -249,10 +249,6 @@ const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refr
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
 const byte N_REGS = 5;
-// Number of backlight levels (not used in h2.0):
-#define N_BACKLIGHT 4
-// Specific backlight levels (N_BACKLIGHT of them; 255 is the maximum value):
-const byte Backlight[] = {0, 110, 127, 255};
 // If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
 //#define ROUND_OFF
 // Number of values for the input parameters (mm_per_frame etc):
@@ -337,6 +333,10 @@ const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_
 // Structure to have custom parameters saved to EEPROM
 struct regist
 {
+  byte i_mode; // counter for the current mode:
+    #define ONE_SHOT_MODE 0
+    #define CONT_MODE 1
+    #define NONCONT_MODE 2
   byte i_n_shots; // counter for n_shots parameter;
   byte i_mm_per_frame; // counter for mm_per_frame parameter;
   byte i_fps; // counter for fps parameter;
@@ -361,8 +361,7 @@ const short dA = sizeof(COORD_TYPE);
 // EEPROM addresses: make sure they don't go beyong the ESP8266 EEPROM size of 4k!
 const int ADDR_POS = 0;  // Current position (integer, 4 bytes)
 const int ADDR_LIMIT2 = ADDR_POS + 4; // pos_int for the background limiter (4 bytes)
-const int ADDR_BACKLIGHT = ADDR_LIMIT2 + dA;  // backlight level (1 byte)
-const int ADDR_REG1 = ADDR_BACKLIGHT + 2;  // Start of default + N_REGS custom memory registers for macro mode
+const int ADDR_REG1 = ADDR_LIMIT2 + dA;  // Start of default + N_REGS custom memory registers for macro mode
 const int ADDR_END = ADDR_REG1 + (N_REGS + 1) * SIZE_REG;   // End of used EEPROM
 
 // 2-char bitmaps to display the battery status; 5 levels: 0 for empty, 4 for full:
@@ -562,7 +561,6 @@ struct global
   byte comment_flag; // flag used to trigger the comment line briefly
   byte x0, y0;  // Display pixel coordinates, set in misc/my_setCursor
   byte error; // error code (no error if 0); 1: initial limiter on or cable disconnected; 2: battery drained; non-zero value will disable the rail (with some exceptions)
-  byte backlight; // backlight level;
   COORD_TYPE coords_change; // if >0, coordinates have to change (because we hit limit1, so we should set limit1=0 at some point)
   byte start_stacking; // =1 if we just initiated focus stacking, =2 when AF is triggered initially, =3 after CONT_STACKING_DELAY delay in continuous mode, =0 when no stacking
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise

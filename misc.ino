@@ -82,19 +82,6 @@ COORD_TYPE roundMy(float x)
 }
 
 
-
-void set_backlight()
-// Setting the LCD backlight. Up to 32 levels.
-// Unused in h2.0!
-{
-  byte level;
-
-  //  analogWrite(PIN_LCD_LED, Backlight[g.backlight]);
-
-  //  EEPROM.put( ADDR_BACKLIGHT, g.backlight);
-
-  return;
-}
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 

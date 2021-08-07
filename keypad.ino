@@ -159,12 +159,11 @@ void process_keypad()
         display_comment_line(g.buffer);
         break;
 
-      case '4': // #4: Backlighting control
-        g.backlight++;
-        // LCD unstable for medium backlight; using only two levels:
-        if (g.backlight >= N_BACKLIGHT)
-          g.backlight = 0;
-        set_backlight();
+      case '4': // #4: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
+        g.i_mode++;
+        if (g.i_mode > 2)
+          g.i_mode = 0;
+        set_mode(); //????
         break;
 
       case '*': // #*: Factory reset
@@ -464,7 +463,7 @@ void process_keypad()
               goto_memory_point(1);
               break;
 
-            case 'C':  // C: Go to the background point (#4)
+            case 'C':  // C: Go to the background point (#2)
               goto_memory_point(2);
               break;
 
