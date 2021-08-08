@@ -159,13 +159,6 @@ void process_keypad()
         display_comment_line(g.buffer);
         break;
 
-      case '4': // #4: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
-        g.i_mode++;
-        if (g.i_mode > 2)
-          g.i_mode = 0;
-        set_mode(); //????
-        break;
-
       case '*': // #*: Factory reset
         if (g.paused || g.limit_on)
           break;
@@ -213,34 +206,6 @@ void process_keypad()
           break;
         go_to(g.starting_point, SPEED_LIMIT);
         display_comment_line("    Going to P0     ");
-        break;
-
-      case '0': // #0: Start 2-point focus stacking from the foreground point in a non-continuous mode
-        if (g.paused)
-          break;
-        // Checking the correctness of point1/2
-        if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
-        {
-          // Using the simplest approach which will result the last shot to always slightly undershoot
-          g.Nframes = Nframes();
-          // Always starting from the foreground point, for full backlash compensation:
-          go_to(g.reg.point[g.point1], SPEED_LIMIT);
-          g.starting_point = g.reg.point[g.point1];
-          g.destination_point = g.reg.point[g.point2];
-          g.stacker_mode = 1;
-          // This is a non-continuous mode:
-          g.continuous_mode = 0;
-          g.start_stacking = 0;
-          g.timelapse_counter = 0;
-          if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
-            g.timelapse_mode = 1;
-          display_comment_line("   2-points stack   ");
-        }
-        else
-        {
-          // Should print error message
-          display_comment_line("   Bad 2 points!    ");
-        }
         break;
 
     } // switch
@@ -467,70 +432,116 @@ void process_keypad()
               goto_memory_point(2);
               break;
 
-            case '0': // 0: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
+
+            case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
               if (g.moving)
                 break;
-              // Checking the correctness of point1/2
-              if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
+              if (g.i_mode == CONT_MODE)
               {
-                if (g.paused == 1)
-                  // Resuming 2-point stacking from a paused state
+                // Checking the correctness of point1/2
+                if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
                 {
-                  g.paused = 0;
-                  g.start_stacking = 1;
-                  if (g.continuous_mode)
+                  if (g.paused == 1)
+                    // Resuming 2-point stacking from a paused state
                   {
-                    // The flag means we just initiated stacking:
-                    letter_status(" ");
+                    g.paused = 0;
+                    g.start_stacking = 1;
+                    if (g.continuous_mode)
+                    {
+                      // The flag means we just initiated stacking:
+                      letter_status(" ");
+                    }
+                    else
+                    {
+                      g.noncont_flag = 1;
+                      letter_status("S");
+                    }
+                    // Time when stacking was initiated:
+                    g.t0_stacking = g.t;
+                    g.ipos_to_shoot = g.ipos;
+                    g.stacker_mode = 2;
+                  }
+                  else if (g.paused == 3)
+                    // Restarting from a pause which happened between stacks (in timelapse mode)
+                  {
+                    g.paused = 0;
+                    display_all();
+                  }
+                  else if (g.paused == 2)
+                    // Restarting from a pause which happened during the initial travel to the starting point
+                  {
+                    go_to(g.reg.point[g.point1], SPEED_LIMIT);
+                    g.stacker_mode = 1;
+                    g.start_stacking = 0;
+                    g.paused = 0;
+                    display_all();
                   }
                   else
+                    // Initiating a new stack (or timelapse sequence of stacks)
                   {
-                    g.noncont_flag = 1;
-                    letter_status("S");
+                    // Using the simplest approach which will result the last shot to always slightly undershoot
+                    g.Nframes = Nframes();
+                    go_to(g.reg.point[g.point1], SPEED_LIMIT);
+                    g.starting_point = g.reg.point[g.point1];
+                    g.destination_point = g.reg.point[g.point2];
+                    g.stacker_mode = 1;
+                    g.continuous_mode = 1;
+                    g.start_stacking = 0;
+                    g.timelapse_counter = 0;
+                    if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                      g.timelapse_mode = 1;
+                    display_comment_line("   2-points stack   ");
                   }
-                  // Time when stacking was initiated:
-                  g.t0_stacking = g.t;
-                  g.ipos_to_shoot = g.ipos;
-                  g.stacker_mode = 2;
-                }
-                else if (g.paused == 3)
-                  // Restarting from a pause which happened between stacks (in timelapse mode)
-                {
-                  g.paused = 0;
-                  display_all();
-                }
-                else if (g.paused == 2)
-                  // Restarting from a pause which happened during the initial travel to the starting point
-                {
-                  go_to(g.reg.point[g.point1], SPEED_LIMIT);
-                  g.stacker_mode = 1;
-                  g.start_stacking = 0;
-                  g.paused = 0;
-                  display_all();
                 }
                 else
-                  // Initiating a new stack (or timelapse sequence of stacks)
+                {
+                  // Should print error message
+                  display_comment_line("   Bad 2 points!    ");
+                }
+              }
+              else if (g.i_mode == NONCONT_MODE)
+              {
+                // Checking the correctness of point1/2
+                if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
                 {
                   // Using the simplest approach which will result the last shot to always slightly undershoot
                   g.Nframes = Nframes();
+                  // Always starting from the foreground point, for full backlash compensation:
                   go_to(g.reg.point[g.point1], SPEED_LIMIT);
                   g.starting_point = g.reg.point[g.point1];
                   g.destination_point = g.reg.point[g.point2];
                   g.stacker_mode = 1;
-                  g.continuous_mode = 1;
+                  // This is a non-continuous mode:
+                  g.continuous_mode = 0;
                   g.start_stacking = 0;
                   g.timelapse_counter = 0;
                   if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
                     g.timelapse_mode = 1;
                   display_comment_line("   2-points stack   ");
                 }
+                else
+                {
+                  // Should print error message
+                  display_comment_line("   Bad 2 points!    ");
+                }
               }
               else
               {
-                // Should print error message
-                display_comment_line("   Bad 2 points!    ");
+                // 1-point stacking
+                // The flag means we just initiated stacking:
+                g.start_stacking = 1;
+                // Time when stacking was initiated:
+                g.t0_stacking = g.t;
+                g.frame_counter = 0;
+                display_frame_counter();
+                g.ipos_to_shoot = g.ipos;
+                g.starting_point = g.ipos;
+                g.stacker_mode = 3;
+                g.continuous_mode = 1;
+                display_comment_line("   1-point stack    ");
               }
               break;
+
 
             case '*':  // *: Show alternative display (for *X commands)
               if (g.paused)
@@ -544,23 +555,11 @@ void process_keypad()
               }
               break;
 
-            case 'D':  // D: Initiate one-point focus stacking forward
-              if (g.paused)
-                break;
-              if (!g.moving)
-              {
-                // The flag means we just initiated stacking:
-                g.start_stacking = 1;
-                // Time when stacking was initiated:
-                g.t0_stacking = g.t;
-                g.frame_counter = 0;
-                display_frame_counter();
-                g.ipos_to_shoot = g.ipos;
-                g.starting_point = g.ipos;
-                g.stacker_mode = 3;
-                g.continuous_mode = 1;
-                display_comment_line("   1-point stack    ");
-              }
+            case '0': // 0: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
+              g.i_mode++;
+              if (g.i_mode > 2)
+                g.i_mode = 0;
+              set_mode(); //????
               break;
 
             case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)

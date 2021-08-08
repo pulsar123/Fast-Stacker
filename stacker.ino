@@ -49,8 +49,8 @@
                   Arduino pin 6 is now used to control the second relay (+ diod + R=33 Ohm), for camera autofocus.
    h1.3 [s1.18 and up]: Upgraded EasyDriver to BigEasyDriver. Swapped pins A3-5 with 0-2, and 6 with A2. Increased N_MICROSTEPS to 16. Added thermometer (10k resistor + 10k thermistor).
                   Using Hall sensor instead of micro switch in telescope mode.
-   h2.0 [s2.00 and up]: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers. Nire motion algorithm (prediction-correction).
-                  Removed the telescope mode.
+   h2.0 [s2.00 and up]: complete rehaul of the hardware and software: ESP8266, MCP23S17, ST7735 TFT, DRV8825, optocouplers. New motion algorithm (prediction-correction).
+                  Removed the telescope mode. Removed backlight stuff.
 */
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>

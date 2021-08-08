@@ -7,21 +7,14 @@ void my_setCursor(byte pos, byte line, byte set)
 */
 {
 
-  if (line < TFT_NY - 1)
-    g.y0 = TOP_GAP - 1 + line * (LINE_GAP + FONT_HEIGHT);
-  else
-    // Bottom (status) line is special, separated from the rest:
-    g.y0 = 128 - TOP_GAP - 1 - FONT_HEIGHT - 3;
+  g.y0 = TOP_GAP - 1 + line * (LINE_GAP + FONT_HEIGHT);
 
 #ifdef TIMING
   if (line == TFT_NY)
     g.y0 = 128 - TOP_GAP - 1 - 2 * FONT_HEIGHT - 6;
 #endif
 
-  if (pos < 7)
-    g.x0 = LEFT_GAP + pos * FONT_WIDTH;
-  else
-    g.x0 = LEFT_GAP + (pos + 4) * FONT_WIDTH;
+  g.x0 = LEFT_GAP + pos * FONT_WIDTH;
 
   //  if (set == 1)
   tft.setCursor(g.x0, g.y0);
@@ -131,7 +124,7 @@ void rail_reverse(byte fix_points)
   d_ipos = g.limit2 + g.backlash;
   if (g.reg.backlash_on != 0)
   {
-    d_ipos = d_ipos - g.reg.backlash_on*BACKLASH_2;
+    d_ipos = d_ipos - g.reg.backlash_on * BACKLASH_2;
     g.Backlash_init = 2;
   }
   else
@@ -163,7 +156,7 @@ COORD_TYPE frame_coordinate()
   // Stacking direction depends on the backlash direction (we always move in the good direction)
   if (g.reg.backlash_on >= 0)
     return g.starting_point + g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
-    else
+  else
     return g.starting_point - g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -231,10 +224,10 @@ void update_backlash()
   else
   {
     g.point2 = FOREGROUND;
-    g.point1 = BACKGROUND;   
+    g.point1 = BACKGROUND;
   }
 
-  
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

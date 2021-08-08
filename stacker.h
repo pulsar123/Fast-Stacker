@@ -294,9 +294,9 @@ TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 #define FONT_HEIGHT 10 // Font height in pixels
 #define FONT_WIDTH 8 // Font width in pixels
 #define TFT_NX 20 // Chars per line
-#define TFT_NY 6 // Number of lines
+#define TFT_NY 7 // Number of lines
 #define TOP_GAP 4 // Empty top gap in pixels (same for bottom gap)
-#define LEFT_GAP FONT_WIDTH // Empty left gap in pixels
+#define LEFT_GAP 0 // Empty left gap in pixels
 #define LINE_GAP 10 // Empty gap between lines in pixels
 #define DEL_BITMAP 2 // Offset for drawBitmap relative to print
 

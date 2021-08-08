@@ -210,7 +210,7 @@ void motion_status()
   if (g.error || g.alt_flag)
     return;
   uint8_t i;
-  
+
   byte motion_status_new = STATUS_NONE;
 
   if (g.moving == 0 && g.model_init == 0)
@@ -245,9 +245,9 @@ void motion_status()
 
     switch (g.motion_status_code)
     {
-//      case STATUS_NONE:
-//        tft.print("   ");
-//        break;
+      //      case STATUS_NONE:
+      //        tft.print("   ");
+      //        break;
 
       case STATUS_REWIND:
         tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, rewind_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
@@ -256,11 +256,11 @@ void motion_status()
       case STATUS_REVERSE:
         tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, reverse_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
         break;
-        
+
       case STATUS_FORWARD:
         tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, forward_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
         break;
-        
+
       case STATUS_STRAIGHT:
         tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, straight_char, 3 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
         break;
@@ -609,7 +609,7 @@ void display_current_position()
 
   //!!! added  g.moving==1 || g.model_init==1
   //  if (g.error || g.moving == 0 && g.BL_counter > 0 || g.alt_flag || g.moving==1 || g.model_init==1)
-  if (g.error || g.moving == 0 && g.reg.backlash_on*g.BL_counter > 0 || g.alt_flag)
+  if (g.error || g.moving == 0 && g.reg.backlash_on * g.BL_counter > 0 || g.alt_flag)
     return;
 
   if (g.reg.straight)
@@ -711,3 +711,133 @@ void shutter_status(short s)
   return;
 }
 #endif
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void display_mode()
+/*
+  Display the mode (top line)
+*/
+{
+#ifdef NO_DISP
+  if (g.moving || g.model_init)
+    return;
+#endif
+  if (g.error || g.alt_flag)
+    return;
+
+  my_setCursor(0, 0, 1);
+  tft.setTextColor(TFT_GOLD, TFT_BLACK);
+
+  if (g.i_mode == ONE_SHOT_MODE)
+    tft.print("One point cont");
+  elseif (g.i_mode == CONT_MODE)
+  tft.print("Two points cont");
+  elseif (g.i_mode == NONCONT_MODE)
+  tft.print("Two points non-cont");
+
+  return;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void display_step()
+/*
+  Display step size (second line)
+*/
+{
+#ifdef NO_DISP
+  if (g.moving || g.model_init)
+    return;
+#endif
+  if (g.error || g.alt_flag)
+    return;
+
+  my_setCursor(0, 1, 1);
+  tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+  tft.print("5");
+
+  my_setCursor(1, 1, 1);
+  tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+  tft.print(":Step ");
+  my_setCursor(7, 1, 1);
+
+  float step_um = 1e3 * MM_PER_MICROSTEP * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+
+  if (step_um >= 10.0)
+    // +0.5 is for proper round-off:
+    sprintf(g.buffer, "%4dum ", (int)(step_um + 0.5));
+  else
+    // +0.05 is for proper round-off:
+    sprintf(g.buffer, "%4suf ", ftoa(g.buf7, step_um + 0.05, 1));
+
+  return;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+void display_third_line()
+/*
+  Display third line
+*/
+{
+#ifdef NO_DISP
+  if (g.moving || g.model_init)
+    return;
+#endif
+  if (g.error || g.alt_flag)
+    return;
+
+  if (g.i_mode == ONE_SHOT_MODE)
+  {
+    my_setCursor(0, 2, 1);
+    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.print("8");
+    my_setCursor(1, 2, 1);
+    tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+    tft.print(":N ");
+    my_setCursor(5, 2, 1);
+    sprintf(g.buffer, "%4d           ", N_SHOTS[g.reg.i_n_shots]);
+    tft.print(g.buffer);
+  }
+  elseif (g.i_mode == CONT_MODE)
+  {
+    my_setCursor(0, 2, 1);
+    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.print("8");
+    my_setCursor(1, 2, 1);
+    tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+    tft.print(":FPS ");
+    my_setCursor(6, 2, 1);
+    if (FPS[g.reg.i_fps] >= 1.0)
+      sprintf(g.buffer, " %3s          ", ftoa(g.buf7, FPS[g.reg.i_fps], 1));
+    else
+      sprintf(g.buffer, "%4s          ", ftoa(g.buf7, FPS[g.reg.i_fps], 2));
+    tft.print(g.buffer);
+  }
+  elseif (g.i_mode == NONCONT_MODE)
+  {
+    my_setCursor(0, 2, 1);
+    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.print("8");
+    my_setCursor(1, 2, 1);
+    tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+    tft.print(":d1 ");
+    my_setCursor(5, 2, 1);
+    sprintf(g.buffer, "%3ss ", ftoa(g.buf7, FIRST_DELAY[g.reg.i_first_delay] + 0.05, 1));
+    tft.print(g.buffer);
+
+    my_setCursor(10, 2, 1);
+    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.print("9");
+    my_setCursor(11, 2, 1);
+    tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+    tft.print(":d2 ");
+    my_setCursor(15, 2, 1);
+    sprintf(g.buffer, "%3ss ", ftoa(g.buf7, SECOND_DELAY[g.reg.i_second_delay] + 0.05, 1));
+    tft.print(ftoa(g.buffer);
+  }
+
+  return;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
