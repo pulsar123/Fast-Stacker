@@ -149,7 +149,6 @@ void initialize(byte factory_reset)
   g.Nframes = Nframes();
 
   // Default lcd layout:
-  // This sets SPEED_LIMIT, among other things:
   display_all();
 
 #ifdef TIMING

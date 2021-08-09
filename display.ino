@@ -13,7 +13,6 @@ void display_stuff()
         display_all();
       else
         display_current_position();
-    //        display_all();
   }
 
 #ifdef TEST_SWITCH
@@ -30,10 +29,7 @@ void display_stuff()
   {
     g.t_display = g.t;
     if (!g.alt_flag)
-//!!!      display_all();
-//    else
        battery_status();
-//      display_status_line();
   }
 
   return;

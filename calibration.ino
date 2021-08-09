@@ -40,7 +40,6 @@ void calibration()
       break;
 
     case 5: // End of calibration; updating coordinates
-      letter_status(" ");
       // Adding LIMITER_PAD padding to both hard limits:
       g.ipos = g.ipos + g.coords_change - LIMITER_PAD;
       g.limit2 = g.limit2 + g.coords_change - 2 * LIMITER_PAD;

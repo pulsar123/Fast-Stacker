@@ -141,9 +141,7 @@ void process_keypad()
         else
           g.reg.i_first_delay = 0;
         EEPROM.put( g.addr_reg[0], g.reg);
-        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-        delay_buffer();
-        display_comment_line(g.buffer);
+        display_third_line();
         break;
 
       case '9': // #9: Cycle through the table for SECOND_DELAY parameter
@@ -154,9 +152,7 @@ void process_keypad()
         else
           g.reg.i_second_delay = 0;
         EEPROM.put( g.addr_reg[0], g.reg);
-        // Fill g.buffer with non-continuous stacking parameters, to be displayed with display_comment_line:
-        delay_buffer();
-        display_comment_line(g.buffer);
+        display_third_line();
         break;
 
       case '*': // #*: Factory reset
@@ -436,7 +432,7 @@ void process_keypad()
             case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
               if (g.moving)
                 break;
-              if (g.i_mode == CONT_MODE)
+              if (g.reg.i_mode == CONT_MODE)
               {
                 // Checking the correctness of point1/2
                 if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
@@ -499,7 +495,7 @@ void process_keypad()
                   display_comment_line("   Bad 2 points!    ");
                 }
               }
-              else if (g.i_mode == NONCONT_MODE)
+              else if (g.reg.i_mode == NONCONT_MODE)
               {
                 // Checking the correctness of point1/2
                 if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
@@ -556,10 +552,12 @@ void process_keypad()
               break;
 
             case '0': // 0: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
-              g.i_mode++;
-              if (g.i_mode > 2)
-                g.i_mode = 0;
-              set_mode(); //????
+              if (g.paused || g.moving)
+                break;
+              g.reg.i_mode++;
+              if (g.reg.i_mode > 2)
+                g.reg.i_mode = 0;
+              display_all();
               break;
 
             case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)
@@ -596,7 +594,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( g.addr_reg[0], g.reg);
-              display_one_point_params();
+              display_third_line();
 #endif
               break;
 
@@ -632,7 +630,7 @@ void process_keypad()
               else
                 break;
               EEPROM.put( g.addr_reg[0], g.reg);
-              display_one_point_params();
+              display_third_line();
 #endif
               break;
 
@@ -652,8 +650,8 @@ void process_keypad()
                 break;
               }
               //              display_all();
-              display_u_per_f();
-              display_two_point_params();
+              display_step();
+              display_third_line();
               EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
@@ -677,8 +675,8 @@ void process_keypad()
               g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
               //              display_all();
-              display_u_per_f();
-              display_two_point_params();
+              display_step();
+              display_third_line();
               break;
 
             case '8':  // 8: Decrease parameter fps
@@ -689,10 +687,8 @@ void process_keypad()
               else
                 break;
               EEPROM.put( g.addr_reg[0], g.reg);
-              //                display_all();
-              display_fps();
-              display_two_point_params();
-              display_one_point_params();
+              display_third_line();
+              display_derivatives();
               break;
 
             case '9':  // 9: Increase parameter fps
@@ -713,17 +709,8 @@ void process_keypad()
               else
                 break;
               EEPROM.put( g.addr_reg[0], g.reg);
-              //                display_all();
-              display_fps();
-              display_two_point_params();
-              display_one_point_params();
-              break;
-
-            case '#': // #: Show the non-continuous parameters in the 5th line of the LCD
-              if (g.moving || g.paused)
-                break;
-              delay_buffer();
-              display_comment_line(g.buffer);
+              display_third_line();
+              display_derivatives();
               break;
 
           } // End of case

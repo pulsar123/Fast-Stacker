@@ -66,7 +66,7 @@ const COORD_TYPE BL_STEP = 1;
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
 //#define SHOW_EEPROM
 // Display positions and temperature in raw units:
-#define SHOW_RAW
+//#define SHOW_RAW
 // If defined, macro rail will be used to test the accuracy of the foreground switch (repeatedly triggering it and measuring the spread of trigger positions)
 //#define TEST_SWITCH
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
@@ -295,10 +295,10 @@ TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 #define FONT_WIDTH 8 // Font width in pixels
 #define TFT_NX 20 // Chars per line
 #define TFT_NY 7 // Number of lines
-#define TOP_GAP 4 // Empty top gap in pixels (same for bottom gap)
-#define LEFT_GAP 0 // Empty left gap in pixels
-#define LINE_GAP 10 // Empty gap between lines in pixels
-#define DEL_BITMAP 2 // Offset for drawBitmap relative to print
+#define TOP_GAP 1 // Empty top gap in pixels (same for bottom gap)
+#define LEFT_GAP 4 // Empty left gap in pixels
+#define LINE_GAP 9 // Empty gap between lines in pixels
+#define DEL_BITMAP 3 // Offset for drawBitmap relative to print
 
 // MM per microstep:
 const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
@@ -354,7 +354,7 @@ struct regist
     #define BACKGROUND 1
 };
 // Add 1 (byte) if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
-short SIZE_REG = sizeof(regist);
+short SIZE_REG = sizeof(regist)+1;
 
 const short dA = sizeof(COORD_TYPE);
 
@@ -577,7 +577,7 @@ struct global
   char tmp_char;
   byte Backlash_init; // 1: initializing a full backlash loop; 2: initializing a rail reverse
   char buf6[6]; // Buffer to store the stacking length for displaying
-  char buf7[7];
+  char buf10[10];
   short timelapse_counter; // Counter for the time lapse feature
   TIME_UTYPE t_mil; // millisecond accuracy timer; used to set up timelapse stacks
   TIME_UTYPE t0_mil; // millisecond accuracy timer; used to set up timelapse stacks

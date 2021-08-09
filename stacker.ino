@@ -141,33 +141,6 @@ void setup() {
   // Should be the last line in setup:
   g.setup_flag = 0;
 
-/*
-int tmp1, tmp2;
-char buf21[21];
-sprintf(buf21, "                    ");
-g.stacker_mode = 1;
-tft.fillScreen(TFT_WHITE);
-  
-for (int i=0; i<15; i++)
-{
-  for(g.frame_counter=1; g.frame_counter<590; g.frame_counter+=588)
-  {
-tmp1 = micros();
-//display_frame_counter();
-//  tft.fillScreen(TFT_BLACK);
-for (int j=0; j<6; j++)
-{
-  my_setCursor(0, j, 1);
-  tft.print(buf21);
-}
-
-tmp2 = micros();
-Serial.println(tmp2-tmp1);
-delay(1000);
-  }
-}
-delay(10000);
-*/
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

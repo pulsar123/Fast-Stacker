@@ -45,7 +45,7 @@ short Nframes ()
 char *ftoa(char *a, float f, int precision)
 // Converting float to string (up to 9 decimals)
 {
-  long p[] = {0, 10, 100, 1000};
+  long p[] = {0, 10, 100, 1000, 10000};
 
   char *ret = a;
   long heiltal = (long)f;
