@@ -245,6 +245,20 @@ const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change ke
 const TIME_STYPE T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
 
+///// Editor related parameters //////
+#define MAX_POS 10 // Maximum number of characters in the edited value
+// Limits for editable parameters:
+#define MSTEP_MIN 1
+#define MSTEP_MAX 2000 // Make sure it's not larger than the length of the rail!
+#define FPS_MIN 0.01
+#define FPS_MAX 4.0 // Adjust to your camera's maximum possible frame rate
+#define FIRST_DELAY_MIN 0.5
+#define FIRST_DELAY_MAX 8.0
+#define SECOND_DELAY_MIN 0.5
+#define SECOND_DELAY_MAX 8.0
+#define N_SHOTS_MIN 2
+#define N_SHOTS_MAX 600
+
 
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
@@ -254,21 +268,21 @@ const byte N_REGS = 5;
 // Number of values for the input parameters (mm_per_frame etc):
 const COORD_TYPE N_PARAMS = 25;
 // Now we are using microsteps per frame input table:
-const COORD_TYPE MSTEP_PER_FRAME[] = {1, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 120, 160, 200, 240, 320, 400, 480, 640, 800, 1200, 1600};
+//const COORD_TYPE MSTEP_PER_FRAME[] = {1, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 120, 160, 200, 240, 320, 400, 480, 640, 800, 1200, 1600};
 // Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
-const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
+//const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
 // Number of shots parameter (to be used in 1-point stacking):
-const COORD_TYPE N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
+//const COORD_TYPE N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
 // Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
 // The length of the first delay table:
 const byte N_FIRST_DELAY = 7;
 // First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
+//const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // The length of the second delay table:
 const byte N_SECOND_DELAY = 7;
 // Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
 // (This should be always longer than the camera exposure time)
-const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
+//const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 4;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6, 9};
@@ -333,15 +347,19 @@ const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_
 // Structure to have custom parameters saved to EEPROM
 struct regist
 {
+  COORD_TYPE mstep; // Number of microsteps per frame
+  float fps; // frames per second for continuous mode
+  int n_shots; // Number of shots in 1-point mode
+  float first_delay; // First delay in non-continuous mode, seconds
+  float second_delay; // Second delay in non-continuous mode, seconds
   byte i_mode; // counter for the current mode:
     #define ONE_SHOT_MODE 0
     #define CONT_MODE 1
     #define NONCONT_MODE 2
-  byte i_n_shots; // counter for n_shots parameter;
-  byte i_mm_per_frame; // counter for mm_per_frame parameter;
-  byte i_fps; // counter for fps parameter;
-  byte i_first_delay; // counter for FIRST_DELAY parameter
-  byte i_second_delay; // counter for SECOND_DELAY parameter
+//  byte i_mm_per_frame; // counter for mm_per_frame parameter;
+//  byte i_fps; // counter for fps parameter;
+//  byte i_first_delay; // counter for FIRST_DELAY parameter
+//  byte i_second_delay; // counter for SECOND_DELAY parameter
   byte i_accel_factor; // Index for accel_factor
   byte i_n_timelapse; // counter for N_TIMELAPSE parameter
   byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
@@ -472,6 +490,7 @@ const uint8_t reverse_char[] = {
   0B00000000,0B00010000,0B00000000
 };
 
+
 // All global variables belong to one structure - global:
 struct global
 {
@@ -512,6 +531,21 @@ struct global
     #define STATUS_STRAIGHT 4
   byte delayed_goto; // set to 1 when pausing focus stacking - a signal to execute goto inside camera() after the breaking is finished
   byte enable_flag; // Tracks down status of the motor enable pin: HIGH: disable motor, LOW: enable motor
+  byte editing; // =1 when editing a value
+  float edited_value; // Edited value
+  int edited_param; // Parameter which is being edited. Possible values:
+    #define PARAM_MSTEP 0 // Number of microsteps per frame
+    #define PARAM_FPS 1
+    #define PARAM_N_SHOTS 2 // Number of shots
+    #define PARAM_FIRST_DELAY 3
+    #define PARAM_SECOND_DELAY 4
+    #define PARAM_GOTO 5  // GoTo target coordinate
+    #define PARAM_ACCEL_FACTOR 6
+    #define PARAM_N_TIMELAPSE 7
+    #define PARAM_DT_TIMELAPSE 8
+  byte cursor_pos; // Initial cursor position (when editing)
+  signed char dot_pos; // Counting dots n the edited value
+  char value[MAX_POS+1]; // String to store the digits of the edited value
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one

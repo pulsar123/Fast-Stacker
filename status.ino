@@ -204,17 +204,26 @@ void display_mode()
     return;
 
   my_setCursor(0, 0, 1);
-//  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextColor(TFT_BLACK, TFT_WHITE);
-  tft.print(g.empty_buffer);  //erasing the line
-  my_setCursor(0, 0, 1);
+//  tft.setTextColor(TFT_BLACK, TFT_WHITE);
 
   if (g.reg.i_mode == ONE_SHOT_MODE)
+  {
+    tft.fillRect(0, 0, 160, 16, 0xFA08);
+    tft.setTextColor(TFT_BLACK, 0xFA08);
     tft.print("    One point cont     ");
+  }
   else if (g.reg.i_mode == CONT_MODE)
+  {
+    tft.fillRect(0, 0, 160, 16, 0x47E8);
+    tft.setTextColor(TFT_BLACK, 0x47E8);
     tft.print("   Two points cont     ");
+  }
   else if (g.reg.i_mode == NONCONT_MODE)
+  {
+    tft.fillRect(0, 0, 160, 16, 0x421F);
+    tft.setTextColor(TFT_BLACK, 0x421F);
     tft.print("  Two points non-cont  ");
+  }
 
   return;
 }
@@ -239,7 +248,7 @@ void display_step()
   my_setCursor(1, 1, 1);
   tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
 
-  float step_um = 1e3 * MM_PER_MICROSTEP * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  float step_um = 1e3 * MM_PER_MICROSTEP * g.reg.mstep;
 
   if (step_um >= 10.0)
     // +0.5 is for proper round-off:
@@ -274,7 +283,7 @@ void display_third_line()
     tft.print("8");
     my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    sprintf(g.buffer, " N=%4d           ", N_SHOTS[g.reg.i_n_shots]);
+    sprintf(g.buffer, " N=%4d           ", g.reg.n_shots);
     tft.print(g.buffer);
   }
   else if (g.reg.i_mode == CONT_MODE)
@@ -285,10 +294,10 @@ void display_third_line()
     tft.print("8");
     my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    if (FPS[g.reg.i_fps] >= 1.0)
-      sprintf(g.buffer, " FPS=%4s          ", ftoa(g.buf10, FPS[g.reg.i_fps], 1));
+    if (g.reg.fps >= 1.0)
+      sprintf(g.buffer, " FPS=%4s          ", ftoa(g.buf10, g.reg.fps, 1));
     else
-      sprintf(g.buffer, " FPS=%4s          ", ftoa(g.buf10, FPS[g.reg.i_fps], 2));
+      sprintf(g.buffer, " FPS=%4s          ", ftoa(g.buf10, g.reg.fps, 2));
     tft.print(g.buffer);
   }
   else if (g.reg.i_mode == NONCONT_MODE)
@@ -299,7 +308,7 @@ void display_third_line()
     tft.print("8");
 //    my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    sprintf(g.buffer, " d1=%3ss ", ftoa(g.buf10, FIRST_DELAY[g.reg.i_first_delay] + 0.05, 1));
+    sprintf(g.buffer, " d1=%3ss ", ftoa(g.buf10, g.reg.first_delay + 0.05, 1));
     tft.print(g.buffer);
 
     my_setCursor(10, 2, 1);
@@ -308,7 +317,7 @@ void display_third_line()
     tft.print("9");
 //    my_setCursor(11, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-    sprintf(g.buffer, " d2=%3ss ", ftoa(g.buf10, SECOND_DELAY[g.reg.i_second_delay] + 0.05, 1));
+    sprintf(g.buffer, " d2=%3ss ", ftoa(g.buf10, g.reg.second_delay + 0.05, 1));
     tft.print(g.buffer);
   }
 
@@ -334,13 +343,13 @@ void display_derivatives()
   if (g.reg.i_mode == ONE_SHOT_MODE)
   {
     // +0.05 for proper round off:
-    float dx = (float)(N_SHOTS[g.reg.i_n_shots] - 1) * MM_PER_MICROSTEP * MSTEP_PER_FRAME[g.reg.i_mm_per_frame] + 0.05;
+    float dx = (float)(g.reg.n_shots - 1) * MM_PER_MICROSTEP * g.reg.mstep + 0.05;
     if (dx < 1000.0)
       ftoa(g.buf10, dx, 2);
     else
       sprintf(g.buf10, "******");
 
-    int dt = roundMy((float)(N_SHOTS[g.reg.i_n_shots] - 1) / FPS[g.reg.i_fps]);
+    int dt = roundMy((float)(g.reg.n_shots - 1) / g.reg.fps);
     if (dt < 10000 && dt >= 0)
       sprintf(g.buf6, "%4d", dt);
     else
@@ -351,7 +360,7 @@ void display_derivatives()
   else
   {
     // +0.5 for proper round off:
-    int dt = (int)((float)(g.Nframes - 1) / FPS[g.reg.i_fps] + 0.5);
+    int dt = (int)((float)(g.Nframes - 1) / g.reg.fps + 0.5);
     if (dt < 10000 && dt >= 0)
       sprintf(g.buf6, "%4d", dt);
     else
@@ -481,7 +490,7 @@ void display_current_position()
 
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   my_setCursor(0, 5, 1);
-  tft.print(g.buffer);
+  tft.print(g.buffer); //!!! Also need to erase to the left
 
   return;
 }

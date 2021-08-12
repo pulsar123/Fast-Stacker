@@ -78,14 +78,14 @@ void camera()
   // Non-continuous stacking mode
   if (g.continuous_mode == 0 && g.start_stacking == 3 && g.moving == 0 && g.model_init == 0 && g.stacker_mode == 2)
   {
-    if (g.noncont_flag == 2 && g.t - g.t_shot > FIRST_DELAY[g.reg.i_first_delay] * 1e6)
+    if (g.noncont_flag == 2 && g.t - g.t_shot > g.reg.first_delay * 1e6)
     {
       g.noncont_flag = 3;
       // Initiating the second camera trigger (actual shot) in MIRROR_LOCK situation, or the only shot otherwise:
       g.make_shot = 1;
       g.t_shot = g.t;
     }
-    else if (g.noncont_flag == 3 && g.t - g.t_shot > SECOND_DELAY[g.reg.i_second_delay] * 1e6)
+    else if (g.noncont_flag == 3 && g.t - g.t_shot > g.reg.second_delay * 1e6)
     {
       if (g.frame_counter < g.Nframes)
       {
@@ -126,7 +126,7 @@ void camera()
       g.frame_counter++;
       // Position at which to shoot the next shot:
       g.ipos_to_shoot = frame_coordinate();
-      if (g.stacker_mode == 3 && g.frame_counter == N_SHOTS[g.reg.i_n_shots])
+      if (g.stacker_mode == 3 && g.frame_counter == g.reg.n_shots)
       {
         // End of one-point stacking
         g.model_type = MODEL_STOP;

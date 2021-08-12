@@ -49,6 +49,7 @@ void initialize(byte factory_reset)
   g.limit1 = 0;
   g.accident = 0;
   g.delayed_goto = 0;
+  g.editing = 0;
 //  g.limiter_counter = 0;
 
   if (factory_reset)
@@ -57,10 +58,10 @@ void initialize(byte factory_reset)
     g.error = 4;
     // Parameters for the reg structure:
     g.reg.i_mode = ONE_SHOT_MODE;
-    g.reg.i_n_shots = 9;
-    g.reg.i_fps = 16;
-    g.reg.i_first_delay = 4;
-    g.reg.i_second_delay = 3;
+    g.reg.n_shots = 10;
+    g.reg.fps = 1.0;
+    g.reg.first_delay = 1.0;
+    g.reg.second_delay = 1.0;
     g.reg.i_accel_factor = 1;
     g.reg.i_n_timelapse = 0;
     g.reg.i_dt_timelapse = 5;
@@ -74,10 +75,10 @@ void initialize(byte factory_reset)
     {
       g.reg.point[i] = DELTA_LIMITER;
     }
-    g.limit2 = 32000;
+    g.limit2 = HUGE;
     g.ipos = DELTA_LIMITER;
 
-    g.reg.i_mm_per_frame = 5;
+    g.reg.mstep = 10;
     EEPROM.put( ADDR_LIMIT2, g.limit2);
     EEPROM.put( ADDR_POS, g.ipos );
 
@@ -176,8 +177,8 @@ void initialize(byte factory_reset)
 #ifdef CAMERA_DEBUG
   shutter_status(0);
   AF_status(0);
-  g.reg.i_first_delay = 4;
-  g.reg.i_second_delay = 3;
+  g.reg.first_delay = 1.0;
+  g.reg.second_delay = 1.0;
 #endif
 
 #ifdef TEST_SWITCH

@@ -133,26 +133,14 @@ void process_keypad()
           read_params(2);
         break;
 
-      case '8': // #8: Cycle through the table for FIRST_DELAY parameter
+      case '8': // #8:
         if (g.paused)
           break;
-        if (g.reg.i_first_delay < N_FIRST_DELAY - 1)
-          g.reg.i_first_delay++;
-        else
-          g.reg.i_first_delay = 0;
-        EEPROM.put( g.addr_reg[0], g.reg);
-        display_third_line();
         break;
 
-      case '9': // #9: Cycle through the table for SECOND_DELAY parameter
+      case '9': // #9: 
         if (g.paused)
           break;
-        if (g.reg.i_second_delay < N_SECOND_DELAY - 1)
-          g.reg.i_second_delay++;
-        else
-          g.reg.i_second_delay = 0;
-        EEPROM.put( g.addr_reg[0], g.reg);
-        display_third_line();
         break;
 
       case '*': // #*: Factory reset
@@ -179,7 +167,7 @@ void process_keypad()
         if (g.paused)
           ipos_target = frame_coordinate();
         else
-          ipos_target = g.ipos - MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+          ipos_target = g.ipos - g.reg.mstep;
         move_to_next_frame(&ipos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -192,7 +180,7 @@ void process_keypad()
         if (g.paused)
           ipos_target = frame_coordinate();
         else
-          ipos_target = g.ipos + MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+          ipos_target = g.ipos + g.reg.mstep;
         move_to_next_frame(&ipos_target, &frame_counter0);
         g.current_point = -1;
         break;
@@ -360,6 +348,11 @@ void process_keypad()
           {
             case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
               // Using key "1" to confirm factory reset
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               if (g.error == 3)
               {
                 initialize(1);
@@ -389,6 +382,11 @@ void process_keypad()
               break;
 
             case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               if (g.paused > 1)
                 break;
               if (g.paused)
@@ -413,23 +411,43 @@ void process_keypad()
               break;
 
             case '4':  // 4: Set foreground point (#1)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               set_memory_point(1);
               break;
 
             case 'B':  // B: Set background point (#2)
-              set_memory_point(2);
+              if (g.editing == 0)
+                set_memory_point(2);
+              else
+                editor('B');
               break;
 
             case '7':  // 7: Go to the foreground point (#1)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               goto_memory_point(1);
               break;
 
             case 'C':  // C: Go to the background point (#2)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               goto_memory_point(2);
               break;
 
 
             case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
+              if (g.editing == 1)
+                  break;
               if (g.moving)
                 break;
               if (g.reg.i_mode == CONT_MODE)
@@ -540,6 +558,8 @@ void process_keypad()
 
 
             case '*':  // *: Show alternative display (for *X commands)
+               if (g.editing == 1)
+                  break;
               if (g.paused)
                 break;
               if (!g.moving && g.alt_flag == 0)
@@ -552,6 +572,11 @@ void process_keypad()
               break;
 
             case '0': // 0: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               if (g.paused || g.moving)
                 break;
               g.reg.i_mode++;
@@ -560,8 +585,20 @@ void process_keypad()
               display_all();
               break;
 
-            case '5':  // 5: Decrease parameter n_shots (for 1-point sstacking)
-              // Also used for different debugging modes, to decrease debugged parameters
+            case '5':  // 5: Set the step (microsteps per frame)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
+              else
+              {
+                g.editing = 1;
+                g.edited_param = PARAM_MSTEP;                
+                editor('I');
+                break;
+              }
+              // Also used for different debugging modes, to decrease debugged parameters              
               if (g.paused)
                 break;
 #if defined(DELAY_DEBUG)
@@ -589,16 +626,15 @@ void process_keypad()
                 g.dt1_buzz_us = 1;
               display_all();
 #else
-              if (g.reg.i_n_shots > 0)
-                g.reg.i_n_shots--;
-              else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_third_line();
 #endif
               break;
 
             case '6':  // 6: Increase parameter n_shots (for 1-point sstacking)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               // Also used for different debugging modes, to increase debugged parameters
               if (g.paused)
                 break;
@@ -625,30 +661,17 @@ void process_keypad()
               g.dt1_buzz_us = g.dt1_buzz_us + DELTA_BUZZ_US;
               display_all();
 #else
-              if (g.reg.i_n_shots < N_PARAMS - 1)
-                g.reg.i_n_shots++;
-              else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_third_line();
 #endif
               break;
 
             case '2':  // 2: Decrease parameter mm_per_frame
-              if (g.paused)
-                break;
-              if (g.reg.i_mm_per_frame > 0)
-                g.reg.i_mm_per_frame--;
-              else
-                break;
-              g.Nframes = Nframes();
-              if (g.Nframes > 9999)
-                // Too many frames; recovering the old values
+              if (g.editing == 1)
               {
-                g.reg.i_mm_per_frame++;
-                g.Nframes = Nframes();
+                editor(key0);
                 break;
               }
+              if (g.paused)
+                break;
               //              display_all();
               display_step();
               display_third_line();
@@ -656,62 +679,67 @@ void process_keypad()
               break;
 
             case '3':  // 3: Increase parameter mm_per_frame
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
               if (g.paused)
                 break;
-              if (g.reg.i_mm_per_frame < N_PARAMS - 1)
-              {
-                g.reg.i_mm_per_frame++;
-                // Estimating the required speed in microsteps per microsecond
-                speed = target_speed();
-                // Reverting back if required speed > maximum allowed:
-                if (speed > SPEED_LIMIT)
-                {
-                  g.reg.i_mm_per_frame--;
-                  break;
-                }
-              }
-              else
-                break;
-              g.Nframes = Nframes();
               EEPROM.put( g.addr_reg[0], g.reg);
               //              display_all();
               display_step();
               display_third_line();
               break;
 
-            case '8':  // 8: Decrease parameter fps
+            case '8':  // 8: Edit a parameter (different for each mode)
+              if (g.editing == 1)
+              {
+                editor(key0);
+                break;
+              }
+              else
+              {
+                g.editing = 1;
+                if (g.reg.i_mode == ONE_SHOT_MODE)
+                  g.edited_param = PARAM_N_SHOTS;
+                else if (g.reg.i_mode == CONT_MODE)            
+                  g.edited_param = PARAM_FPS;
+                else if (g.reg.i_mode == NONCONT_MODE)
+                  g.edited_param = PARAM_FIRST_DELAY;
+                else
+                  break;
+                editor('I');
+                break;
+              }
               if (g.paused)
                 break;
-              if (g.reg.i_fps > 0)
-                g.reg.i_fps--;
-              else
-                break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_third_line();
-              display_derivatives();
               break;
 
             case '9':  // 9: Increase parameter fps
-              if (g.paused)
-                break;
-              if (g.reg.i_fps < N_PARAMS - 1)
+              if (g.editing == 1)
               {
-                g.reg.i_fps++;
-                // Estimating the required speed in microsteps per microsecond
-                speed = target_speed();
-                // Reverting back if required speed > maximum allowed:
-                if (speed > SPEED_LIMIT || FPS[g.reg.i_fps] > MAXIMUM_FPS)
-                {
-                  g.reg.i_fps--;
-                  break;
-                }
+                editor(key0);
+                break;
               }
               else
+              {
+                g.editing = 1;
+                g.edited_param = PARAM_SECOND_DELAY;
+                editor('I');
                 break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              display_third_line();
-              display_derivatives();
+              }
+              if (g.paused)
+                break;
               break;
+
+            case '#':  // 
+              if (g.editing == 1)
+              {
+                editor(key0);
+              }
+                break;
+
 
           } // End of case
         }  // if (g.stacker_mode == 0)

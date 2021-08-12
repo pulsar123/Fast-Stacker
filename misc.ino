@@ -27,8 +27,16 @@ void my_setCursor(byte pos, byte line, byte set)
 float target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
-  return 1e-6 * FPS[g.reg.i_fps] * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+  return 1e-6 * g.reg.fps * g.reg.mstep;
 }
+
+
+float max_fps ()
+// A reverse of the above function. Given speed (microstep/second), estimate the maximum allowed fps
+{
+  return (float)g.reg.mstep / SPEED_LIMIT;
+}
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -37,7 +45,7 @@ short Nframes ()
    g.reg.point[FOREGROUND], or g.reg.point[BACKGROUND] changes.
 */
 {
-  return short(((float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND])) / (float)MSTEP_PER_FRAME[g.reg.i_mm_per_frame]) + 1;
+  return short(((float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND])) / (float)g.reg.mstep) + 1;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -155,9 +163,9 @@ COORD_TYPE frame_coordinate()
 {
   // Stacking direction depends on the backlash direction (we always move in the good direction)
   if (g.reg.backlash_on >= 0)
-    return g.starting_point + g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+    return g.starting_point + g.frame_counter * g.reg.mstep;
   else
-    return g.starting_point - g.frame_counter * MSTEP_PER_FRAME[g.reg.i_mm_per_frame];
+    return g.starting_point - g.frame_counter * g.reg.mstep;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

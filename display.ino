@@ -25,12 +25,13 @@ void display_stuff()
 
 
   // Refreshing battery status regularly (only when not moving, as it is slow):
-  if (g.moving == 0 && g.error == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
+  if (g.moving == 0 && g.error == 0 && g.editing == 0 && g.t - g.t_display > DISPLAY_REFRESH_TIME)
   {
     g.t_display = g.t;
     if (!g.alt_flag)
        battery_status();
   }
 
+ 
   return;
 }
