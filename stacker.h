@@ -284,8 +284,8 @@ const byte N_SECOND_DELAY = 7;
 // (This should be always longer than the camera exposure time)
 //const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
-const byte N_ACCEL_FACTOR = 4;
-const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 3, 6, 9};
+const byte N_ACCEL_FACTOR = 7;
+const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};
 // Table for N_timelapse parameter (number of stacking sequences in the timelapse mode); 1 means no timelapse (just one stack):
 const byte N_N_TIMELAPSE = 7;
 const COORD_TYPE N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};

@@ -1,6 +1,6 @@
 void editor(char key)
 /*
-   Handles all the editing stuff. Parameter to edit is provided via g.edited_param . The output (a float) is in g.edited_value .
+   Handles all the editing stuff. Parameter to edit is provided via g.edited_param .
    Input: a char, with either a pressed key value, or a command:
 
   I: initialize editor
@@ -220,6 +220,7 @@ void editor(char key)
 
     }
 
+    g.Nframes = Nframes();
     g.editing = 0;
     tft.setTextFont(2);
     display_all();

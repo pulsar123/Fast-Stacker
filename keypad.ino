@@ -201,7 +201,7 @@ void process_keypad()
   else if (state0 == PRESSED && keypad.key[0].kchar == '*' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key)
 
   {
-    if (g.moving == 0 && g.paused == 0)
+    if (g.moving == 0 && g.paused == 0 && g.editing == 0)
     {
       switch (keypad.key[1].kchar)
       {
@@ -583,6 +583,7 @@ void process_keypad()
               if (g.reg.i_mode > 2)
                 g.reg.i_mode = 0;
               display_all();
+              EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
             case '5':  // 5: Set the step (microsteps per frame)
@@ -800,7 +801,7 @@ void process_keypad()
           g.model_type = MODEL_STOP;
           g.model_init = 1;
         }
-        if (g.key_old == '*')
+        if (g.key_old == '*' && g.alt_flag != 0)
           // The '*' key was just released: switch to default screen from the alternative one
         {
           g.alt_flag = 0;

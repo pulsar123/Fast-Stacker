@@ -74,7 +74,7 @@ void display_all()
       sprintf(g.buffer, "BL=%2d", g.reg.backlash_on);
       my_setCursor(7, 1, 1);
       tft.print(g.buffer);
-      
+
       // Line 3:
       my_setCursor(0, 2, 1);
       sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
@@ -83,12 +83,12 @@ void display_all()
       sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
       my_setCursor(7, 2, 1);
       tft.print(g.buffer);
-      
+
       // Line 4:
       sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
       my_setCursor(0, 3, 1);
       tft.print(g.buffer);
-      
+
       // Line 5:
       //    tft.print("              ");
 
@@ -136,8 +136,8 @@ void display_all()
   {
     // Error code displaying:
     if (g.error > 0)
-        tft.setTextColor(TFT_RED, TFT_BLACK);
-    
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+
     switch (g.error)
     {
       case 0:  // No error, normal display
@@ -204,7 +204,7 @@ void display_mode()
     return;
 
   my_setCursor(0, 0, 1);
-//  tft.setTextColor(TFT_BLACK, TFT_WHITE);
+  //  tft.setTextColor(TFT_BLACK, TFT_WHITE);
 
   if (g.reg.i_mode == ONE_SHOT_MODE)
   {
@@ -279,7 +279,7 @@ void display_third_line()
   {
     my_setCursor(0, 2, 1);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-//    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
     my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
@@ -289,8 +289,8 @@ void display_third_line()
   else if (g.reg.i_mode == CONT_MODE)
   {
     my_setCursor(0, 2, 1);
-  tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-//    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
     my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
@@ -303,19 +303,19 @@ void display_third_line()
   else if (g.reg.i_mode == NONCONT_MODE)
   {
     my_setCursor(0, 2, 1);
-  tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-//    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
-//    my_setCursor(1, 2, 1);
+    //    my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
     sprintf(g.buffer, " d1=%3ss ", ftoa(g.buf10, g.reg.first_delay + 0.05, 1));
     tft.print(g.buffer);
 
     my_setCursor(10, 2, 1);
-//    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-  tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    tft.setTextColor(TFT_BLACK, TFT_ORANGE);
     tft.print("9");
-//    my_setCursor(11, 2, 1);
+    //    my_setCursor(11, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
     sprintf(g.buffer, " d2=%3ss ", ftoa(g.buf10, g.reg.second_delay + 0.05, 1));
     tft.print(g.buffer);
@@ -359,18 +359,32 @@ void display_derivatives()
   }
   else
   {
-    // +0.5 for proper round off:
-    int dt = (int)((float)(g.Nframes - 1) / g.reg.fps + 0.5);
-    if (dt < 10000 && dt >= 0)
-      sprintf(g.buf6, "%4d", dt);
+    TIME_STYPE dt;
+    if (g.reg.i_mode == CONT_MODE)
+    {
+      // +0.5 for proper round off:
+      dt = (float)(g.Nframes - 1) / g.reg.fps + 0.5;
+    }
     else
-      sprintf(g.buf6, "****");
+    {
+      // Time to travel one frame (s), with fixed acceleration:
+      float dt_goto = 1e-6 * sqrt((float)g.reg.mstep / ACCEL_LIMIT);
+      // +0.5 for roundoff:
+      dt = (float)(g.Nframes) * (g.reg.first_delay + g.reg.second_delay) + (float)(g.Nframes - 1) * dt_goto + 0.5;
+    }
+
+    if (dt < 100000 && dt >= 0)
+      sprintf(g.buf6, "%5d", dt);
+    else
+      sprintf(g.buf6, "*****");
 
     if (g.reg.point[BACKGROUND] >= g.reg.point[FOREGROUND])
-      sprintf(g.buffer, "N=%4d    t=%4ss   ", g.Nframes, g.buf6);
+      sprintf(g.buffer, "N=%4d    t=%5ss   ", g.Nframes, g.buf6);
     else
       sprintf(g.buffer, "N=****    t=*****   ");
   }
+
+
 
 
   tft.print(g.buffer);
@@ -729,7 +743,7 @@ void battery_status()
   sprintf(g.buffer, "%3d", analogRead(PIN_BATTERY));
   tft.print(g.buffer);
 #else
-  my_setCursor(16, 6, 0);  // 12
+  my_setCursor(17, 6, 0);  // 12
 
   // A 5-level bitmap indication (between V_LOW and V_HIGH):
   short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
