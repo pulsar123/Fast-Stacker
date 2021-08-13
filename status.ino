@@ -467,6 +467,10 @@ void display_current_position()
   if (g.error || g.moving == 0 && g.reg.backlash_on * g.BL_counter > 0 || g.alt_flag)
     return;
 
+  // Do not show the line untill the comment line stayed on for COMMENT_DELAY
+//  if (g.comment_flag == 1 && g.t < g.t_comment + COMMENT_DELAY)
+//    return;
+
   if (g.reg.straight)
     g.tmp_char = ' ';
   else
@@ -504,7 +508,10 @@ void display_current_position()
 
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   my_setCursor(0, 5, 1);
-  tft.print(g.buffer); //!!! Also need to erase to the left
+  if (g.comment_flag == 1)
+    tft.print(g.buf_comment);
+  else
+    tft.print(g.buffer); //!!! Also need to erase to the left
 
   return;
 }
@@ -529,6 +536,7 @@ void display_comment_line(char const * l)
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   my_setCursor(0, 5, 1);
   tft.print(l);
+  strcpy(g.buf_comment, l);
   g.t_comment = g.t;
   g.comment_flag = 1;
   return;

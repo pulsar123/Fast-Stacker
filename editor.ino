@@ -72,6 +72,21 @@ void editor(char key)
         tft.println("The second delay in non-");
         tft.println("continuous mode (seconds)");
         break;
+
+      case PARAM_GOTO:
+        if (g.paused)
+        {
+          tft.println("Destination frame for");
+          tft.println("for the GoTo command.");
+          tft.println("Range: 1...N");
+        }
+        else
+        {
+          tft.println("Destination coordinate");
+          tft.println("(in mm) for the GoTo");
+          tft.println("command.");
+        }
+        break;
     }
 
     // Descriptions for the keys (bottom of the screen)
@@ -186,7 +201,7 @@ void editor(char key)
 
       else if (g.edited_param == PARAM_N_SHOTS)
       {
-        int n_shots = (int)(fvalue+0.5);
+        int n_shots = (int)(fvalue + 0.5);
         // Enforcing limits:
         if (n_shots < N_SHOTS_MIN)
           n_shots = N_SHOTS_MIN;
@@ -216,6 +231,32 @@ void editor(char key)
           fvalue = SECOND_DELAY_MAX;
         g.reg.second_delay = fvalue; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
+      }
+
+      else if (g.edited_param == PARAM_GOTO)
+      {
+        if (g.paused)
+        {
+          short int frame_counter0 = g.frame_counter;
+          g.frame_counter = (int)(fvalue + 0.5) - 1;
+          if (g.frame_counter < 0)
+            g.frame_counter = 0;
+          if (g.frame_counter > g.Nframes-1)
+            g.frame_counter = g.Nframes-1;
+          COORD_TYPE ipos_target = frame_coordinate();
+          move_to_next_frame(&ipos_target, &frame_counter0);
+        }
+        else
+        {
+          // Destination coordinate (in microsteps):
+          COORD_TYPE ipos1 = (fvalue / MM_PER_MICROSTEP) + 0.5;
+          // Enforcing limits:
+          if (ipos1 < 0)
+            ipos1 = 0;
+          if (ipos1 > g.limit2)
+            ipos1 = g.limit2;
+          go_to(ipos1, SPEED_LIMIT); // Moving to the target position with maximum speed/acceleration
+        }
       }
 
     }

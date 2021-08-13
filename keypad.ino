@@ -26,6 +26,7 @@ void process_keypad()
   // The trick is to generate fake key press events for the currently pressed key. Flag fake_key
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
+  /*  No longer used in s2.0
   // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
   if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5' || g.key_old == '6' || g.key_old == '8' || g.key_old == '9')
       && g.t - g.t_key_pressed > T_KEY_LAG)
@@ -46,7 +47,7 @@ void process_keypad()
       fake_key = 1;
     }
   }
-
+*/
 
   // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
   if (!keypad.getKeys() && !fake_key)
@@ -665,18 +666,21 @@ void process_keypad()
 #endif
               break;
 
-            case '2':  // 2: Decrease parameter mm_per_frame
+            case '2':  // 2: GoTo command
               if (g.editing == 1)
               {
                 editor(key0);
                 break;
               }
+              else
+              {
+                g.editing = 1;
+                g.edited_param = PARAM_GOTO;
+                editor('I');
+                break;
+              }
               if (g.paused)
                 break;
-              //              display_all();
-              display_step();
-              display_third_line();
-              EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
             case '3':  // 3: Increase parameter mm_per_frame
@@ -687,10 +691,6 @@ void process_keypad()
               }
               if (g.paused)
                 break;
-              EEPROM.put( g.addr_reg[0], g.reg);
-              //              display_all();
-              display_step();
-              display_third_line();
               break;
 
             case '8':  // 8: Edit a parameter (different for each mode)
@@ -796,7 +796,8 @@ void process_keypad()
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
         // Breaking / stopping if 1/A keys were depressed
-        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0)
+        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0 && 
+            (g.model_type==MODEL_REWIND || g.model_type==MODEL_FF))
         {
           g.model_type = MODEL_STOP;
           g.model_init = 1;

@@ -591,6 +591,7 @@ struct global
   signed char dir; // -1/1 for reverse/forward directions of moving (the actual state of the motor)
   char buffer[21];  // char buffer to be used for lcd print; 1 more element than the lcd width (20)
   char empty_buffer[21];  // char buffer to be used to clear one row of the LCD; 1 more element than the lcd width (20)
+  char buf_comment[21]; // Keeps a copy of the comment line
   TIME_UTYPE t_comment; // time when commment line was triggered
   byte comment_flag; // flag used to trigger the comment line briefly
   byte x0, y0;  // Display pixel coordinates, set in misc/my_setCursor
