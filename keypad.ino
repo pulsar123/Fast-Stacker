@@ -27,11 +27,11 @@ void process_keypad()
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
   /*  No longer used in s2.0
-  // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
-  if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5' || g.key_old == '6' || g.key_old == '8' || g.key_old == '9')
+    // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
+    if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5' || g.key_old == '6' || g.key_old == '8' || g.key_old == '9')
       && g.t - g.t_key_pressed > T_KEY_LAG)
     // We are here when a change parameter key was pressed longer than T_KEY_LAG
-  {
+    {
     if (g.N_repeats == 0)
       // Generating the first fake key event:
     {
@@ -46,8 +46,8 @@ void process_keypad()
       g.t_last_repeat = g.t;
       fake_key = 1;
     }
-  }
-*/
+    }
+  */
 
   // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
   if (!keypad.getKeys() && !fake_key)
@@ -139,7 +139,7 @@ void process_keypad()
           break;
         break;
 
-      case '9': // #9: 
+      case '9': // #9:
         if (g.paused)
           break;
         break;
@@ -446,99 +446,87 @@ void process_keypad()
               break;
 
 
-            case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point, or goto current memory point
-              if (g.editing == 1)
-                  break;
-              if (g.moving)
+            case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point
+              if (g.editing || g.moving)
                 break;
-              if (g.reg.i_mode == CONT_MODE)
+              // Checking the correctness of point1/2
+              if (g.reg.point[BACKGROUND] < g.reg.point[FOREGROUND] || g.reg.point[FOREGROUND] < 0 || g.reg.point[BACKGROUND] > g.limit2)
               {
-                // Checking the correctness of point1/2
-                if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
+                // Should print error message
+                display_comment_line("   Bad 2 points!    ");
+                break;
+              }
+              if (g.paused > 0 && (g.reg.i_mode == CONT_MODE || g.reg.i_mode == NONCONT_MODE))
+              {
+                if (g.paused == 1)
+                  // Resuming 2-point stacking from a paused state
                 {
-                  if (g.paused == 1)
-                    // Resuming 2-point stacking from a paused state
+                  g.paused = 0;
+                  g.start_stacking = 1;
+                  if (g.continuous_mode)
                   {
-                    g.paused = 0;
-                    g.start_stacking = 1;
-                    if (g.continuous_mode)
-                    {
-                      // The flag means we just initiated stacking:
-                      letter_status(" ");
-                    }
-                    else
-                    {
-                      g.noncont_flag = 1;
-                      letter_status("S");
-                    }
-                    // Time when stacking was initiated:
-                    g.t0_stacking = g.t;
-                    g.ipos_to_shoot = g.ipos;
-                    g.stacker_mode = 2;
-                  }
-                  else if (g.paused == 3)
-                    // Restarting from a pause which happened between stacks (in timelapse mode)
-                  {
-                    g.paused = 0;
-                    display_all();
-                  }
-                  else if (g.paused == 2)
-                    // Restarting from a pause which happened during the initial travel to the starting point
-                  {
-                    go_to(g.reg.point[g.point1], SPEED_LIMIT);
-                    g.stacker_mode = 1;
-                    g.start_stacking = 0;
-                    g.paused = 0;
-                    display_all();
+                    // The flag means we just initiated stacking:
+                    letter_status(" ");
                   }
                   else
-                    // Initiating a new stack (or timelapse sequence of stacks)
                   {
-                    // Using the simplest approach which will result the last shot to always slightly undershoot
-                    g.Nframes = Nframes();
-                    go_to(g.reg.point[g.point1], SPEED_LIMIT);
-                    g.starting_point = g.reg.point[g.point1];
-                    g.destination_point = g.reg.point[g.point2];
-                    g.stacker_mode = 1;
-                    g.continuous_mode = 1;
-                    g.start_stacking = 0;
-                    g.timelapse_counter = 0;
-                    if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
-                      g.timelapse_mode = 1;
-                    display_comment_line("   2-points stack   ");
+                    g.noncont_flag = 1;
+                    letter_status("S");
                   }
+                  // Time when stacking was initiated:
+                  g.t0_stacking = g.t;
+                  g.ipos_to_shoot = g.ipos;
+                  g.stacker_mode = 2;
                 }
-                else
+                else if (g.paused == 3)
+                  // Restarting from a pause which happened between stacks (in timelapse mode)
                 {
-                  // Should print error message
-                  display_comment_line("   Bad 2 points!    ");
+                  g.paused = 0;
+                  display_all();
                 }
-              }
-              else if (g.reg.i_mode == NONCONT_MODE)
-              {
-                // Checking the correctness of point1/2
-                if (g.reg.point[BACKGROUND] > g.reg.point[FOREGROUND] && g.reg.point[FOREGROUND] >= 0 && g.reg.point[BACKGROUND] <= g.limit2)
+                else if (g.paused == 2)
+                  // Restarting from a pause which happened during the initial travel to the starting point
                 {
-                  // Using the simplest approach which will result the last shot to always slightly undershoot
-                  g.Nframes = Nframes();
-                  // Always starting from the foreground point, for full backlash compensation:
                   go_to(g.reg.point[g.point1], SPEED_LIMIT);
-                  g.starting_point = g.reg.point[g.point1];
-                  g.destination_point = g.reg.point[g.point2];
                   g.stacker_mode = 1;
-                  // This is a non-continuous mode:
-                  g.continuous_mode = 0;
                   g.start_stacking = 0;
-                  g.timelapse_counter = 0;
-                  if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
-                    g.timelapse_mode = 1;
-                  display_comment_line("   2-points stack   ");
+                  g.paused = 0;
+                  display_all();
                 }
-                else
-                {
-                  // Should print error message
-                  display_comment_line("   Bad 2 points!    ");
-                }
+                break;
+              }
+              if (g.reg.i_mode == CONT_MODE && g.paused == 0)
+              {
+                // Initiating a new stack (or timelapse sequence of stacks)
+                // Using the simplest approach which will result the last shot to always slightly undershoot
+                g.Nframes = Nframes();
+                g.starting_point = g.reg.point[g.point1];
+                g.destination_point = g.reg.point[g.point2];
+                go_to(g.starting_point, SPEED_LIMIT);
+                g.stacker_mode = 1;
+                g.continuous_mode = 1;
+                g.start_stacking = 0;
+                g.timelapse_counter = 0;
+                if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                  g.timelapse_mode = 1;
+                display_comment_line("   2-points stack   ");
+              }
+              else if (g.reg.i_mode == NONCONT_MODE && g.paused == 0)
+              {
+                // Using the simplest approach which will result the last shot to always slightly undershoot
+                g.Nframes = Nframes();
+                // Always starting from the foreground point, for full backlash compensation:
+                go_to(g.reg.point[g.point1], SPEED_LIMIT);
+                g.starting_point = g.reg.point[g.point1];
+                g.destination_point = g.reg.point[g.point2];
+                g.stacker_mode = 1;
+                // This is a non-continuous mode:
+                g.continuous_mode = 0;
+                g.start_stacking = 0;
+                g.timelapse_counter = 0;
+                if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                  g.timelapse_mode = 1;
+                display_comment_line("   2-points stack   ");
               }
               else
               {
@@ -559,8 +547,8 @@ void process_keypad()
 
 
             case '*':  // *: Show alternative display (for *X commands)
-               if (g.editing == 1)
-                  break;
+              if (g.editing == 1)
+                break;
               if (g.paused)
                 break;
               if (!g.moving && g.alt_flag == 0)
@@ -596,11 +584,11 @@ void process_keypad()
               else
               {
                 g.editing = 1;
-                g.edited_param = PARAM_MSTEP;                
+                g.edited_param = PARAM_MSTEP;
                 editor('I');
                 break;
               }
-              // Also used for different debugging modes, to decrease debugged parameters              
+              // Also used for different debugging modes, to decrease debugged parameters
               if (g.paused)
                 break;
 #if defined(DELAY_DEBUG)
@@ -704,7 +692,7 @@ void process_keypad()
                 g.editing = 1;
                 if (g.reg.i_mode == ONE_SHOT_MODE)
                   g.edited_param = PARAM_N_SHOTS;
-                else if (g.reg.i_mode == CONT_MODE)            
+                else if (g.reg.i_mode == CONT_MODE)
                   g.edited_param = PARAM_FPS;
                 else if (g.reg.i_mode == NONCONT_MODE)
                   g.edited_param = PARAM_FIRST_DELAY;
@@ -734,12 +722,12 @@ void process_keypad()
                 break;
               break;
 
-            case '#':  // 
+            case '#':  //
               if (g.editing == 1)
               {
                 editor(key0);
               }
-                break;
+              break;
 
 
           } // End of case
@@ -796,8 +784,8 @@ void process_keypad()
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
         // Breaking / stopping if 1/A keys were depressed
-        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0 && 
-            (g.model_type==MODEL_REWIND || g.model_type==MODEL_FF))
+        if ((g.key_old == '1' || g.key_old == 'A') && g.moving == 1 && state0 == RELEASED && state0_changed && g.paused == 0 &&
+            (g.model_type == MODEL_REWIND || g.model_type == MODEL_FF))
         {
           g.model_type = MODEL_STOP;
           g.model_init = 1;

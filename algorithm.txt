@@ -1,5 +1,31 @@
 = New algorith (v2.0) =
 
+Pause restart bug
+
+* Normal start:
+g.stacker_mode = 1;
+g.start_stacking = 0;
+
+
+
+
+* After a pause (g.paused=1)
+g.paused = 0;
+g.stacker_mode = 2; //  2-point focus stacking
+g.start_stacking = 1;  // =1 if we just initiated focus stacking
+g.t0_stacking = g.t;
+g.ipos_to_shoot = g.ipos;  // Position to shoot the next shot during focus stacking
+g.noncont_flag = 1
+
+Camera
+g.AF_on = 1
+g.t_AF = g.t
+g.start_stacking = 2  //=2 when AF is triggered initially
+  
+Camera
+g.start_stacking = 3; //=3 after CONT_STACKING_DELAY delay in continuous mode
+
+
 POtential issues:
  - micros() returns unsigned long (uint32), but my TIME_TYPE is a signed int (s32) - I'll have issues with negative times!
 

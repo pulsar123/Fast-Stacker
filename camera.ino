@@ -49,11 +49,11 @@ void camera()
     g.stacker_mode = 2;
   }
 
-  // Enforcing the initial delay before a stacking (only for continuous mode):
   if (g.start_stacking == 2 && (g.t - g.t0_stacking > CONT_STACKING_DELAY || g.continuous_mode == 0 || AF_SYNC))
   {
     g.start_stacking = 3;
 
+  // Enforcing the initial delay before a stacking (only for continuous mode):
     if (g.continuous_mode)
     {
       // Estimating the required speed in microsteps per microsecond

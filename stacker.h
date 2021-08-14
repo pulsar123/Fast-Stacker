@@ -601,8 +601,12 @@ struct global
   byte make_shot; // =1 if we just initiated a shot; 0 otherwise
   TIME_UTYPE t_shot; // the time shot was initiated
   TIME_UTYPE t0_stacking; // time when stacking was initiated;
-  byte paused; // =1 when 2-point stacking was paused, after hitting any key; =0 otherwise
-  COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
+  //Pause state:
+  // 0: no pause
+  // 1: when 2-point stacking was paused
+  // 2: pause which happened during the initial travel to the starting point after hitting any key
+  // 3: pause which happened between stacks (in timelapse mode)
+  byte paused;   COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   byte Backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame
