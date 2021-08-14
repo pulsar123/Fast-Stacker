@@ -13,7 +13,7 @@
 #define VERSION "2.0"
 
 //++++++++++ Major features +++++++++++++++++
-//#define BUZZER
+#define BUZZER
 
 //+++++++++++++ Data types +++++++++++++++++++
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -171,6 +171,7 @@ char keys[rows][cols] = {
 byte rowPins[rows] = {5, 6, 7, 8}; //connect to the row pinouts of the keypad
 byte colPins[cols] = {1, 2, 3, 4}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, rows, cols );
+const TIME_STYPE KEY_DELAY = 1000000; // Delay for activating certain keys (4, B), us
 
 
 //////// Parameters related to the motor and the rail: ////////
@@ -244,6 +245,7 @@ const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line
 const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const TIME_STYPE T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
+const byte N_REPEATS_KEY_DELAY = 4; // How many fake key repeats before a delayed key (4, B) is triggered
 
 ///// Editor related parameters //////
 #define MAX_POS 10 // Maximum number of characters in the edited value
@@ -295,7 +297,7 @@ const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3
 
 // Buzzer stuff:
 #ifdef BUZZER
-const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
+const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz) ; 125
 #endif
 
 const TIME_STYPE FLASHING_DELAY = 300000;
@@ -546,6 +548,8 @@ struct global
   byte cursor_pos; // Initial cursor position (when editing)
   signed char dot_pos; // Counting dots n the edited value
   char value[MAX_POS+1]; // String to store the digits of the edited value
+  TIME_UTYPE t_key_delay; // Time when a key with the delay function (4,B) was pressed
+  byte key_delay_on; // 1: in the process of delaying a key; 0: otherwise
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
@@ -672,6 +676,9 @@ struct global
 #endif
 #ifdef BUZZER
   TIME_STYPE dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us
+  TIME_UTYPE t_beep; // time when beep was initiated
+  TIME_STYPE beep_length; // Length of beep, us
+  byte beep_on; // 1: beeping
 #endif
 #ifdef TEST_LIMITER
   int limiter_i; // counter for the false limiter readings

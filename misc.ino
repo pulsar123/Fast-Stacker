@@ -291,6 +291,18 @@ void set_memory_point(char n)
 {
   if (g.paused || g.moving)
     return;
+
+  if (g.N_repeats != N_REPEATS_KEY_DELAY)
+    return;
+
+#ifdef BUZZER  
+  // Starting a short beep
+  g.beep_length = 100000; // Beep length in us
+  g.beep_on = 1;
+  g.t_beep = g.t;
+  g.t_buzz = g.t;
+#endif  
+    
   g.current_point = n - 1;
   g.reg.point[g.current_point] = g.ipos;
   // Saving the changed register as default one:
@@ -299,6 +311,7 @@ void set_memory_point(char n)
   display_all();
   sprintf(g.buffer, "     P%1d was set     ", n);
   display_comment_line(g.buffer);
+  
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -21,17 +21,16 @@ void process_keypad()
   // The previous value of the key 0:
   g.key_old = keypad.key[0].kchar;
 
-  // This is a trick to generate multiple actions when you press certain keys (like "2") long enough
+  // This is a trick to generate multiple actions when you press certain keys long enough
   // (longer than T_KEY_LAG). The multiple actions are separated by delays T_KEY_REPEAT.
   // The trick is to generate fake key press events for the currently pressed key. Flag fake_key
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
-  /*  No longer used in s2.0
-    // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
-    if ((g.key_old == '2' || g.key_old == '3' || g.key_old == '5' || g.key_old == '6' || g.key_old == '8' || g.key_old == '9')
+  // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
+  if ((g.key_old == '4' || g.key_old == 'B') && g.editing==0 && g.paused==0 && g.moving==0
       && g.t - g.t_key_pressed > T_KEY_LAG)
     // We are here when a change parameter key was pressed longer than T_KEY_LAG
-    {
+  {
     if (g.N_repeats == 0)
       // Generating the first fake key event:
     {
@@ -46,8 +45,7 @@ void process_keypad()
       g.t_last_repeat = g.t;
       fake_key = 1;
     }
-    }
-  */
+  }
 
   // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
   if (!keypad.getKeys() && !fake_key)

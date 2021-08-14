@@ -1,6 +1,11 @@
 #ifdef BUZZER
 void buzzer()
 {
+  if (g.beep_on == 0)
+    return;
+
+  if (g.t - g.t_beep > g.beep_length)
+    g.beep_on = 0;
 
   if (g.t - g.t_buzz > g.dt1_buzz_us)
     {

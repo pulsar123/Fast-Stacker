@@ -1,5 +1,11 @@
 = New algorith (v2.0) =
 
+TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz)
+  TIME_UTYPE t_buzz; // timer for the buzzer
+  byte buzz_state; // HIGH or LOW for the buzzer state
+  TIME_STYPE dt1_buzz_us = 1000; // Current half-period for the buzzer sound, us
+
+
 Pause restart bug
 
 * Normal start:

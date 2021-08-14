@@ -88,7 +88,6 @@ void setup() {
   iochip.pinMode(EPIN_BUZZ, OUTPUT);
   g.buzz_state = LOW;
   iochip.digitalWrite(EPIN_BUZZ, g.buzz_state);
-  g.t_buzz = micros();
 #endif
 
 #ifdef SER_DEBUG

@@ -49,7 +49,7 @@ void initialize(byte factory_reset)
   g.limit1 = 0;
   g.accident = 0;
   g.delayed_goto = 0;
-  g.editing = 0;
+  g.editing = 0; 
 //  g.limiter_counter = 0;
 
   if (factory_reset)
@@ -116,6 +116,7 @@ void initialize(byte factory_reset)
   g.t_AF = g.t;
   g.t_mil = millis();
   g.t_next_step = g.t;
+  g.t_key_delay = g.t;
 
   g.N_repeats = 0;
   g.uninterrupted = 0;
@@ -129,6 +130,7 @@ void initialize(byte factory_reset)
   g.starting_point = g.reg.point[g.point1];
   g.timelapse_counter = 0;
   g.timelapse_mode = 0;
+  g.key_delay_on = 0;
 
   if (factory_reset)
   {
@@ -206,6 +208,10 @@ void initialize(byte factory_reset)
 
 #ifdef BUZZER
   g.dt1_buzz_us = DT_BUZZ_US;
+  g.t_beep = g.t;
+  g.t_buzz = g.t;
+  g.beep_on = 0;
+  g.beep_length = 100000;
 #endif
 
   sprintf(g.empty_buffer, "                    ");  // 20 spaces, used to clear one LCD row
