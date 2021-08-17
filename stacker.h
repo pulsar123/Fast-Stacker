@@ -550,6 +550,8 @@ struct global
   char value[MAX_POS+1]; // String to store the digits of the edited value
   TIME_UTYPE t_key_delay; // Time when a key with the delay function (4,B) was pressed
   byte key_delay_on; // 1: in the process of delaying a key; 0: otherwise
+  COORD_TYPE ipos_raw; // Raw coordinate, used for parking
+  signed char dir_raw; // Raw motor direction, for parking
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one

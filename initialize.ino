@@ -44,12 +44,14 @@ void initialize(byte factory_reset)
   g.single_shot = 0;
   g.direction = 1;
   g.dir = 0; // 0 so it's guaranteed to execute the proper direction command at first motor_direction() call
+  g.dir_raw = 1;
   g.comment_flag = 0;
   g.current_point = -1;
   g.limit1 = 0;
   g.accident = 0;
   g.delayed_goto = 0;
   g.editing = 0; 
+  g.ipos_raw = 0;
 //  g.limiter_counter = 0;
 
   if (factory_reset)
@@ -215,6 +217,8 @@ void initialize(byte factory_reset)
 #endif
 
   sprintf(g.empty_buffer, "                    ");  // 20 spaces, used to clear one LCD row
+
+  motor_direction(); // Sending the motor the initial direction signal
 
   EEPROM.commit();
 

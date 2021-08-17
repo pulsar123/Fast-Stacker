@@ -72,7 +72,7 @@ void motor_control()
     if (g.reg.backlash_on * g.BL_counter < 0)
       g.BL_counter = 0;
     // and cannot be larger than g.backlash:
-    if (g.reg.backlash_on==1 && (g.BL_counter > g.backlash) || g.reg.backlash_on==-1 && (g.BL_counter < g.backlash))
+    if (g.reg.backlash_on == 1 && (g.BL_counter > g.backlash) || g.reg.backlash_on == -1 && (g.BL_counter < g.backlash))
       g.BL_counter = g.backlash;
 
     // Syncing times
@@ -93,7 +93,7 @@ void motor_control()
     if (g.model_type == MODEL_NONE)
       return;
 
-    if (g.reg.save_energy && g.enable_flag==HIGH)
+    if (g.reg.save_energy && g.enable_flag == HIGH)
     {
 #ifndef DISABLE_MOTOR
       g.enable_flag = LOW;
@@ -396,7 +396,7 @@ void generate_model()
     //++++++++++++++++++++  GOTO, REWIND and FF models +++++++++++++++++++++++
   {
     // Backlash compensation for GOTO model:
-    if (g.model_type == MODEL_GOTO && (g.reg.backlash_on==1 && (g.model_ipos1 < g.ipos) || g.reg.backlash_on==-1 && (g.model_ipos1 > g.ipos)))
+    if (g.model_type == MODEL_GOTO && (g.reg.backlash_on == 1 && (g.model_ipos1 < g.ipos) || g.reg.backlash_on == -1 && (g.model_ipos1 > g.ipos)))
       g.model_ipos1 = g.model_ipos1 - g.backlash;
 
     // Models FF and REWIND do not have explicit destination. We set it here to the corresponding soft limit
@@ -720,17 +720,16 @@ void motor_direction()
     if (g.direction == 1)
     {
       g.dir = 1; // This variable reflect the actual state of the motor
-#ifndef DISABLE_MOTOR
-      digitalWrite(PIN_DIR, 1 - g.reg.straight);
-#endif
+      g.dir_raw = 1 - g.reg.straight; // Raw motor direction (to use in parking)
     }
     else
     {
       g.dir = -1;
-#ifndef DISABLE_MOTOR
-      digitalWrite(PIN_DIR, g.reg.straight);
-#endif
+      g.dir_raw = g.reg.straight;
     }
+#ifndef DISABLE_MOTOR
+    digitalWrite(PIN_DIR, g.dir_raw);
+#endif
   }
 
   // Updating the display - only if the motion status changed:
@@ -753,6 +752,12 @@ void make_step()
 #ifndef DISABLE_MOTOR
   digitalWrite(PIN_STEP, HIGH);
 #endif
+
+  // Raw coordinate (used in parking):
+  if (g.dir_raw == 1)
+    g.ipos_raw++;
+  else
+    g.ipos_raw--;
 
   return;
 }
@@ -796,4 +801,54 @@ void start_breaking()
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+void parking()
+// Parking
+{
+
+  byte raw_direction;
+  if (g.dir_raw == 1)
+    raw_direction = 1;
+  else
+    raw_direction = 0;
+
+  // Figuring out the raw parking coordinate (multiples of 4 full steps):
+  COORD_TYPE delta_ipos_park = g.ipos_raw % (4 * N_MICROSTEPS);
+
+  // The nearest parking point:
+  if (delta_ipos_park > 2 * N_MICROSTEPS)
+    delta_ipos_park = delta_ipos_park - 4 * N_MICROSTEPS;
+  else if (delta_ipos_park < -2 * N_MICROSTEPS)
+    delta_ipos_park = delta_ipos_park + 4 * N_MICROSTEPS;
+
+  // If program direction = raw direction,  my move in the programs coordinates will be  -delta_ipos_park
+  // If program direction = -raw direction, my move in the programs coordinates will be   delta_ipos_park
+  COORD_TYPE ipos_park;  // Parking coordinate in the model coordinates
+  if (g.direction == raw_direction)
+    ipos_park = g.ipos - delta_ipos_park;
+  else
+    ipos_park = g.ipos + delta_ipos_park;
+
+  // Inforcing the limits:
+  if (ipos_park > g.limit2-BACKLASH)
+  {
+    // How many 4N steps to move back to become smaller than limit2:
+    COORD_TYPE d2 = (ipos_park - (g.limit2-BACKLASH)) / (4 * N_MICROSTEPS) + 1;
+    ipos_park = ipos_park - d2 * 4 * N_MICROSTEPS;
+  }
+  else if (ipos_park < g.limit1+BACKLASH)
+  {
+    // How many 4N steps to move forward to become larger than limit1+BACKLASH:
+    COORD_TYPE d2 = (g.limit1+BACKLASH - ipos_park) / (4 * N_MICROSTEPS) + 1;
+    ipos_park = ipos_park + d2 * 4 * N_MICROSTEPS;
+  }
+
+  go_to(ipos_park, SPEED_LIMIT);  // Parking move
+
+  display_comment_line("       Parked       ");
+  EEPROM.commit();
+
+  return;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

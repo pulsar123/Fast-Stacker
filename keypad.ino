@@ -669,7 +669,7 @@ void process_keypad()
                 break;
               break;
 
-            case '3':  // 3: Increase parameter mm_per_frame
+            case '3':  // 3: Parking
               if (g.editing == 1)
               {
                 editor(key0);
@@ -677,6 +677,7 @@ void process_keypad()
               }
               if (g.paused)
                 break;
+              parking();
               break;
 
             case '8':  // 8: Edit a parameter (different for each mode)
