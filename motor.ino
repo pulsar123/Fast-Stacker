@@ -306,6 +306,11 @@ void generate_model()
 
     We apply here backlash compensation for STOP, BREAK, and GOTO models moving in the bad (negative) direction at the final model leg.
 
+    New: the original STOP model is way too slow when backlashing is enabled and the move is in the bad direction. The new strategy: in such situations,
+    STOP model should essentially behave as REWIND (or FF, depending on the direction). It starts from a non-zero speed, and then goes to the
+    calculated target position, which is the position it would stop without a backlash, minus (or plus) BACKLASH. As it is following a FF/REWIND
+    model, it can first accelerate before slowing down and stopping at the destination. (This is unlike STOP model, which can only decelerated until stopped.)
+    We move at the highest acceleration/deceleration, and maximum speed, so the move will be as quick as it can be.
 */
 {
   float speed0, dx_break, accel, Vmax0, Vmax;
@@ -342,6 +347,8 @@ void generate_model()
     return;
   }
 
+  byte backlashed_stop = 0;
+
   speed0 = current_speed();  // Current speed (signed), based on the current model; will be the initial speed in the new model
 
   // First model point (direction and acceleration will be defined later):
@@ -354,7 +361,6 @@ void generate_model()
   // Global model parameters:
   g.model_ipos0 = g.ipos;  // Initial absolute coordinate
   g.model_t0 = g.t;  // Initial absolute time
-
 
   //++++++++++++++++++++  STOP and BREAK models +++++++++++++++++++++++
   if (g.model_type == MODEL_STOP || g.model_type == MODEL_BREAK)
@@ -374,43 +380,66 @@ void generate_model()
       g.model_ipos1 = g.model_ipos1 - g.backlash;
       dx_break = dx_break - g.backlash;
     }
-    // Revised acceleration, for the revised dx_break:
-    accel = -0.5 * speed0 * speed0 / dx_break;
 
-    // Missing data for the first point:
-    g.model_dir[i_point] = g.direction; // Maintaining the current direction
-    g.model_accel[i_point] = accel;  // Acceleration corrected for overshoot
+    // Detecting if this is a special case of a STOP model moving in the bad direction:
+    if (g.model_type == MODEL_STOP && g.reg.backlash_on != 0 && g.direction == -g.reg.backlash_on)
+    {
+      float V0 = fabs(speed0);  // Module of the initial speed
+      // Breaking distance (absolute value) with the backlash overshooting:
+      float dx1 = fabs(dx_break);
+      // Old stype (constant deceleration) breaking time:
+      float t_old = 2 * dx1 / V0;
+      // New style (accel, then decel, using maximum accelerations) breaking time:
+      float t_new = (V0 + 2 * sqrt(0.5 * V0 * V0 + ACCEL_LIMIT * dx1)) / ACCEL_LIMIT;
+      // To use new style breaking, the new time should be shorter than the old one.
+      // The 0.95 factors are to avoid floating point issues later on
+      if (t_new < 0.95 * t_old && V0 < 0.95 * SPEED_LIMIT)
+        backlashed_stop = 1;
+    }
 
-    // The second (and final) point:
-    i_point++;
-    g.model_dir[i_point] = g.direction;
-    g.model_accel[i_point] = 0;
-    model_time[i_point] = -speed0 / accel; // Time corrected for overshoot
-    g.model_speed[i_point] = 0;
-    g.model_pos[i_point] = dx_break; // Coordinate corrected for overshoot
-    g.model_ptype[i_point] = STOP_POINT;
+    if (backlashed_stop == 0)
+      // Old style (constant deceleration) model
+    {
+      // Revised acceleration, for the revised dx_break:
+      accel = -0.5 * speed0 * speed0 / dx_break;
+
+      // Missing data for the first point:
+      g.model_dir[i_point] = g.direction; // Maintaining the current direction
+      g.model_accel[i_point] = accel;  // Acceleration corrected for overshoot
+
+      // The second (and final) point:
+      i_point++;
+      g.model_dir[i_point] = g.direction;
+      g.model_accel[i_point] = 0;
+      model_time[i_point] = -speed0 / accel; // Time corrected for overshoot
+      g.model_speed[i_point] = 0;
+      g.model_pos[i_point] = dx_break; // Coordinate corrected for overshoot
+      g.model_ptype[i_point] = STOP_POINT;
+    }
   }
 
-  else
-
+  if (g.model_type == MODEL_GOTO || g.model_type == MODEL_REWIND || g.model_type == MODEL_FF || (g.model_type == MODEL_STOP && backlashed_stop))
     //++++++++++++++++++++  GOTO, REWIND and FF models +++++++++++++++++++++++
   {
     // Backlash compensation for GOTO model:
     if (g.model_type == MODEL_GOTO && (g.reg.backlash_on == 1 && (g.model_ipos1 < g.ipos) || g.reg.backlash_on == -1 && (g.model_ipos1 > g.ipos)))
       g.model_ipos1 = g.model_ipos1 - g.backlash;
 
-    // Models FF and REWIND do not have explicit destination. We set it here to the corresponding soft limit
-    if (g.model_type == MODEL_FF)
-      g.model_ipos1 = g.limit2;
-    else if (g.model_type == MODEL_REWIND)
-      g.model_ipos1 = g.limit1;
-    else
+    if (backlashed_stop == 0)
     {
-      // Enforcing soft limits for GOTO model:
-      if (g.model_ipos1 > g.limit2)
+      // Models FF and REWIND do not have explicit destination. We set it here to the corresponding soft limit
+      if (g.model_type == MODEL_FF)
         g.model_ipos1 = g.limit2;
-      if (g.model_ipos1 < g.limit1)
+      else if (g.model_type == MODEL_REWIND)
         g.model_ipos1 = g.limit1;
+      else
+      {
+        // Enforcing soft limits for GOTO model:
+        if (g.model_ipos1 > g.limit2)
+          g.model_ipos1 = g.limit2;
+        if (g.model_ipos1 < g.limit1)
+          g.model_ipos1 = g.limit1;
+      }
     }
 
     // Accurate travel vector (if no accel limit existed):
@@ -447,7 +476,7 @@ void generate_model()
     }
     else
     {
-      accel = g.direction * g.accel_v[4];  // Maximum acceleration is used for all GOTO moves
+      accel = g.direction * g.accel_v[4];  // Maximum acceleration is used for all GOTO moves, and for backlashed_stop=1 situation
       accel_last = -accel;
     }
 
@@ -460,7 +489,7 @@ void generate_model()
     if (g.model_type == MODEL_GOTO)
       Vmax0 = g.model_speed_max;
     else
-      Vmax0 = SPEED_LIMIT;
+      Vmax0 = SPEED_LIMIT;  // also works for backlashed_stop=1 situation (MODEL_STOP)
 
     signed char direction = g.direction;
 
@@ -549,7 +578,7 @@ void generate_model()
     g.model_pos[i_point] = dx_prime;
     g.model_ptype[i_point] = STOP_POINT;
 
-  }  // else (non-breaking models)
+  }  // if (non-breaking models or backlashed_stop=1)
 
   g.Npoints = i_point + 1;  // Number of model points
 
@@ -829,16 +858,16 @@ void parking()
     ipos_park = g.ipos + delta_ipos_park;
 
   // Inforcing the limits:
-  if (ipos_park > g.limit2-BACKLASH)
+  if (ipos_park > g.limit2 - BACKLASH)
   {
     // How many 4N steps to move back to become smaller than limit2:
-    COORD_TYPE d2 = (ipos_park - (g.limit2-BACKLASH)) / (4 * N_MICROSTEPS) + 1;
+    COORD_TYPE d2 = (ipos_park - (g.limit2 - BACKLASH)) / (4 * N_MICROSTEPS) + 1;
     ipos_park = ipos_park - d2 * 4 * N_MICROSTEPS;
   }
-  else if (ipos_park < g.limit1+BACKLASH)
+  else if (ipos_park < g.limit1 + BACKLASH)
   {
     // How many 4N steps to move forward to become larger than limit1+BACKLASH:
-    COORD_TYPE d2 = (g.limit1+BACKLASH - ipos_park) / (4 * N_MICROSTEPS) + 1;
+    COORD_TYPE d2 = (g.limit1 + BACKLASH - ipos_park) / (4 * N_MICROSTEPS) + 1;
     ipos_park = ipos_park + d2 * 4 * N_MICROSTEPS;
   }
 
