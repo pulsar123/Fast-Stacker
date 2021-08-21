@@ -65,8 +65,8 @@ void initialize(byte factory_reset)
     g.reg.first_delay = 1.0;
     g.reg.second_delay = 1.0;
     g.reg.i_accel_factor = 1;
-    g.reg.i_n_timelapse = 0;
-    g.reg.i_dt_timelapse = 5;
+    g.reg.n_timelapse = 1;
+    g.reg.dt_timelapse = 300.0;
     g.reg.mirror_lock = 1;
     g.reg.backlash_on = 0;
     update_backlash();
@@ -209,6 +209,8 @@ void initialize(byte factory_reset)
 #endif
 
 #ifdef BUZZER
+  g.buzz_state = LOW;
+  iochip.digitalWrite(EPIN_BUZZ, g.buzz_state);
   g.dt1_buzz_us = DT_BUZZ_US;
   g.t_beep = g.t;
   g.t_buzz = g.t;

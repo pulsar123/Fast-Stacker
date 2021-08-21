@@ -30,6 +30,7 @@ void editor(char key)
   if (key == 'I')
     // Initializing the editor
   {
+    g.alt_flag = 0;
     // Initial cursor position:
     g.cursor_pos = 0;
     g.dot_pos = -1;
@@ -86,6 +87,19 @@ void editor(char key)
           tft.println("(in mm) for the GoTo");
           tft.println("command.");
         }
+        break;
+
+      case PARAM_N_TIMELAPSE:
+        tft.println("Number of passes in a");
+        tft.println("timelapse sequence.");
+        tft.println("(Set to 1 to disable");
+        tft.println("timelapsing.)");
+        break;
+
+      case PARAM_DT_TIMELAPSE:
+        tft.println("Time interval");
+        tft.println("(seconds) between");
+        tft.println("timelapse passes.");
         break;
     }
 
@@ -241,8 +255,8 @@ void editor(char key)
           g.frame_counter = (int)(fvalue + 0.5) - 1;
           if (g.frame_counter < 0)
             g.frame_counter = 0;
-          if (g.frame_counter > g.Nframes-1)
-            g.frame_counter = g.Nframes-1;
+          if (g.frame_counter > g.Nframes - 1)
+            g.frame_counter = g.Nframes - 1;
           COORD_TYPE ipos_target = frame_coordinate();
           move_to_next_frame(&ipos_target, &frame_counter0);
         }
@@ -259,6 +273,28 @@ void editor(char key)
         }
       }
 
+      else if (g.edited_param == PARAM_N_TIMELAPSE)
+      {
+        int n_timelapse = (int)(fvalue + 0.5);
+        // Enforcing limits:
+        if (n_timelapse < N_TIMELAPSE_MIN)
+          n_timelapse = N_TIMELAPSE_MIN;
+        if (n_timelapse > N_TIMELAPSE_MAX)
+          n_timelapse = N_TIMELAPSE_MAX;
+        g.reg.n_timelapse = n_timelapse; // Updating the value
+        EEPROM.put( g.addr_reg[0], g.reg);
+      }
+
+      else if (g.edited_param == PARAM_DT_TIMELAPSE)
+      {
+        // Enforcing limits:
+        if (fvalue < DT_TIMELAPSE_MIN)
+          fvalue = DT_TIMELAPSE_MIN;
+        if (fvalue > DT_TIMELAPSE_MAX)
+          fvalue = DT_TIMELAPSE_MAX;
+        g.reg.dt_timelapse = fvalue; // Updating the value
+        EEPROM.put( g.addr_reg[0], g.reg);
+      }
     }
 
     g.Nframes = Nframes();

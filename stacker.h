@@ -14,6 +14,7 @@
 
 //++++++++++ Major features +++++++++++++++++
 #define BUZZER
+#define BUZZER_PASSIVE  // If you are using a passive buzzer (requires PWM signal)
 
 //+++++++++++++ Data types +++++++++++++++++++
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -81,8 +82,8 @@ const COORD_TYPE BL_STEP = 1;
 
 // Port expander initial state:
 // For MCP23S17 expander; ports numbering is 16, 15, ..., 1 (B7, B6, ..., A7, ..., A0):
-s16 IO_MODE =   0B1100000011111111;
-s16 IO_PULLUP = 0B1111111111111111;
+s16 IO_MODE =   0B1000000011111111;  // 1: input; 0: output
+s16 IO_PULLUP = 0B1000000011111111;
 
 //////// Camera related parameters: ////////
 // Delay between triggering AF on and starting shooting in continuous stacking mode; microseconds
@@ -260,7 +261,10 @@ const byte N_REPEATS_KEY_DELAY = 4; // How many fake key repeats before a delaye
 #define SECOND_DELAY_MAX 8.0
 #define N_SHOTS_MIN 2
 #define N_SHOTS_MAX 600
-
+#define N_TIMELAPSE_MIN 1
+#define N_TIMELAPSE_MAX 999
+#define DT_TIMELAPSE_MIN 0
+#define DT_TIMELAPSE_MAX 9999
 
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
@@ -289,11 +293,11 @@ const byte N_SECOND_DELAY = 7;
 const byte N_ACCEL_FACTOR = 7;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};
 // Table for N_timelapse parameter (number of stacking sequences in the timelapse mode); 1 means no timelapse (just one stack):
-const byte N_N_TIMELAPSE = 7;
-const COORD_TYPE N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
+//const byte N_N_TIMELAPSE = 7;
+//const COORD_TYPE N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
 // Table for dt_timelapse parameter (time in seconds between different stacks in timelapse mode; if it is shorter than a single stack time, the latter is used)
-const byte N_DT_TIMELAPSE = 9;
-const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
+//const byte N_DT_TIMELAPSE = 9;
+//const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
 
 // Buzzer stuff:
 #ifdef BUZZER
@@ -363,8 +367,8 @@ struct regist
 //  byte i_first_delay; // counter for FIRST_DELAY parameter
 //  byte i_second_delay; // counter for SECOND_DELAY parameter
   byte i_accel_factor; // Index for accel_factor
-  byte i_n_timelapse; // counter for N_TIMELAPSE parameter
-  byte i_dt_timelapse; // counter for DT_TIMELAPSE parameter
+  int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
+  float dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
   signed char backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0; =-1 when g.backlash=-BACKLASH
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)

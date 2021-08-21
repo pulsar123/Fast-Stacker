@@ -223,12 +223,12 @@ void camera()
   // Timelapse module:
   if (g.end_of_stacking && g.moving == 0 && g.paused == 0)
   {
-    if (g.timelapse_counter < N_TIMELAPSE[g.reg.i_n_timelapse] - 1)
+    if (g.timelapse_counter < g.reg.n_timelapse - 1)
     {
       // Special stacker mode: waiting between stacks in a timelapse sequence:
       g.stacker_mode = 4;
       g.t_mil = millis();
-      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > (float)DT_TIMELAPSE[g.reg.i_dt_timelapse])
+      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > g.reg.dt_timelapse)
         // We are initiating the next stacking in the timelapse sequence
       {
         g.end_of_stacking = 0;

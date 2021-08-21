@@ -58,43 +58,77 @@ void display_all()
     if (g.alt_kind == 1)
       // Screen "*"
     {
-      // Line 1:
+      const byte shift = 10;
+      const byte del = 2;
+      byte line;
+//---------------------------------------------
+      line = 0;
+      my_setCursor(0, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("1");
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      my_setCursor(7, 0, 1);
+      sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
+      my_setCursor(del, line, 1);
+      tft.print(g.buf6);
+
+      my_setCursor(shift, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("A");
+      my_setCursor(shift+del, line, 1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buffer, "Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
       tft.print(g.buffer);
-      sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
-      my_setCursor(0, 0, 1);
-      tft.print(g.buf6);
 
-      // Line 2:
-      sprintf(g.buffer, "N=%-3d", N_TIMELAPSE[g.reg.i_n_timelapse]);
-      my_setCursor(0, 1, 1);
+//---------------------------------------------
+      line = 1;
+      my_setCursor(0, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("4");
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      sprintf(g.buffer, "N=%-3d", g.reg.n_timelapse);      
+      my_setCursor(del, line, 1);
       tft.print(g.buffer);
+      
+      my_setCursor(shift, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("B");
+      my_setCursor(shift+del, line, 1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buffer, "BL=%2d", g.reg.backlash_on);
-      my_setCursor(7, 1, 1);
       tft.print(g.buffer);
 
-      // Line 3:
-      my_setCursor(0, 2, 1);
-      sprintf(g.buf6, "dt=%ds", DT_TIMELAPSE[g.reg.i_dt_timelapse]);
+//---------------------------------------------
+      line = 2;
+      my_setCursor(0, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("7");
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      my_setCursor(del, line, 1);
+      sprintf(g.buf6, "dt=%ds", (int)g.reg.dt_timelapse);
       tft.print(g.buf6);
+      
+      my_setCursor(shift, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("C");
+      my_setCursor(shift+del, line, 1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buf6, "Mir");
       sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
-      my_setCursor(7, 2, 1);
       tft.print(g.buffer);
 
-      // Line 4:
+//---------------------------------------------
+      line = 3;
+      my_setCursor(0, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("0");
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      my_setCursor(del, line, 1);
       sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
-      my_setCursor(0, 3, 1);
       tft.print(g.buffer);
-
-      // Line 5:
-      //    tft.print("              ");
-
-      // Line 6:
-      my_setCursor(0, 5, 1);
-      sprintf(g.buffer, "         s%s", VERSION);
+      
+      line = 6;
+      my_setCursor(15, line, 1);
+      sprintf(g.buffer, "s%s", VERSION);
 
 #ifdef TIMING
       // Average loop length for the last motion, in shortest miscrostep length units *100:
@@ -468,8 +502,8 @@ void display_current_position()
     return;
 
   // Do not show the line untill the comment line stayed on for COMMENT_DELAY
-//  if (g.comment_flag == 1 && g.t < g.t_comment + COMMENT_DELAY)
-//    return;
+  //  if (g.comment_flag == 1 && g.t < g.t_comment + COMMENT_DELAY)
+  //    return;
 
   if (g.reg.straight)
     g.tmp_char = ' ';

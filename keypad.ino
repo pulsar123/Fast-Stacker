@@ -27,7 +27,7 @@ void process_keypad()
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
   // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
-  if ((g.key_old == '4' || g.key_old == 'B') && g.editing==0 && g.paused==0 && g.moving==0
+  if ((g.key_old == '4' || g.key_old == 'B') && g.editing == 0 && g.paused == 0 && g.moving == 0
       && g.t - g.t_key_pressed > T_KEY_LAG)
     // We are here when a change parameter key was pressed longer than T_KEY_LAG
   {
@@ -72,7 +72,7 @@ void process_keypad()
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Two-key #X commands (no fake key events allowed)
-  if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key)
+  if (state0 == PRESSED && keypad.key[0].kchar == '#' && keypad.key[1].stateChanged && state1 == PRESSED && !fake_key && g.editing == 0)
   {
     switch (keypad.key[1].kchar)
     {
@@ -88,7 +88,7 @@ void process_keypad()
         display_all();
         break;
 
-      case 'B':  // #B: Initiate emergency breaking, or abort paused stacking
+      case 'B': // #B: Initiate emergency breaking, or abort paused stacking
         if (g.paused && g.moving == 0)
           // Aborting stacking:
         {
@@ -184,7 +184,7 @@ void process_keypad()
         g.current_point = -1;
         break;
 
-      case 'D':  // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
+      case 'D': // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
         if (g.paused)
           break;
         go_to(g.starting_point, SPEED_LIMIT);
@@ -271,31 +271,27 @@ void process_keypad()
         case 'D': // *D: temporarily disable limiters (not saved to EEPROM)
           // Use this command if the rail gets confused and cannot be operated normally (e.g. false limiter trigger)
           // Once the rail is moved into a safe position, reboot the controller
-          g.uninterrupted2 = 1;
-          g.limit1 = 10000;
-          g.limit2 = 100000;
-          g.ipos = 50000;
-          g.error = 0; // To remove "Calibrate?" screen if present
-          display_all();
+          /*  Disabled for now
+            g.uninterrupted2 = 1;
+            g.limit1 = 10000;
+            g.limit2 = 100000;
+            g.ipos = 50000;
+            g.error = 0; // To remove "Calibrate?" screen if present
+            display_all();
+          */
           break;
 
 
         case '4': // *4: Change N_timelapse
-          if (g.reg.i_n_timelapse < N_N_TIMELAPSE - 1)
-            g.reg.i_n_timelapse++;
-          else
-            g.reg.i_n_timelapse = 0;
-          EEPROM.put( g.addr_reg[0], g.reg);
-          display_all();
+          g.editing = 1;
+          g.edited_param = PARAM_N_TIMELAPSE;
+          editor('I');
           break;
 
         case '7': // *7: Change dt_timelapse
-          if (g.reg.i_dt_timelapse < N_DT_TIMELAPSE - 1)
-            g.reg.i_dt_timelapse++;
-          else
-            g.reg.i_dt_timelapse = 0;
-          EEPROM.put( g.addr_reg[0], g.reg);
-          display_all();
+          g.editing = 1;
+          g.edited_param = PARAM_DT_TIMELAPSE;
+          editor('I');
           break;
 
         case '0': // *0: Save energy on / off
@@ -392,10 +388,13 @@ void process_keypad()
               {
                 if (g.moving)
                   break;
+
+                // Moving +10 frames when paused:
                 frame_counter0 = g.frame_counter;
                 g.frame_counter = g.frame_counter + 10;
                 ipos_target = frame_coordinate();
                 move_to_next_frame(&ipos_target, &frame_counter0);
+
               }
               else
               {
@@ -505,7 +504,7 @@ void process_keypad()
                 g.continuous_mode = 1;
                 g.start_stacking = 0;
                 g.timelapse_counter = 0;
-                if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                if (g.reg.n_timelapse > 1)
                   g.timelapse_mode = 1;
                 display_comment_line("   2-points stack   ");
               }
@@ -522,7 +521,7 @@ void process_keypad()
                 g.continuous_mode = 0;
                 g.start_stacking = 0;
                 g.timelapse_counter = 0;
-                if (N_TIMELAPSE[g.reg.i_n_timelapse] > 1)
+                if (g.reg.n_timelapse > 1)
                   g.timelapse_mode = 1;
                 display_comment_line("   2-points stack   ");
               }
@@ -581,14 +580,14 @@ void process_keypad()
               }
               else
               {
+                if (g.paused)
+                  break;
                 g.editing = 1;
                 g.edited_param = PARAM_MSTEP;
                 editor('I');
                 break;
               }
               // Also used for different debugging modes, to decrease debugged parameters
-              if (g.paused)
-                break;
 #if defined(DELAY_DEBUG)
               // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
               SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
@@ -652,7 +651,7 @@ void process_keypad()
 #endif
               break;
 
-            case '2':  // 2: GoTo command
+            case '2':  // 2: GoTo command (for both non-paused and paused situations)
               if (g.editing == 1)
               {
                 editor(key0);
@@ -665,8 +664,6 @@ void process_keypad()
                 editor('I');
                 break;
               }
-              if (g.paused)
-                break;
               break;
 
             case '3':  // 3: Parking
@@ -688,6 +685,8 @@ void process_keypad()
               }
               else
               {
+                if (g.paused)
+                  break;
                 g.editing = 1;
                 if (g.reg.i_mode == ONE_SHOT_MODE)
                   g.edited_param = PARAM_N_SHOTS;
@@ -712,13 +711,15 @@ void process_keypad()
               }
               else
               {
+                if (g.paused)
+                  break;
+                if (g.reg.i_mode != NONCONT_MODE)
+                  break;
                 g.editing = 1;
                 g.edited_param = PARAM_SECOND_DELAY;
                 editor('I');
                 break;
               }
-              if (g.paused)
-                break;
               break;
 
             case '#':  //
