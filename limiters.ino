@@ -1,14 +1,14 @@
 void limiters()
 /* Processing inputs from the two limiting switches, plus all the relevant calculations.
- *  
- *  Only processed when moving.
+
+    Only processed when moving.
 
 */
 {
   COORD_TYPE dx, dx_break;
 
 #ifdef TEST_LIMITER
-// Detecting false readings from the limiting switch:
+  // Detecting false readings from the limiting switch:
   Read_limiters();
   if (g.limit_on != g.limiter_ini)
   {
@@ -74,6 +74,9 @@ void limiters()
     if (g.calibrate_flag == 0)
     {
       g.accident = 1;
+#ifdef BUZZER
+      g.accident_buzzer = 1;
+#endif      
       // Calibration initiated by hitting limit2 switch by accident:
       if (g.direction == 1)
       {
@@ -106,7 +109,7 @@ void limiters()
 
     // Emergency breaking (cannot be interrupted):
     start_breaking();
-    display_comment_line("   Hit a limiter    "); // Expensive 
+    display_comment_line("   Hit a limiter    "); // Expensive
   }
   else
 

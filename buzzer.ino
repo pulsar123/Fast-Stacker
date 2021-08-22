@@ -12,23 +12,28 @@ void buzzer()
   return;
 */
 
+
 #ifdef BUZZER_PASSIVE
   if (g.beep_on == 0)
     return;
 #endif    
 
-  if (g.beep_on == 1 && g.t - g.t_beep > g.beep_length)
+  TIME_UTYPE t = micros(); 
+
+  if (g.beep_on == 1 && t - g.t_beep > g.beep_length)
   {
     g.beep_on = 0;
+    g.buzz_state = 0;
+    iochip.digitalWrite(EPIN_BUZZ, g.buzz_state);
     return;
   }
 
 #ifdef BUZZER_PASSIVE
-  if (g.t - g.t_buzz > g.dt1_buzz_us)
+  if (t - g.t_buzz > g.dt1_buzz_us)
     {
       g.buzz_state = 1 - g.buzz_state;
       iochip.digitalWrite(EPIN_BUZZ, g.buzz_state);
-      g.t_buzz = g.t;  
+      g.t_buzz = t;  
     }
 
 #else
@@ -48,5 +53,6 @@ void buzzer()
     }
 #endif    
 
+  return;
 }
 #endif

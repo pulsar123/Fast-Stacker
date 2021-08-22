@@ -12,11 +12,30 @@ void process_keypad()
   if (g.uninterrupted == 1)
     return;
 
+// Treating delayed keyes here:
+  if (g.init_delayed_key == 1 && micros() - g.t_delayed_key > KEY_DELAY_US)
+  {
+    g.init_delayed_key = 0;
+    
+    switch (keypad.key[0].kchar)
+    {
+      case '4': // 4: Set foreground point (#1)
+        set_memory_point(1);
+        break;
+
+      case 'B': // B: Set background point (#2)
+        set_memory_point(2);
+        break;      
+    }
+  }
+
   // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
+  /* !!!
   if (g.comment_flag == 1 && keypad.key[0].kchar == '#')
     // -COMMENT_LINE+10000 is a hack, to reduce to almost zero the time the parameters are displayed:
     // (So basically the parameters are only displayed as long as the "#" key is pressed)
     g.t_comment = g.t - COMMENT_DELAY + 10000;
+*/
 
   // The previous value of the key 0:
   g.key_old = keypad.key[0].kchar;
@@ -26,6 +45,7 @@ void process_keypad()
   // The trick is to generate fake key press events for the currently pressed key. Flag fake_key
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
+  /*  Not using in v2.0
   // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
   if ((g.key_old == '4' || g.key_old == 'B') && g.editing == 0 && g.paused == 0 && g.moving == 0
       && g.t - g.t_key_pressed > T_KEY_LAG)
@@ -46,6 +66,7 @@ void process_keypad()
       fake_key = 1;
     }
   }
+*/
 
   // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
   if (!keypad.getKeys() && !fake_key)
@@ -408,18 +429,24 @@ void process_keypad()
               }
               break;
 
-            case '4':  // 4: Set foreground point (#1)
-              if (g.editing == 1)
+            case '4':
+              if (g.editing == 0)
               {
-                editor(key0);
-                break;
+//                set_memory_point(1);
+                g.init_delayed_key = 1;
+                g.t_delayed_key = micros();
               }
-              set_memory_point(1);
+              else
+                editor('4');
               break;
 
-            case 'B':  // B: Set background point (#2)
+            case 'B':
               if (g.editing == 0)
-                set_memory_point(2);
+              {
+//                set_memory_point(2);
+                g.init_delayed_key = 1;
+                g.t_delayed_key = micros();
+              }
               else
                 editor('B');
               break;
@@ -781,6 +808,7 @@ void process_keypad()
       else
         // if a key was just released
       {
+        g.init_delayed_key = 0;
         // Resetting the counter of key repeats:
         g.N_repeats = 0;
         // Breaking / stopping if 1/A keys were depressed

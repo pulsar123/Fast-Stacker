@@ -731,6 +731,18 @@ void stop_now()
     g.test_flag = 4;
 #endif
 
+#ifdef BUZZER
+  if (g.accident_buzzer)
+  {
+    g.accident_buzzer = 0;
+    // Starting a beep
+    g.beep_length = ACCIDENT_BEEP_US; // Beep length in us
+    g.beep_on = 1;
+    g.t_beep = micros(); // We nee actual time, not g.t, for buzzer manipulation
+    g.t_buzz = g.t_beep;
+  }
+#endif
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

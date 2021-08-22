@@ -14,7 +14,7 @@
 
 //++++++++++ Major features +++++++++++++++++
 #define BUZZER
-#define BUZZER_PASSIVE  // If you are using a passive buzzer (requires PWM signal)
+#define BUZZER_PASSIVE  // If you are using a passive buzzer (requires explicit PWM signal)
 
 //+++++++++++++ Data types +++++++++++++++++++
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
@@ -244,9 +244,10 @@ const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microst
 //////// User interface parameters: ////////
 const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
-const TIME_STYPE T_KEY_REPEAT = 200000; // time interval in us for repeating with parameter change keys
+//const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
-const byte N_REPEATS_KEY_DELAY = 4; // How many fake key repeats before a delayed key (4, B) is triggered
+//const byte N_REPEATS_KEY_DELAY = 3; // How many fake key repeats before a delayed key is triggered
+const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
 
 ///// Editor related parameters //////
 #define MAX_POS 10 // Maximum number of characters in the edited value
@@ -302,6 +303,8 @@ const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};
 // Buzzer stuff:
 #ifdef BUZZER
 const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz) ; 125
+const TIME_STYPE KEY_BEEP_US = 50000; // Delayed key beep length, us
+const TIME_STYPE ACCIDENT_BEEP_US = 250000; // Accidental limiter triggering key beep length, us
 #endif
 
 const TIME_STYPE FLASHING_DELAY = 300000;
@@ -556,6 +559,8 @@ struct global
   byte key_delay_on; // 1: in the process of delaying a key; 0: otherwise
   COORD_TYPE ipos_raw; // Raw coordinate, used for parking
   signed char dir_raw; // Raw motor direction, for parking
+  byte init_delayed_key; // =1 when we just pressed a delayed key (4, B)
+  TIME_UTYPE t_delayed_key; // Time when a delayed key (4, B) was pressed
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
@@ -685,6 +690,7 @@ struct global
   TIME_UTYPE t_beep; // time when beep was initiated
   TIME_STYPE beep_length; // Length of beep, us
   byte beep_on; // 1: beeping
+  byte accident_buzzer; // =1 when a limiter is accidently triggered
 #endif
 #ifdef TEST_LIMITER
   int limiter_i; // counter for the false limiter readings

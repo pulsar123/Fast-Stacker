@@ -50,9 +50,13 @@ void initialize(byte factory_reset)
   g.limit1 = 0;
   g.accident = 0;
   g.delayed_goto = 0;
-  g.editing = 0; 
+  g.editing = 0;
   g.ipos_raw = 0;
-//  g.limiter_counter = 0;
+  g.init_delayed_key = 0;
+#ifdef BUZZER
+  g.accident_buzzer = 0;
+#endif
+  //  g.limiter_counter = 0;
 
   if (factory_reset)
   {
@@ -119,6 +123,7 @@ void initialize(byte factory_reset)
   g.t_mil = millis();
   g.t_next_step = g.t;
   g.t_key_delay = g.t;
+  g.t_delayed_key = g.t;
 
   g.N_repeats = 0;
   g.uninterrupted = 0;
@@ -145,7 +150,7 @@ void initialize(byte factory_reset)
     g.BL_counter = g.backlash;  // Can be + or -
     g.Backlash_init = 1;
   }
-  
+
   g.continuous_mode = 1;
   g.noncont_flag = 0;
   g.alt_flag = 0;
