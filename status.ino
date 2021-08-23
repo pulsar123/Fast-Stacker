@@ -10,6 +10,9 @@ void display_all()
   float p;
   byte row, col;
 
+  if (g.help_mode)
+    return;
+
 #ifdef NO_DISP
   if (g.moving || g.model_init)
     return;
@@ -126,6 +129,16 @@ void display_all()
       sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
       tft.print(g.buffer);
       
+      my_setCursor(shift, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("D");
+      my_setCursor(shift+del, line, 1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      sprintf(g.buf6, "Buzz");
+      sprintf(g.buffer, "%4s=%1d", g.buf6, g.reg.buzzer);
+      tft.print(g.buffer);
+     
+//---------------------------------------------
       line = 6;
       my_setCursor(15, line, 1);
       sprintf(g.buffer, "s%s", VERSION);
@@ -289,7 +302,7 @@ void display_step()
     sprintf(g.buffer, " Step=%4dum       ", (int)(step_um + 0.5));
   else
     // +0.05 is for proper round-off:
-    sprintf(g.buffer, " Step=%4suf       ", ftoa(g.buf10, step_um + 0.05, 1));
+    sprintf(g.buffer, " Step=%4sum       ", ftoa(g.buf10, step_um + 0.05, 1));
 
   tft.print(g.buffer);
 

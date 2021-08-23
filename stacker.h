@@ -244,7 +244,7 @@ const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microst
 //////// User interface parameters: ////////
 const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
 const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
-//const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
+const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
 //const byte N_REPEATS_KEY_DELAY = 3; // How many fake key repeats before a delayed key is triggered
 const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
@@ -379,6 +379,7 @@ struct regist
   COORD_TYPE point[2];  // two memory points:
     #define FOREGROUND 0
     #define BACKGROUND 1
+  byte buzzer; // 1: buzzer on; 0: buzzer off
 };
 // Add 1 (byte) if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
 short SIZE_REG = sizeof(regist)+1;
@@ -561,6 +562,9 @@ struct global
   signed char dir_raw; // Raw motor direction, for parking
   byte init_delayed_key; // =1 when we just pressed a delayed key (4, B)
   TIME_UTYPE t_delayed_key; // Time when a delayed key (4, B) was pressed
+  byte help_mode; //=1: initialized the help screen mode
+#define N_HELP_PAGES 9 // Number of help pages  
+  short help_page; // help page (0...N_HELP_PAGES-1)
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one

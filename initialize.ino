@@ -57,6 +57,7 @@ void initialize(byte factory_reset)
   g.accident_buzzer = 0;
 #endif
   //  g.limiter_counter = 0;
+  g.help_mode = 0;
 
   if (factory_reset)
   {
@@ -68,14 +69,15 @@ void initialize(byte factory_reset)
     g.reg.fps = 1.0;
     g.reg.first_delay = 1.0;
     g.reg.second_delay = 1.0;
-    g.reg.i_accel_factor = 1;
+    g.reg.i_accel_factor = 0;
     g.reg.n_timelapse = 1;
-    g.reg.dt_timelapse = 300.0;
+    g.reg.dt_timelapse = 0.0;
     g.reg.mirror_lock = 1;
     g.reg.backlash_on = 0;
     update_backlash();
     g.reg.straight = 1;
     g.reg.save_energy = 1;
+    g.reg.buzzer = 1;
     update_save_energy();
     for (byte i = 0; i < 2; i++)
     {

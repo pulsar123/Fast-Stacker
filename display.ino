@@ -4,6 +4,9 @@
 void display_stuff()
 {
 
+  if (g.help_mode)
+    return;
+
   // Disabling the last comment line displaying after COMMENT_DELAY interval:
   if (g.comment_flag == 1 && g.t > g.t_comment + COMMENT_DELAY)
   {
