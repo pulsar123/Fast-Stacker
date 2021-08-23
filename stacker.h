@@ -25,7 +25,7 @@
 // Long signed type (for time differences and such):
 #define TIME_STYPE s32
 
-//////// Debugging options ////////
+//////// Debugging options ////////  Some might not work in s2.0!
 //#define SER_DEBUG  // Debugging using serial interface
 // If defined, no display updates when moving
 //#define NO_DISP
@@ -42,26 +42,21 @@
 #define NO_CRITICAL_VOLTAGE
 // If defined, debug buzzer (find the resonance frequency):
 // two keys get reassigned: keys "5" and "6" (change frequency)
-//#define BUZZER_DEBUG
-//#define DELTA_BUZZ_US  1 // Steps in us for changing buzzer timing when doing buzzer debugging
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
 // Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
-// When BL_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce BACKLASH" and "increase BACKLASH" functions
+// Only positive values are accepted. Make sure backlash compensations works against the gravity!
+// When BL_DEBUG is defined, key "5" becomes "eidit BACKLASH" function. Once proper value for BACKLASH is determined, copy it back in the code (below)
 // Don't use BL_DEBUG together with either BL2_DEBUG or DELAY_DEBUG!
 //#define BL_DEBUG
 // Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
-// When BL2_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce BACKLASH_2" and "increase BACKLASH_2" functions
+// When BL2_DEBUG is defined, key "5" become "edit BACKLASH_2" function. Once proper value for BACKLASH_2 is determined, copy it back in the code (below)
 // Don't use BL2_DEBUG together with either BL_DEBUG or DELAY_DEBUG!
 //#define BL2_DEBUG
-// Step for changing both BACKLASH and BACKLASH_2, in microsteps:
-const COORD_TYPE BL_STEP = 1;
 // Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
-// When DELAY_DEBUG is defined, two keys get reassigned: keys "5" and "6" become "reduce SHUTTER_ON_DELAY2" and "increase SHUTTER_ON_DELAY2" functions
+// When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
 // Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
 //#define DELAY_DEBUG
-// Step used durinmg DELAY_DEBUG (in us)
-//const TIME_STYPE DELAY_STEP = 50000;
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
@@ -97,11 +92,10 @@ const TIME_STYPE SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between sett
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
 const short AF_SYNC = 0;
+// When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
-// The SHUTTER_ON_DELAY2 value can be modified during debugging (keys 2/3); the SHUTTER_OFF_DELAY2 value is fixed
 TIME_STYPE SHUTTER_ON_DELAY2 = 1100000;
-TIME_STYPE SHUTTER_OFF_DELAY2 = 100000;
 #else
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture - FRSP - for Canon with Magic Lantern firmware).
 // For FRSP to work, the AF relay should be connected as usual (to the AF camera circuit), but the shutter relay should operate the external flash
@@ -114,8 +108,8 @@ TIME_STYPE SHUTTER_OFF_DELAY2 = 100000;
 // FRSP should only be used with non-continuous stacking, with DELAY1+DELAY2 long enough for multiple silent pictures to be taken successfully.
 // (For Canon 50D at least 5.5s: DELAY1=4s, DELAY2=1.5s)
 const TIME_STYPE SHUTTER_ON_DELAY2 = 500000; //  1100000 for 50D, 500000 for 6D/MLV (4/1.5s delays; 1/4s exposure; ExpOverride ON, ExpSim ON)
-const TIME_STYPE SHUTTER_OFF_DELAY2 = 100000; // 100000
 #endif
+const TIME_STYPE SHUTTER_OFF_DELAY2 = 100000; // 100000
 
 //////// Pin assignment ////////
 // SPI 16 GPIOs port expander MCP23S17, pin CS:
@@ -365,10 +359,6 @@ struct regist
     #define ONE_SHOT_MODE 0
     #define CONT_MODE 1
     #define NONCONT_MODE 2
-//  byte i_mm_per_frame; // counter for mm_per_frame parameter;
-//  byte i_fps; // counter for fps parameter;
-//  byte i_first_delay; // counter for FIRST_DELAY parameter
-//  byte i_second_delay; // counter for SECOND_DELAY parameter
   byte i_accel_factor; // Index for accel_factor
   int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
   float dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap

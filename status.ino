@@ -535,11 +535,8 @@ void display_current_position()
   // When debugging BACKLASH_2, displays the current BACKLAS_2 value in microsteps
   sprintf(g.buf6, "%3d", BACKLASH_2);
 #elif defined(DELAY_DEBUG)
-  // Delay used in mirror_lock=2 mode (electronic shutter), in 10ms units:
-  sprintf(g.buf6, "%3d", SHUTTER_ON_DELAY2 / 10000);
-#elif defined(BUZZER_DEBUG)
-  // When debugging buzzer, displays the current g.dt1_buzz_us value in microseconds
-  sprintf(g.buf6, "%3d", g.dt1_buzz_us);
+  // Delay used in mirror_lock=2 mode (electronic shutter), in ms units:
+  sprintf(g.buf6, "%4d", SHUTTER_ON_DELAY2 / 1000);
 #endif
 
 #ifdef SHOW_RAW

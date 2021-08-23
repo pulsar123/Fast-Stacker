@@ -46,10 +46,21 @@ void editor(char key)
       // 26 chars per line, up to 5 lines ok
     {
       case PARAM_MSTEP:
+        #if defined(BL_DEBUG)
+        tft.println("BACKLASH value in");
+        tft.println("microsteps");
+        #elif defined (BL2_DEBUG)
+        tft.println("BACKLASH_2 value in");
+        tft.println("microsteps");
+        #elif defined (DELAY_DEBUG)
+        tft.println("SHUTTER_ON_DELAY2");
+        tft.println("value in ms");
+        #else
         tft.println("Distance between adjacent");
         tft.println("frames in micrometers.");
         tft.println("Will be rounded up to the");
         tft.println("nearest whole microstep.");
+        #endif
         break;
 
       case PARAM_FPS:
@@ -187,6 +198,32 @@ void editor(char key)
       float fvalue = atof(g.value);
       if (g.edited_param == PARAM_MSTEP)
       {
+        #if defined(BL_DEBUG)
+        g.backlash = (int)(fvalue + 0.5); // Rounding up to the nearest integer value
+        // Enforcing limits:
+        if (g.backlash < 0)
+          g.backlash = 0;
+        if (g.backlash > 10000) // A sane upper limit
+          g.backlash = 10000;
+
+        #elif defined (BL2_DEBUG)
+        BACKLASH_2 = (int)(fvalue + 0.5); // Rounding up to the nearest integer value
+        // Enforcing limits:
+        if (BACKLASH_2 < 0)
+          BACKLASH_2 = 0;
+        if (BACKLASH_2 > 10000) // A sane upper limit
+          BACKLASH_2 = 10000;
+
+        #elif defined (DELAY_DEBUG)
+        SHUTTER_ON_DELAY2 = (int)(fvalue + 0.5); // Rounding up to the nearest integer value
+        // Enforcing limits:
+        if (SHUTTER_ON_DELAY2 < 1)
+          SHUTTER_ON_DELAY2 = 1;
+        if (SHUTTER_ON_DELAY2 > 10000) // A sane upper limit
+          SHUTTER_ON_DELAY2 = 10000;
+        SHUTTER_ON_DELAY2 = 1000 * SHUTTER_ON_DELAY2;  // Converting ms -> us
+
+        #else
         float n_steps = fvalue / 1000.0 / MM_PER_MICROSTEP;
         COORD_TYPE in_steps = (COORD_TYPE)(n_steps + 0.5); // Rounding up to the nearest integer value
         // Enforcing limits:
@@ -196,6 +233,7 @@ void editor(char key)
           in_steps = MSTEP_MAX;
         g.reg.mstep = in_steps; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
+        #endif
       }
 
       else if (g.edited_param == PARAM_FPS)

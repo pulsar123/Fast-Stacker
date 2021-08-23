@@ -639,32 +639,6 @@ void process_keypad()
                 break;
               }
               // Also used for different debugging modes, to decrease debugged parameters
-#if defined(DELAY_DEBUG)
-              // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to decrease the SHUTTER_ON_DELAY2 parameter:
-              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 - DELAY_STEP;
-              if (SHUTTER_ON_DELAY2 < 0)
-                SHUTTER_ON_DELAY2 = 0;
-              display_all();
-#elif defined(BL2_DEBUG)
-              // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to decrease the BACKLASH_2 parameter:
-              BACKLASH_2 = BACKLASH_2 - BL_STEP;
-              if (BACKLASH_2 < 0)
-                BACKLASH_2 = 0;
-              display_all();
-#elif defined(BL_DEBUG)
-              // The meaning of "6" changes when BL_DEBUG is defined: now it is used to decrease the g.backlash parameter:
-              g.backlash = g.backlash - BL_STEP;
-              if (g.backlash < 1)
-                g.backlash = 1;
-              display_all();
-#elif defined(BUZZER_DEBUG)
-              // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to decrease the buzzer timing:
-              g.dt1_buzz_us = g.dt1_buzz_us - DELTA_BUZZ_US;
-              if (g.dt1_buzz_us < 1)
-                g.dt1_buzz_us = 1;
-              display_all();
-#else
-#endif
               break;
 
             case '6':  // 6: Help menu
@@ -674,34 +648,8 @@ void process_keypad()
                 break;
               }
               // Also used for different debugging modes, to increase debugged parameters
-//              if (g.paused)
-//                break;
               g.help_mode = 1;
               help();
-#if defined (DELAY_DEBUG)
-              // The meaning of "6" changes when DELAY_DEBUG is defined: now it is used to increase the SHUTTER_ON_DELAY2 parameter:
-              SHUTTER_ON_DELAY2 = SHUTTER_ON_DELAY2 + DELAY_STEP;
-              if (SHUTTER_ON_DELAY2 > 10000000)
-                SHUTTER_ON_DELAY2 = 10000000;
-              display_all();
-#elif defined (BL2_DEBUG)
-              // The meaning of "6" changes when BL2_DEBUG is defined: now it is used to increase the BACKLASH_2 parameter:
-              BACKLASH_2 = BACKLASH_2 + BL_STEP;
-              if (BACKLASH_2 > 10000)
-                BACKLASH_2 = 10000;
-              display_all();
-#elif defined(BL_DEBUG)
-              // The meaning of "6" changes when BL_DEBUG is defined: now it is used to increase the g.backlash parameter:
-              g.backlash = g.backlash + BL_STEP;
-              if (g.backlash > 10000)
-                g.backlash = 10000;
-              display_all();
-#elif defined(BUZZER_DEBUG)
-              // The meaning of "6" changes when BUZZER_DEBUG is defined: now it is used to increase the buzzer timing:
-              g.dt1_buzz_us = g.dt1_buzz_us + DELTA_BUZZ_US;
-              display_all();
-#else
-#endif
               break;
 
             case '2':  // 2: GoTo command (for both non-paused and paused situations)
