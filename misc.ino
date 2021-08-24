@@ -182,6 +182,7 @@ void read_params(byte n)
   // Memorizing as default environment:
   EEPROM.put( g.addr_reg[0], g.reg);
   g.Nframes = Nframes();
+  g.alt_flag = 0;
   display_all();
   sprintf(g.buffer, "   Loading Reg %2d   ", n);
   display_comment_line(g.buffer);
@@ -193,6 +194,7 @@ void read_params(byte n)
   }
   // Loading new register clears the current memory point index:
   g.current_point = -1;
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -203,9 +205,12 @@ void save_params(byte n)
 // Now only used in macro mode
 {
   EEPROM.put( g.addr_reg[n], g.reg);
+  g.alt_flag = 0;
+  display_all();
   sprintf(g.buffer, "   Saved to Reg%1d    ", n);
   display_comment_line(g.buffer);
   //  tft.print("       ");
+  
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

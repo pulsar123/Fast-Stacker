@@ -553,7 +553,10 @@ void display_current_position()
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   my_setCursor(0, 5, 1);
   if (g.comment_flag == 1)
+  {
+    tft.setTextColor(TFT_PINK, TFT_BLACK);
     tft.print(g.buf_comment);
+  }
   else
     tft.print(g.buffer); //!!! Also need to erase to the left
 
@@ -577,7 +580,7 @@ void display_comment_line(char const * l)
   if (g.error || g.alt_flag)
     return;
 
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  tft.setTextColor(TFT_PINK, TFT_BLACK);
   my_setCursor(0, 5, 1);
   tft.print(l);
   strcpy(g.buf_comment, l);
