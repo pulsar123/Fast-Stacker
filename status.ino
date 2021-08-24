@@ -558,7 +558,7 @@ void display_current_position()
     tft.print(g.buf_comment);
   }
   else
-    tft.print(g.buffer); //!!! Also need to erase to the left
+    tft.print(g.buffer);
 
   return;
 }

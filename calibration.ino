@@ -32,7 +32,6 @@ void calibration()
       break;
 
     case 3: // Triggered limit1 and stopped, will now move forward to calibrate limit1 on the first switch-off position
-    //!!!! This is wrong - limit1 should be recorded when turned on, during the previous move!
       // Warning: here we should move far enough, so by the time we stop the limiter has to be off again (CALIBRATE_FINAL_LEG)
       go_to(g.ipos + CALIBRATE_FINAL_LEG, SPEED_LIMIT);
       display_all();

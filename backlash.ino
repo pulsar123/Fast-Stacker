@@ -3,7 +3,7 @@
 
 void backlash()
 /*  Monitors the value of the backlash counter BL_counter (updated in motor_control). When it detects that
-    BL_counter > 0 (and only when the rail is at rest) it initiates a go_to travel to compensate for backlash.
+    BL_counter != 0 (and only when the rail is at rest) it initiates a go_to travel to compensate for backlash.
 
     This routine should work in concert with go_to() function, where all moves ending in the bad (negative) direction
     should always travel g.backlash further back. The backlash() picks up where go_to() left, after the rail stops, and rewinds

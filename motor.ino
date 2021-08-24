@@ -1,10 +1,10 @@
 void motor_control()
 /* Controlling the stepper motor.
 
-   v2.0: A complete rewrite of the motion algorithm. Instead of trying to be a "real time", with some attempts to fix backwards (which didn't
+   v2.0: A complete rewrite of the motion algorithm. Instead of trying to be "real time", with some attempts to fix backwards (which didn't
          really work), now this is an accurate prediction - correction algorithm.
 
-     I have two time lines - the real time (as returned by micros() ), and the model time: micros() - g.dt_lost
+     I have two timelines - the real time (as returned by micros() ), and the model time = micros() - g.dt_lost
      The real and model times are only synced when we overshoot a special event - making a step. Sync is achieved by increasing g.dt_lost accordingly,
        so steps happen exactly as planned (in the model timeline), on integer values of the position.
      If a model change comes from a real time event (hit a limiter; pressed/depressed a key while moving), the action is taken only when we overshoot the next step
@@ -24,14 +24,14 @@ void motor_control()
    - GOTO: always starting from rest, go to a specific coordinate, stop there.
    - FF / REWIND: accelerate until hitting the speed limit (optionally), then hit a soft limit, decelerate and stop. Can be initiated while moving. This is the only model
       allowing for a direction change.
-   - STOP / BREAK: break using the prescribed accceleration until it stops. Can only be called if moving. (STOP uses an intermediate acceleration, BREAK - maximum one)
+   - STOP / BREAK: break using the prescribed accceleration until it stops. Can only be called if moving.
   2) Inside motor_control, we use the model to predict the next step.
    - If currently at rest, start processing the model during the first call of the function
    - If currently moving, start processing the new model at the next step (when model and physical times are synced)
   3) Inside motor_control, execute the next event (step with an optional dir change) after the predicted time, while syncing the model and physical times.
-  4) Make sure stop event is handled reliably.
-   - Overshoot slightly all moves (by 0.5-1 microsteps) to account for floating point errors, and stop abruptly when reaching the target coordinate in the last model leg.
-  5) Backlash is handled by overshooting the final leg of the model by a backlash amount - only if the leg is in the bad (negative) direction.
+  4) Making sure stop event is handled reliably.
+   - Overshoot slightly all moves (by ~0.5 microsteps) to account for floating point errors, and stop abruptly when reaching the target coordinate in the last model leg.
+  5) Backlash is handled by overshooting the final leg of the model by a backlash amount - only if the leg is in the bad direction.
 */
 
 {
@@ -82,7 +82,6 @@ void motor_control()
 
   // At this point, model and real times are guaranteed to be in sync (via g.dt_lost)
 
-  //!!!  if (g.model_init == 1 && g.uninterrupted == 0)
   if (g.model_init == 1)
     // Optionally updating the model
   {
@@ -155,15 +154,6 @@ void motor_control()
   {
     float delta = g.direction * (g.model_ipos0 + g.model_pos[i] - g.ipos); // How far is the leg's starting point, in the direction of motion
     // If a direction change happenes before the next step, we change direction now
-    /*
-      #ifdef SER_DEBUG
-      if (g.model_ptype[i]==DIR_CHANGE_POINT)
-      {
-      Serial.print("delta = ");
-      Serial.println(delta);
-      }
-      #endif
-    */
     if (g.model_ptype[i] == DIR_CHANGE_POINT && delta < 1.0 && delta >= 0.0)
     {
       i_dir = i;
@@ -287,7 +277,7 @@ void motor_control()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 void generate_model()
-/* Generate a new model of motion, based on the current position and speed, and based on the requested new model
+/*  Generate a new model of motion, based on the current position and speed, and based on the requested new model
     (g.model_type). For g.model_type=MODEL_GOTO we also use the values of the target speed (g.model_speed_max), and
     target coordinate (g.model_ipos1).
 
@@ -304,7 +294,7 @@ void generate_model()
 
     Soft limits have to be enforced here!
 
-    We apply here backlash compensation for STOP, BREAK, and GOTO models moving in the bad (negative) direction at the final model leg.
+    We apply here backlash compensation for STOP, BREAK, and GOTO models moving in the bad direction at the final model leg.
 
     New: the original STOP model is way too slow when backlashing is enabled and the move is in the bad direction. The new strategy: in such situations,
     STOP model should essentially behave as REWIND (or FF, depending on the direction). It starts from a non-zero speed, and then goes to the

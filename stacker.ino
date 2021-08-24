@@ -163,7 +163,7 @@ void loop()
   // All the processing related to the two extreme limits for the macro rail movements:
   limiters();
 
-  // Perform calibration of the limiters if requested (only when the rail is at rest):
+  // Perform calibration of the limiters if requested:
   calibration();
 
   // Camera control:

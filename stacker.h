@@ -2,7 +2,6 @@
 
    User header file. Contains user adjustable parameters (constants), and other stuff.
 
-   To be used with automated macro rail for focus stacking, and (h1.3+, discontinued in h2.0) for a telescope focuser
 */
 
 #ifndef STACKER_H
@@ -25,7 +24,21 @@
 // Long signed type (for time differences and such):
 #define TIME_STYPE s32
 
-//////// Debugging options ////////  Some might not work in s2.0!
+//////// Debugging options //////// 
+// Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
+// Only positive values are accepted. Make sure backlash compensations works against the gravity!
+// When BL_DEBUG is defined, key "5" becomes "eidit BACKLASH" function. Once proper value for BACKLASH is determined, copy it back in the code (below)
+// Don't use BL_DEBUG together with either BL2_DEBUG or DELAY_DEBUG!
+//#define BL_DEBUG
+// Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
+// When BL2_DEBUG is defined, key "5" become "edit BACKLASH_2" function. Once proper value for BACKLASH_2 is determined, copy it back in the code (below)
+// Don't use BL2_DEBUG together with either BL_DEBUG or DELAY_DEBUG!
+//#define BL2_DEBUG
+// Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
+// When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
+// Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
+//#define DELAY_DEBUG
+
 //#define SER_DEBUG  // Debugging using serial interface
 // If defined, no display updates when moving
 //#define NO_DISP
@@ -44,19 +57,6 @@
 // two keys get reassigned: keys "5" and "6" (change frequency)
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
-// Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
-// Only positive values are accepted. Make sure backlash compensations works against the gravity!
-// When BL_DEBUG is defined, key "5" becomes "eidit BACKLASH" function. Once proper value for BACKLASH is determined, copy it back in the code (below)
-// Don't use BL_DEBUG together with either BL2_DEBUG or DELAY_DEBUG!
-//#define BL_DEBUG
-// Uncomment this line to measure the BACKLASH_2 parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH_2)
-// When BL2_DEBUG is defined, key "5" become "edit BACKLASH_2" function. Once proper value for BACKLASH_2 is determined, copy it back in the code (below)
-// Don't use BL2_DEBUG together with either BL_DEBUG or DELAY_DEBUG!
-//#define BL2_DEBUG
-// Uncomment this line to measure SHUTTER_ON_DELAY2 (electronic shutter for Canon DSLRs; when mirror_lock=2).
-// When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
-// Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
-//#define DELAY_DEBUG
 // Uncomment to disable shutter triggering:
 //#define DISABLE_SHUTTER
 // Uncomment to display the amount of used EEPROM in "*" screen (bottom line)
@@ -125,11 +125,12 @@ const byte EPIN_M0 = 10; // Expander B0
 const byte EPIN_M1 = 11; // Expander B1
 const byte EPIN_M2 = 12; // Expander B2
 // -----------  Display pins  --------------------------------------
-// Using hardware SPI (pins D5 and D7)
+// The actual display pin assignment is done inside User_Setup.h file (part of the TFT_eSPI library)
 //const byte TFT_CS = D0;
 //#define TFT_RST  -1 // Connect to RST pin of D1 Mini
 //const byte TFT_DC = D4;
 // Pin to read digital input from the two limiting switches (normally LOW; HIGH when limiters are triggered)
+// Make sure to solder a 3-10 nF capacitor between this pin and the ground pin, on the microcontroller, to reduce reading noise from the cable
 const byte PIN_LIMITERS = D8; // Native GPIO is much better for limiters vs port expander, as it's much faster (0.34 vs 7.9 us)
 // Pin to trigger camera shutter:
 const byte EPIN_SHUTTER = 13;  // Green LED; expander B4
@@ -182,6 +183,7 @@ const COORD_TYPE N_MICROSTEPS = 32;
 const float MM_PER_ROTATION = 3.98;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
+// v2.0: Now one can designate either negative or positive directions as bad ones (*B keys)
 // Using the simplest BL model (assumption: rail physically doesn't move until rewinding the full g.backlash amount,
 // and then instantly starts moving; same when moving to the positive direction after moving to the bad direction).
 // The algorithm guarantees that every time the rail comes to rest, it is fully BL compensated (so the code coordinate = physical coordinate).
@@ -201,9 +203,9 @@ const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
 const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
-// in Arduino loop becoming longer than inter-step time interval, which can screw up the algorithm.
+// in Arduino loop becoming longer than inter-step time interval, which effectively will limit your maxium speed.
 // For an arbitrary rail and motor, make sure the following condition is met:
-// 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) >~ 500 microseconds
+// 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) > typical Arduino loop timing (us)
 // Macro rail speed limit:
 const float SPEED_LIMIT_MM_S = 10; // 10
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
@@ -213,9 +215,6 @@ const float SPEED_LIMIT_MM_S = 10; // 10
 const float BREAKING_DISTANCE_MM = 1.0;
 // Padding (in mm) for a soft limit, before hitting the limiters (increase if you constantly hit the limiter by accident)
 const float LIMITER_PAD_MM = 0.5;
-// A bit of extra padding (in mm) when calculating the breaking distance before hitting the limiters (to account for inaccuracies of go_to()):
-// (increase if you constantly hit the limiter by accident)
-const float LIMITER_PAD2_MM = 0.6;
 // During calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
 // travel this many mm, before starting checking the limiter again (should be large enough that the limiter is guaranteed to go off by that point)
 const float DELTA_LIMITER_MM = 4.0;
@@ -227,10 +226,6 @@ const float CALIBRATE_FINAL_LEG_MM = 4.0;
 const short STEP_LOW_DT = 2;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
-// Number of consequitive HIGH values to set g.limit_on to HIGH
-// Set it to >1 if you get false limiter triggering when motor is in use. The larger the number, the more stable it is against the impulse noise
-// (the drawback - you'll start having a lag between the actual trigger and the reaction to it.)
-//const byte N_LIMITER = 1;  // Not used
 const float OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
 const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microsteps for the whole rail length
 
@@ -240,7 +235,6 @@ const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line
 const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
-//const byte N_REPEATS_KEY_DELAY = 3; // How many fake key repeats before a delayed key is triggered
 const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
 
 ///// Editor related parameters //////
@@ -264,44 +258,16 @@ const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
 const byte N_REGS = 5;
-// If defined, the smaller values (< 20 microsteps) in the MM_PER_FRAME table below will be rounded off to the nearest whole number of microsteps.
-//#define ROUND_OFF
-// Number of values for the input parameters (mm_per_frame etc):
-const COORD_TYPE N_PARAMS = 25;
-// Now we are using microsteps per frame input table:
-//const COORD_TYPE MSTEP_PER_FRAME[] = {1, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 120, 160, 200, 240, 320, 400, 480, 640, 800, 1200, 1600};
-// Frame per second parameter (Canon 50D can do up to 4 fps when Live View is not enabled, for 20 shots using 1000x Lexar card):
-//const float FPS[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4};
-// Number of shots parameter (to be used in 1-point stacking):
-//const COORD_TYPE N_SHOTS[] = {2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 600};
-// Two delay parameters for the non-continuous stacking mode (initiated with "#0"):
-// The length of the first delay table:
-const byte N_FIRST_DELAY = 7;
-// First delay in non-continuous stacking (from the moment rail stops until the shot is initiated), in seconds:
-//const float FIRST_DELAY[N_FIRST_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
-// The length of the second delay table:
-const byte N_SECOND_DELAY = 7;
-// Second delay in non-continuous stacking (from the shot initiation until the rail starts moving again), in seconds
-// (This should be always longer than the camera exposure time)
-//const float SECOND_DELAY[N_SECOND_DELAY] = {0.5, 1, 1.5, 2, 3, 4, 8};
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 7;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};
-// Table for N_timelapse parameter (number of stacking sequences in the timelapse mode); 1 means no timelapse (just one stack):
-//const byte N_N_TIMELAPSE = 7;
-//const COORD_TYPE N_TIMELAPSE[N_N_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 999};
-// Table for dt_timelapse parameter (time in seconds between different stacks in timelapse mode; if it is shorter than a single stack time, the latter is used)
-//const byte N_DT_TIMELAPSE = 9;
-//const COORD_TYPE DT_TIMELAPSE[N_DT_TIMELAPSE] = {1, 3, 10, 30, 100, 300, 1000, 3000, 9999};
 
 // Buzzer stuff:
 #ifdef BUZZER
-const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz) ; 125
+const TIME_STYPE DT_BUZZ_US = 125; // Half-period for the buzzer sound, us; computed as 10^6/(2*freq_Hz) ; 125 for a 4kHz buzzer
 const TIME_STYPE KEY_BEEP_US = 50000; // Delayed key beep length, us
 const TIME_STYPE ACCIDENT_BEEP_US = 250000; // Accidental limiter triggering key beep length, us
 #endif
-
-const TIME_STYPE FLASHING_DELAY = 300000;
 
 
 //////////////////////////////////////////// Normally you shouldn't modify anything below this line ///////////////////////////////////////////////////
@@ -329,8 +295,6 @@ const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
 const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
-// Speed small enough to allow instant stopping (such that stopping within one microstep is withing ACCEL_LIMIT):
-// 2* - to make goto accurate, but with higher decelerations at the end
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
 #ifdef BL2_DEBUG
@@ -344,7 +308,6 @@ const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.
 const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
 const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD = (COORD_TYPE)(LIMITER_PAD_MM / MM_PER_MICROSTEP + 0.5);
-const COORD_TYPE LIMITER_PAD2 = (COORD_TYPE)(LIMITER_PAD2_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_PER_MICROSTEP + 0.5);
 
 // Structure to have custom parameters saved to EEPROM
@@ -507,7 +470,6 @@ struct global
     #define MODEL_BREAK 5 // Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
   float model_speed_max; // Desired (maximum) speed for the next goto motion (always positive).
   COORD_TYPE model_ipos1; // Desired target position for the next move (goto, accelerate, or stop)
-  // Each model of motion is completely described by the following parameters:
   byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes. (Normally do not coincide with steps.)
   #define N_POINTS_MAX 5  // Largest possible value for Npoints
   float model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
@@ -553,7 +515,7 @@ struct global
   byte init_delayed_key; // =1 when we just pressed a delayed key (4, B)
   TIME_UTYPE t_delayed_key; // Time when a delayed key (4, B) was pressed
   byte help_mode; //=1: initialized the help screen mode
-#define N_HELP_PAGES 9 // Number of help pages  
+#define N_HELP_PAGES 10 // Number of help pages  
   short help_page; // help page (0...N_HELP_PAGES-1)
   //-----------------
   struct regist reg; // Custom parameters register
@@ -615,7 +577,8 @@ struct global
   // 1: when 2-point stacking was paused
   // 2: pause which happened during the initial travel to the starting point after hitting any key
   // 3: pause which happened between stacks (in timelapse mode)
-  byte paused;   COORD_TYPE BL_counter; // Counting microsteps made in the bad (negative) direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
+  byte paused;   
+  COORD_TYPE BL_counter; // Counting microsteps made in the bad direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   byte Backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
   byte noncont_flag; // flag for non-continuous mode of stacking; 0: no stacking; 1: initiated; 2: first shutter trigger; 3: second shutter; 4: go to the next frame

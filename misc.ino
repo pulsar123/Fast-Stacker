@@ -1,5 +1,3 @@
-
-
 void my_setCursor(byte pos, byte line, byte set)
 /*
    Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new display pixel coordinates -
@@ -30,6 +28,7 @@ float target_speed ()
   return 1e-6 * g.reg.fps * g.reg.mstep;
 }
 
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 float max_fps ()
 // A reverse of the above function. Given speed (microstep/second), estimate the maximum allowed fps
@@ -345,31 +344,12 @@ void Read_limiters()
    Sets g.limit_on to HIGH/1 if any limiter is enabled; sets it to LOW/0 otherwise.
 */
 {
-  byte limit_on;
 #ifdef MOTOR_DEBUG
   g.limit_on = 0;
   return;
 #else
-  limit_on = digitalRead(PIN_LIMITERS);
+  g.limit_on = digitalRead(PIN_LIMITERS);
 #endif
-
-  g.limit_on = limit_on;
-  /*
-    // Impulse noise suppression:
-    if (limit_on == 1)
-      {
-        g.limiter_counter++;
-        if (g.limiter_counter >= N_LIMITER)
-        {
-          g.limit_on = 1;
-        }
-      }
-      else
-      {
-        g.limit_on = 0;
-        g.limiter_counter = 0;
-      }
-  */
 
   return;
 }

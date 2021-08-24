@@ -92,7 +92,7 @@ void Keypad::scanKeys() {
 //  {
 //    for (byte r = 0; r < sizeKpd.rows; r++) {
 //      pin_mode(rowPins[r], INPUT_PULLUP);
-//         iochip.pullupMode(rowPins[r], HIGH); //!!!
+//         iochip.pullupMode(rowPins[r], HIGH);
 //    }
 //    Keypad::init = 0;
 //  }

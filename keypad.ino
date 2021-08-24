@@ -29,14 +29,6 @@ void process_keypad()
     }
   }
 
-  // This is to keep the non-continuous parameters displayed as long as the key "#" is pressed:
-  /* !!!
-    if (g.comment_flag == 1 && keypad.key[0].kchar == '#')
-    // -COMMENT_LINE+10000 is a hack, to reduce to almost zero the time the parameters are displayed:
-    // (So basically the parameters are only displayed as long as the "#" key is pressed)
-    g.t_comment = g.t - COMMENT_DELAY + 10000;
-  */
-
   // The previous value of the key 0:
   g.key_old = keypad.key[0].kchar;
 
