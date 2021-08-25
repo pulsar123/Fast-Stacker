@@ -221,9 +221,9 @@ void process_keypad()
         case '1': // *1: Rail reverse
           g.reg.straight = 1 - g.reg.straight;
           EEPROM.put( g.addr_reg[0], g.reg);
-          display_all();
           // Reversing the rail and updating the point1,2 parameters:
           rail_reverse(1);
+          display_all();
           break;
 
         case '2': // *2: Save parameters to third memory bank

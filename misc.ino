@@ -150,6 +150,8 @@ void rail_reverse(byte fix_points)
     EEPROM.put( g.addr_reg[0], g.reg);
   }
 
+  g.dir = 0; // To make sure motor dir change command will be issued in motor_direction()
+  motor_direction(); // Reversing the motor direction corresponding to the current g.direction
 
   return;
 }
