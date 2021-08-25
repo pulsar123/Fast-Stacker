@@ -32,7 +32,7 @@ void display_stuff()
   {
     g.t_display = g.t;
     if (!g.alt_flag)
-       battery_status();
+       battery_status(1);
   }
 
  

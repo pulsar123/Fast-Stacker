@@ -58,6 +58,7 @@ void initialize(byte factory_reset)
 #endif
   //  g.limiter_counter = 0;
   g.help_mode = 0;
+  g.level_old = -1;
 
   if (factory_reset)
   {

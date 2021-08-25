@@ -607,7 +607,7 @@ void display_status_line()
   motion_status();
   display_frame_counter();
   points_status();
-  battery_status();
+  battery_status(0);
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -772,9 +772,9 @@ void points_status()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void battery_status()
+void battery_status(byte only_if_changed)
 /*
-  Measuring the battery voltage and displaying it.
+  Measuring the battery voltage and displaying it (only if changed, if only_if_changed=1).
 */
 {
 #ifdef NO_DISP
@@ -785,31 +785,12 @@ void battery_status()
     return;
 
   // Battery voltage (per AA battery; assuming 8 batteries) measured via a two-resistor voltage devider
-  // (to reduce voltage from 12V -> 5V)
+  // (to reduce voltage from 12V -> <3.3V)
   // Slow operation (100 us), so should be done infrequently
   float V = (float)analogRead(PIN_BATTERY) * VOLTAGE_SCALER;
 
   if (g.error)
     return;
-
-#ifdef BATTERY_DEBUG
-  // Printing actual voltage per AA battery (times 100)
-  my_setCursor(15, 6, 1);
-  sprintf(g.buffer, "%3d", analogRead(PIN_BATTERY));
-  tft.print(g.buffer);
-#else
-  my_setCursor(17, 6, 0);  // 12
-
-  // A 5-level bitmap indication (between V_LOW and V_HIGH):
-  short level = (short)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
-  if (level < 0)
-    level = 0;
-  if (level > 4)
-    level = 4;
-  tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, battery_char[level], 2 * FONT_WIDTH, FONT_HEIGHT, TFT_WHITE);
-  //tft.print(V);
-
-#endif // BATTERY_DEBUG
 
   // Disabling the rail once V goes below the critical V_LOW voltage
 #ifndef MOTOR_DEBUG
@@ -818,6 +799,42 @@ void battery_status()
     g.error = 2;
 #endif
 #endif
+
+#ifdef BATTERY_DEBUG
+  // Printing raw voltage measurement
+  my_setCursor(15, 6, 1);
+  sprintf(g.buffer, "%3d", analogRead(PIN_BATTERY));
+  tft.print(g.buffer);
+#else
+  my_setCursor(17, 6, 0);  // 12
+
+  // A 5-level bitmap indication (between V_LOW and V_HIGH):
+  int level = (int)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
+  if (level < 0)
+    level = 0;
+  if (level > 4)
+    level = 4;
+
+  if (only_if_changed && level == g.level_old)  
+    return;
+
+  g.level_old = level;
+    
+  int color;
+  if (level == 0)
+    color = TFT_RED;
+  else if (level == 1)
+    color = TFT_ORANGE;
+  else if (level == 2)
+    color = TFT_YELLOW;
+  else    
+    color = TFT_WHITE;
+    
+  tft.fillRect(g.x0, g.y0 + DEL_BITMAP, 2 * FONT_WIDTH, FONT_HEIGHT, TFT_BLACK);
+  tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, battery_char[level], 2 * FONT_WIDTH, FONT_HEIGHT, color);
+
+#endif // BATTERY_DEBUG
+
 
   return;
 }

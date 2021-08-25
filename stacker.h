@@ -53,8 +53,6 @@
 //#define BATTERY_DEBUG
 // If defined, disables critically low voltage action:
 #define NO_CRITICAL_VOLTAGE
-// If defined, debug buzzer (find the resonance frequency):
-// two keys get reassigned: keys "5" and "6" (change frequency)
 // If defined, do camera debugging:
 //#define CAMERA_DEBUG
 // Uncomment to disable shutter triggering:
@@ -144,12 +142,13 @@ const byte EPIN_BUZZ = 15; // expander B6
 //////// Voltage parameters: ////////
 // Scaling coefficient to derive the battery voltage (depends on the resistance of the two dividing resistors, R3 and R4.
 // Assuming R3 is the one directly connected to "+" of the battery, the scaler is (R3+R4)/R4. R3+R4 should be ~0.5M)
-// To reduce reading noise, a 0.1uF capacitor has to be soldered parallel to R4.
-// The second factor is 3.3V/1024/8 (assumes 8 AA batteries) - don't change it.
-const float VOLTAGE_SCALER = 15.28 * 3.3 / 1024.0 / 8.0; // TOCHANGE
+// To reduce reading noise, a 0.1uF capacitor can be soldered parallel to R4.
+// The simplest way is to measure it: define DEBUG_VOLTAGE above (this will display raw voltage measurement),
+// then compute VOLTASGE_SCALER as actual_voltage (in volts) / raw_voltage / 8 (so it's per AA battery)
+const float VOLTAGE_SCALER = 10.72/450.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
-const float V_LOW = 1;
+const float V_LOW = 0.9;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
 
@@ -517,6 +516,7 @@ struct global
   byte help_mode; //=1: initialized the help screen mode
 #define N_HELP_PAGES 10 // Number of help pages  
   short help_page; // help page (0...N_HELP_PAGES-1)
+  signed char level_old; // the old value of the battery level (0...4)
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
