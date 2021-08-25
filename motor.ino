@@ -702,8 +702,16 @@ void stop_now()
   // We can lower the breaking flag now, as we already stopped:
   g.uninterrupted = 0;
   g.Backlashing = 0;
+
   // Refresh the whole display:
-  display_all();
+  if (g.alt_flag || g.error)
+    display_all();
+  else
+  {
+    display_current_position();
+    display_status_line();
+  }
+
   if (g.noncont_flag > 0)
   {
     letter_status("S");
