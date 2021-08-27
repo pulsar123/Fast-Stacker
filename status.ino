@@ -140,8 +140,8 @@ void display_all()
      
 //---------------------------------------------
       line = 6;
-      my_setCursor(15, line, 1);
-      sprintf(g.buffer, "s%s", VERSION);
+      my_setCursor(3, line, 1);
+      sprintf(g.buffer, "Fast Stacker s%s", VERSION);
 
 #ifdef TIMING
       // Average loop length for the last motion, in shortest miscrostep length units *100:

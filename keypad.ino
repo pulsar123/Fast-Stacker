@@ -219,6 +219,14 @@ void process_keypad()
       switch (keypad.key[1].kchar)
       {
         case '1': // *1: Rail reverse
+          if (g.ipos-g.limit1 <= BACKLASH+BACKLASH_2 || g.limit2-g.ipos <= BACKLASH+BACKLASH_2)
+          // Being too close to limiters seems to be causing issues. Aborting
+          {
+            g.alt_flag = 0;
+            display_all();
+            display_comment_line("Too close to limiters");
+            break;
+          }
           g.reg.straight = 1 - g.reg.straight;
           EEPROM.put( g.addr_reg[0], g.reg);
           // Reversing the rail and updating the point1,2 parameters:
