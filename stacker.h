@@ -240,7 +240,7 @@ const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
 #define MAX_POS 10 // Maximum number of characters in the edited value
 // Limits for editable parameters:
 #define MSTEP_MIN 1
-#define MSTEP_MAX 2000 // Make sure it's not larger than the length of the rail!
+#define MSTEP_MAX 8000 // Make sure it's not larger than the length of the rail! 8000 -> 5mm
 #define FPS_MIN 0.01
 #define FPS_MAX 4.0 // Adjust to your camera's maximum possible frame rate
 #define FIRST_DELAY_MIN 0.5
