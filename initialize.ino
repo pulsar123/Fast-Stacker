@@ -84,6 +84,7 @@ void initialize(byte factory_reset)
     {
       g.reg.point[i] = DELTA_LIMITER;
     }
+    g.limit1 = -HUGE;
     g.limit2 = HUGE;
     g.ipos = DELTA_LIMITER;
 

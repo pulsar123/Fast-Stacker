@@ -1,11 +1,9 @@
 Fast Stacker
 
-DIY cheap, fast, portable, and accurate automated macro focus stacking rail (based on Arduino microcontroller) 
+DIY cheap, fast, portable, and accurate automated macro focus stacking rail (based on ESP8266 microcontroller - since v2.0) 
 which can be used with a wide range of photo cameras, and magnifications from standard macro (1:1) to extreme 
-macro (up to 20:1). To reproduce this project, you need some basic mechanical and soldering skills. 
-Once you have all the parts, it can be built in a couple of days.
+macro (up to 60:1 - since v2.0). To reproduce this project, you need some basic mechanical and soldering skills. 
 
 Detailed tutorial:
 
-http://pulsar124.wikia.com/wiki/DIY_automated_macro_rail_for_focus_stacking_based_on_Arduino
-
+http://pulsar124.wikia.com/wiki/Fast_Stacker

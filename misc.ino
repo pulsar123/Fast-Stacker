@@ -31,9 +31,9 @@ float target_speed ()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 float max_fps ()
-// A reverse of the above function. Given speed (microstep/second), estimate the maximum allowed fps
+// A reverse of the above function. Given speed (microstep/microsecond), estimate the maximum allowed fps
 {
-  return (float)g.reg.mstep / SPEED_LIMIT;
+  return 1e6 * SPEED_LIMIT / (float)g.reg.mstep;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

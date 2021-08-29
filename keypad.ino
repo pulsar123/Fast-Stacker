@@ -1,6 +1,14 @@
 void process_keypad()
 /*
   All the keypad runtime stuff goes here
+
+  For each key command, use the following comment format (after "case 'x':")
+    //@ KEY Key description
+
+  Then one can easily list all the key commands by executing the following code (bash - under cygwin or Linux):
+
+  grep @ keypad.ino | cut -d@ -f2 | sort
+
 */
 {
   float speed, dx_stop;
@@ -19,11 +27,13 @@ void process_keypad()
 
     switch (keypad.key[0].kchar)
     {
-      case '4': // 4: Set foreground point (#1)
+      case '4':
+        // Set foreground point
         set_memory_point(1);
         break;
 
-      case 'B': // B: Set background point (#2)
+      case 'B':
+        // Set background point
         set_memory_point(2);
         break;
     }
@@ -37,11 +47,11 @@ void process_keypad()
   // The trick is to generate fake key press events for the currently pressed key. Flag fake_key
   // is used to differentiate bwetween a real key press (then it is '0') and fake key press (it is '1').
   char fake_key = 0;
-    // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
-    if (g.help_mode==1 && (g.key_old == '1' || g.key_old == 'A') && g.editing == 0 && g.moving == 0
+  // This is the list of the all keys (only one-key bindings are allowed) with multiple actions:
+  if (g.help_mode == 1 && (g.key_old == '1' || g.key_old == 'A') && g.editing == 0 && g.moving == 0
       && g.t - g.t_key_pressed > T_KEY_LAG)
     // We are here when a change parameter key was pressed longer than T_KEY_LAG
-    {
+  {
     if (g.N_repeats == 0)
       // Generating the first fake key event:
     {
@@ -56,7 +66,7 @@ void process_keypad()
       g.t_last_repeat = g.t;
       fake_key = 1;
     }
-    }
+  }
 
   // Rescanning the keys. Most of the calls return false (no scan performed), exiting immediately if so
   if (!keypad.getKeys() && !fake_key)
@@ -87,7 +97,7 @@ void process_keypad()
   {
     switch (keypad.key[1].kchar)
     {
-      case 'C': // #C: Initiate a full calibration
+      case 'C': //@ #C: Initiate a full calibration
         // Ignore if moving:
         if (g.moving == 1 || g.paused || g.limit_on)
           break;
@@ -99,7 +109,7 @@ void process_keypad()
         display_all();
         break;
 
-      case 'B': // #B: Initiate emergency breaking, or abort paused stacking
+      case 'B': //@ #B: Initiate emergency breaking, or abort paused stacking
         if (g.paused && g.moving == 0)
           // Aborting stacking:
         {
@@ -123,44 +133,44 @@ void process_keypad()
 #endif
         break;
 
-      case '2': // #2: Save parameters to first memory bank
+      case '2': //@ #2: Save parameters to first memory bank
         if (!g.paused)
           save_params(1);
         break;
 
-      case '3': // #3: Read parameters from first memory bank
+      case '3': //@ #3: Read parameters from first memory bank
         if (!g.paused)
           read_params(1);
         break;
 
-      case '5': // #5: Save parameters to second memory bank
+      case '5': //@ #5: Save parameters to second memory bank
         if (!g.paused)
           save_params(2);
         break;
 
-      case '6': // #6: Read parameters from second memory bank
+      case '6': //@ #6: Read parameters from second memory bank
         if (!g.paused)
           read_params(2);
         break;
 
-      case '8': // #8:
-        if (g.paused)
-          break;
+      case '8': //@ #8: Save parameters to third memory bank
+        if (!g.paused)
+          save_params(3);
         break;
 
-      case '9': // #9:
-        if (g.paused)
-          break;
+      case '9': //@ #9: Read parameters from third memory bank
+        if (!g.paused)
+          read_params(3);
         break;
 
-      case '*': // #*: Factory reset
+      case '*': //@ #*: Factory reset
         if (g.paused || g.limit_on)
           break;
         g.error = 3;
         display_all();
         break;
 
-      case '7': // #7: Manual camera shutter triggering
+      case '7': //@ #7: Manual camera shutter triggering
         if (g.moving)
           break;
         g.make_shot = 1;
@@ -169,7 +179,7 @@ void process_keypad()
         g.stacker_mode = 0;
         break;
 
-      case '1': // #1: Rewind a single frame step (no shooting)
+      case '1': //@ #1: Rewind a single frame step (no shooting)
         if (g.moving || g.paused > 1)
           break;
         frame_counter0 = g.frame_counter;
@@ -182,7 +192,7 @@ void process_keypad()
         g.current_point = -1;
         break;
 
-      case 'A': // #A: Fast-forward a single frame step (no shooting)
+      case 'A': //@ #A: Fast-forward a single frame step (no shooting)
         if (g.moving || g.paused > 1)
           break;
         frame_counter0 = g.frame_counter;
@@ -195,14 +205,11 @@ void process_keypad()
         g.current_point = -1;
         break;
 
-      case 'D': // #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
+      case 'D': //@ #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
         if (g.paused)
           break;
         go_to(g.starting_point, SPEED_LIMIT);
         display_comment_line("    Going to P0     ");
-        break;
-
-      case '4': //
         break;
 
     } // switch
@@ -218,9 +225,9 @@ void process_keypad()
     {
       switch (keypad.key[1].kchar)
       {
-        case '1': // *1: Rail reverse
-          if (g.ipos-g.limit1 <= BACKLASH+BACKLASH_2 || g.limit2-g.ipos <= BACKLASH+BACKLASH_2)
-          // Being too close to limiters seems to be causing issues. Aborting
+        case '1': //@ *1: Rail reverse
+          if (g.ipos - g.limit1 <= BACKLASH + BACKLASH_2 || g.limit2 - g.ipos <= BACKLASH + BACKLASH_2)
+            // Being too close to limiters seems to be causing issues. Aborting
           {
             g.alt_flag = 0;
             display_all();
@@ -234,31 +241,31 @@ void process_keypad()
           display_all();
           break;
 
-        case '2': // *2: Save parameters to third memory bank
-          save_params(3);
-          break;
-
-        case '3': // *3: Read parameters from third memory bank
-          read_params(3);
-          break;
-
-        case '5': // *5: Save parameters to fourth memory bank
+        case '2': //@ *2: Save parameters to 4th memory bank
           save_params(4);
           break;
 
-        case '6': // *6: Read parameters from fourth memory bank
+        case '3': //@ *3: Read parameters from 4th memory bank
           read_params(4);
           break;
 
-        case '8': // *8: Save parameters to fifth memory bank
+        case '5': //@ *5: Save parameters to 5th memory bank
           save_params(5);
           break;
 
-        case '9': // *9: Read parameters from fifth memory bank
+        case '6': //@ *6: Read parameters from 5th memory bank
           read_params(5);
           break;
 
-        case 'A': // *A: Change accel_factor
+        case '8': //@ *8: Save parameters to 6th memory bank
+          save_params(6);
+          break;
+
+        case '9': //@ *9: Read parameters from 6th memory bank
+          read_params(6);
+          break;
+
+        case 'A': //@ *A: Change accel_factor
           if (g.reg.i_accel_factor < N_ACCEL_FACTOR - 1)
             g.reg.i_accel_factor++;
           else
@@ -269,7 +276,7 @@ void process_keypad()
           set_accel_v();
           break;
 
-        case 'B': // *B: Backlash compensation: -1, 0, 1 (camera looking down; no backlash; camera looking up)
+        case 'B': //@ *B: Backlash compensation: -1, 0, 1 (camera looking down; no backlash; camera looking up)
           if (g.reg.backlash_on < 1)
             g.reg.backlash_on++;
           else
@@ -280,7 +287,7 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        case 'C': // *C: Mirror lock: 0, 1, 2 (macro)
+        case 'C': //@ *C: Mirror lock: 0, 1, 2
           if (g.reg.mirror_lock < 2)
             g.reg.mirror_lock++;
           else
@@ -290,26 +297,26 @@ void process_keypad()
           break;
 
 
-        case 'D': //  Buzzer on/off
+        case 'D': //@ *D: Buzzer on/off
           g.reg.buzzer = 1 - g.reg.buzzer;
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
 
-        case '4': // *4: Change N_timelapse
+        case '4': //@ *4: Change N_timelapse
           g.editing = 1;
           g.edited_param = PARAM_N_TIMELAPSE;
           editor('I');
           break;
 
-        case '7': // *7: Change dt_timelapse
+        case '7': //@ *7: Change dt_timelapse
           g.editing = 1;
           g.edited_param = PARAM_DT_TIMELAPSE;
           editor('I');
           break;
 
-        case '0': // *0: Save energy on / off
+        case '0': //@ *0: Save energy on / off
           g.reg.save_energy = 1 - g.reg.save_energy;
           update_save_energy();
           display_all();
@@ -364,7 +371,7 @@ void process_keypad()
 
           switch (key0)
           {
-            case '1':  // 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
+            case '1':  //@ 1: Rewinding, or moving 10 frames back for the current stacking direction (if paused)
               // Using key "1" to confirm factory reset
               if (g.editing == 1)
               {
@@ -410,7 +417,7 @@ void process_keypad()
               }
               break;
 
-            case 'A':  // A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
+            case 'A':  //@ A: Fast forwarding, or moving 10 frames forward for the current stacking direction (if paused)
               if (g.editing == 1)
               {
                 editor(key0);
@@ -453,7 +460,7 @@ void process_keypad()
               }
               break;
 
-            case '4':
+            case '4': //@ 4: Set foreground point (delayed)
               if (g.editing == 0)
               {
                 //                set_memory_point(1);
@@ -464,7 +471,7 @@ void process_keypad()
                 editor('4');
               break;
 
-            case 'B':
+            case 'B': //@ B: Set background point (delayed)
               if (g.editing == 0)
               {
                 //                set_memory_point(2);
@@ -475,7 +482,7 @@ void process_keypad()
                 editor('B');
               break;
 
-            case '7':  // 7: Go to the foreground point (#1)
+            case '7':  //@ 7: Go to the foreground point
               if (g.editing == 1)
               {
                 editor(key0);
@@ -484,7 +491,7 @@ void process_keypad()
               goto_memory_point(1);
               break;
 
-            case 'C':  // C: Go to the background point (#2)
+            case 'C':  //@ C: Go to the background point
               if (g.editing == 1)
               {
                 editor(key0);
@@ -494,7 +501,7 @@ void process_keypad()
               break;
 
 
-            case 'D': // D: Start shooting (2-point focus stacking) from the foreground (g.reg.backlash_on=1) or background (g.reg.backlash_on=-1) point
+            case 'D': //@ D: Start shooting the stacking sequence
               if (g.editing || g.moving)
                 break;
               // Checking the correctness of point1/2
@@ -594,7 +601,7 @@ void process_keypad()
               break;
 
 
-            case '*':  // *: Show alternative display (for *X commands)
+            case '*':  //@ * : Show alternative display (for *X commands)
               if (g.editing == 1)
                 break;
               if (g.paused)
@@ -608,7 +615,7 @@ void process_keypad()
               }
               break;
 
-            case '0': // 0: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
+            case '0': //@ 0: Cycling through different modes: 1-shot, 2-shot continuous, 2-shot noncontinuous
               if (g.editing == 1)
               {
                 editor(key0);
@@ -623,7 +630,7 @@ void process_keypad()
               EEPROM.put( g.addr_reg[0], g.reg);
               break;
 
-            case '5':  // 5: Set the step (microsteps per frame)
+            case '5':  //@ 5: Set the step (microsteps per frame)
               if (g.editing == 1)
               {
                 editor(key0);
@@ -641,7 +648,7 @@ void process_keypad()
               // Also used for different debugging modes, to decrease debugged parameters
               break;
 
-            case '6':  // 6: Help menu
+            case '6':  //@ 6: Help menu
               if (g.editing == 1)
               {
                 editor(key0);
@@ -652,7 +659,7 @@ void process_keypad()
               help();
               break;
 
-            case '2':  // 2: GoTo command (for both non-paused and paused situations)
+            case '2':  //@ 2: GoTo command (for both non-paused and paused situations)
               if (g.editing == 1)
               {
                 editor(key0);
@@ -667,7 +674,7 @@ void process_keypad()
               }
               break;
 
-            case '3':  // 3: Parking
+            case '3':  //@ 3: Parking
               if (g.editing == 1)
               {
                 editor(key0);
@@ -678,7 +685,7 @@ void process_keypad()
               parking();
               break;
 
-            case '8':  // 8: Edit a parameter (different for each mode)
+            case '8':  //@ 8: FPS or First delay
               if (g.editing == 1)
               {
                 editor(key0);
@@ -690,7 +697,7 @@ void process_keypad()
                   break;
                 g.editing = 1;
                 if (g.reg.i_mode == ONE_SHOT_MODE)
-                  g.edited_param = PARAM_N_SHOTS;
+                  g.edited_param = PARAM_FPS;
                 else if (g.reg.i_mode == CONT_MODE)
                   g.edited_param = PARAM_FPS;
                 else if (g.reg.i_mode == NONCONT_MODE)
@@ -704,7 +711,7 @@ void process_keypad()
                 break;
               break;
 
-            case '9':  // 9: Increase parameter fps
+            case '9': //@ 9: Nshots or Second delay
               if (g.editing == 1)
               {
                 editor(key0);
@@ -714,16 +721,20 @@ void process_keypad()
               {
                 if (g.paused)
                   break;
-                if (g.reg.i_mode != NONCONT_MODE)
+                // Key is not used in the 2p cont mode:
+                if (g.reg.i_mode == CONT_MODE)
                   break;
                 g.editing = 1;
-                g.edited_param = PARAM_SECOND_DELAY;
+                if (g.reg.i_mode == ONE_SHOT_MODE)
+                  g.edited_param = PARAM_N_SHOTS;
+                else
+                  g.edited_param = PARAM_SECOND_DELAY;
                 editor('I');
                 break;
               }
               break;
 
-            case '#':  //
+            case '#': //@ # : Dot (in editing mode)
               if (g.editing == 1)
               {
                 editor(key0);

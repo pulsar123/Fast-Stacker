@@ -326,9 +326,18 @@ void display_third_line()
   {
     my_setCursor(0, 2, 1);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
     my_setCursor(1, 2, 1);
+    tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+    if (g.reg.fps >= 1.0)
+      sprintf(g.buffer, " FPS=%4s", ftoa(g.buf10, g.reg.fps, 1));
+    else
+      sprintf(g.buffer, " FPS=%4s", ftoa(g.buf10, g.reg.fps, 2));
+    tft.print(g.buffer);
+   
+    my_setCursor(10, 2, 1);
+    tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+    tft.print("9");
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
     sprintf(g.buffer, " N=%4d           ", g.reg.n_shots);
     tft.print(g.buffer);
@@ -337,7 +346,6 @@ void display_third_line()
   {
     my_setCursor(0, 2, 1);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
     my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
@@ -351,18 +359,14 @@ void display_third_line()
   {
     my_setCursor(0, 2, 1);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.print("8");
-    //    my_setCursor(1, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
     sprintf(g.buffer, " d1=%3ss ", ftoa(g.buf10, g.reg.first_delay + 0.05, 1));
     tft.print(g.buffer);
 
     my_setCursor(10, 2, 1);
-    //    tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
     tft.print("9");
-    //    my_setCursor(11, 2, 1);
     tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
     sprintf(g.buffer, " d2=%3ss ", ftoa(g.buf10, g.reg.second_delay + 0.05, 1));
     tft.print(g.buffer);
@@ -581,6 +585,8 @@ void display_comment_line(char const * l)
     return;
 
   tft.setTextColor(TFT_PINK, TFT_BLACK);
+  my_setCursor(0, 5, 1);
+  tft.print(g.empty_buffer);
   my_setCursor(0, 5, 1);
   tft.print(l);
   strcpy(g.buf_comment, l);

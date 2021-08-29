@@ -22,9 +22,16 @@ void backlash()
   if (g.reg.backlash_on*g.BL_counter > 0)
   {
     // Backlash compensation.
-    go_to(g.ipos + g.BL_counter, SPEED_LIMIT);
+    if (g.reg.backlash_on==-1 && g.ipos-g.limit1>BACKLASH || g.reg.backlash_on==1 && g.limit2-g.ipos>BACKLASH)
+      // If we are far enough from the limiting switch, we simply make one move - in the good direction:
+      go_to(g.ipos + g.BL_counter, SPEED_LIMIT);
+    else
+      // If we are too close to the limiting switch on the good direction end, we move one microstep in the bad direction;
+      // As go_to moves in the bad direction always add an extra BACKLASH factor, the actual move will be 1+BACKLASH
+      // At the end, the usual backlash compensation move will be performed (so two go_to moves in total)
+      go_to(g.ipos - g.reg.backlash_on, SPEED_LIMIT);
 
-    // This should be done after go_to call:
+    // This should be done after go_to call (will be set to 0 at the end of the goto move):
     g.Backlashing = 1;
   }
 

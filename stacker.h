@@ -93,7 +93,7 @@ const short AF_SYNC = 0;
 // When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
-TIME_STYPE SHUTTER_ON_DELAY2 = 1100000;
+TIME_STYPE SHUTTER_ON_DELAY2 = 500000;
 #else
 // The ON and OFF delays used only for mirror_lock=2 (Full Resolution Silent Picture - FRSP - for Canon with Magic Lantern firmware).
 // For FRSP to work, the AF relay should be connected as usual (to the AF camera circuit), but the shutter relay should operate the external flash
@@ -256,7 +256,7 @@ const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
 
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
-const byte N_REGS = 5;
+const byte N_REGS = 6;
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 7;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};

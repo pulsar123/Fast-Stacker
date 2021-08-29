@@ -192,6 +192,8 @@ void editor(char key)
   else if (key == 'A')
     // Accepting the value, and doing all associated actions
   {
+    byte comment_code = 0; // If it becomes non-zero, a comment line will be displayed after editing is done
+
     if (g.cursor_pos > 0)
     {
       // First - converting to float
@@ -228,9 +230,22 @@ void editor(char key)
         COORD_TYPE in_steps = (COORD_TYPE)(n_steps + 0.5); // Rounding up to the nearest integer value
         // Enforcing limits:
         if (in_steps < MSTEP_MIN)
+        {
+          comment_code = 3;
           in_steps = MSTEP_MIN;
+        }
         if (in_steps > MSTEP_MAX)
+        {
+          comment_code = 4;
           in_steps = MSTEP_MAX;
+        }
+        // Step is limited by the maximum speed and FPS:
+        int max_step = (int)(1e6 * SPEED_LIMIT / g.reg.fps); 
+        if (in_steps > max_step)
+        {
+          in_steps = max_step;
+          comment_code = 1;
+        }
         g.reg.mstep = in_steps; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
         #endif
@@ -240,13 +255,22 @@ void editor(char key)
       {
         // Enforcing limits:
         if (fvalue < FPS_MIN)
+        {
+          comment_code = 3;
           fvalue = FPS_MIN;
+        }
         if (fvalue > FPS_MAX)
+        {
+          comment_code = 4;
           fvalue = FPS_MAX;
+        }
         // Maximum fps from speed limit:
         float max_fps1 = max_fps();
         if (fvalue > max_fps1)
+        {
           fvalue = max_fps1;
+          comment_code = 2;
+        }
         g.reg.fps = fvalue; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -256,9 +280,15 @@ void editor(char key)
         int n_shots = (int)(fvalue + 0.5);
         // Enforcing limits:
         if (n_shots < N_SHOTS_MIN)
+        {
+          comment_code = 3;
           n_shots = N_SHOTS_MIN;
+        }
         if (n_shots > N_SHOTS_MAX)
+        {
+          comment_code = 4;
           n_shots = N_SHOTS_MAX;
+        }
         g.reg.n_shots = n_shots; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -267,9 +297,15 @@ void editor(char key)
       {
         // Enforcing limits:
         if (fvalue < FIRST_DELAY_MIN)
+        {
+          comment_code = 3;
           fvalue = FIRST_DELAY_MIN;
+        }
         if (fvalue > FIRST_DELAY_MAX)
+        {
+          comment_code = 4;
           fvalue = FIRST_DELAY_MAX;
+        }
         g.reg.first_delay = fvalue; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -278,9 +314,15 @@ void editor(char key)
       {
         // Enforcing limits:
         if (fvalue < SECOND_DELAY_MIN)
+        {
+          comment_code = 3;
           fvalue = SECOND_DELAY_MIN;
+        }
         if (fvalue > SECOND_DELAY_MAX)
+        {
+          comment_code = 4;
           fvalue = SECOND_DELAY_MAX;
+        }
         g.reg.second_delay = fvalue; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -292,9 +334,15 @@ void editor(char key)
           short int frame_counter0 = g.frame_counter;
           g.frame_counter = (int)(fvalue + 0.5) - 1;
           if (g.frame_counter < 0)
+          {
+            comment_code = 3;
             g.frame_counter = 0;
+          }
           if (g.frame_counter > g.Nframes - 1)
+          {
+            comment_code = 4;
             g.frame_counter = g.Nframes - 1;
+          }
           COORD_TYPE ipos_target = frame_coordinate();
           move_to_next_frame(&ipos_target, &frame_counter0);
         }
@@ -304,9 +352,15 @@ void editor(char key)
           COORD_TYPE ipos1 = (fvalue / MM_PER_MICROSTEP) + 0.5;
           // Enforcing limits:
           if (ipos1 < 0)
+          {
+            comment_code = 3;
             ipos1 = 0;
+          }
           if (ipos1 > g.limit2)
+          {
+            comment_code = 4;
             ipos1 = g.limit2;
+          }
           go_to(ipos1, SPEED_LIMIT); // Moving to the target position with maximum speed/acceleration
         }
       }
@@ -316,9 +370,15 @@ void editor(char key)
         int n_timelapse = (int)(fvalue + 0.5);
         // Enforcing limits:
         if (n_timelapse < N_TIMELAPSE_MIN)
+        {
+          comment_code = 3;
           n_timelapse = N_TIMELAPSE_MIN;
+        }
         if (n_timelapse > N_TIMELAPSE_MAX)
+        {
+          comment_code = 4;
           n_timelapse = N_TIMELAPSE_MAX;
+        }
         g.reg.n_timelapse = n_timelapse; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -327,9 +387,15 @@ void editor(char key)
       {
         // Enforcing limits:
         if (fvalue < DT_TIMELAPSE_MIN)
+        {
+          comment_code = 3;
           fvalue = DT_TIMELAPSE_MIN;
+        }
         if (fvalue > DT_TIMELAPSE_MAX)
+        {
+          comment_code = 4;
           fvalue = DT_TIMELAPSE_MAX;
+        }
         g.reg.dt_timelapse = fvalue; // Updating the value
         EEPROM.put( g.addr_reg[0], g.reg);
       }
@@ -339,8 +405,17 @@ void editor(char key)
     g.editing = 0;
     tft.setTextFont(2);
     display_all();
-  }
 
+    if      (comment_code == 1)
+      display_comment_line("   Reduce FPS!");
+    else if (comment_code == 2)
+      display_comment_line("   Reduce Step!");
+    else if (comment_code == 3)
+      display_comment_line("    Too small!");
+    else if (comment_code == 4)
+      display_comment_line("    Too large!");
+      
+  }
 
   return;
 }
