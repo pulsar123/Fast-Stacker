@@ -49,7 +49,7 @@
 //#define MOTOR_DEBUG
 // Uncomment this line when debugging the control unit without the motor unit:
 //#define DISABLE_MOTOR
-// Battery debugging mode (prints actual voltage per AA battery in the status line; needed to determine the lowest voltage parameter, V_LOW - see below)
+// Battery debugging mode (prints actual raw voltage sensor value)
 //#define BATTERY_DEBUG
 // If defined, disables critically low voltage action:
 #define NO_CRITICAL_VOLTAGE
@@ -89,7 +89,7 @@ const TIME_STYPE SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between sett
 //  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
-const short AF_SYNC = 0;
+const short AF_SYNC = 1;
 // When DELAY_DEBUG is defined, key "5" becomes "edit SHUTTER_ON_DELAY2" function. Once proper value is determined, copy it back in the code (below)
 #ifdef DELAY_DEBUG
 // Initial values for the two electronic shutter delays during delay debugging:
@@ -151,6 +151,8 @@ const float VOLTAGE_SCALER = 10.72/450.0 / 8.0;
 const float V_LOW = 0.9;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
+// Threshold voltage (Volts) between battery and AC operations (divided by 8 - so it's "per battery" value)
+const float V_THRESHOLD = 11.2 / 8;
 
 
 //////// Keypad stuff: ////////
@@ -401,6 +403,19 @@ const uint8_t battery_char [][20] = {{
   0B00111111,0B11111111,
   0B00111111,0B11111111
 }
+};
+// AC power symbol:
+const uint8_t AC_char[] = {
+  0B00000000,0B00000000,
+  0B00000000,0B00100000,
+  0B00000011,0B11100000,
+  0B00000111,0B11111110,
+  0B11111111,0B11100000,
+  0B11111111,0B11100000,
+  0B00000111,0B11111110,
+  0B00000011,0B11100000,
+  0B00000000,0B00100000,
+  0B00000000,0B00000000
 };
 // 8x10 bitmaps
 const uint8_t rewind_char[] = {

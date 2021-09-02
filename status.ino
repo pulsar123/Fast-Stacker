@@ -64,7 +64,7 @@ void display_all()
       const byte shift = 10;
       const byte del = 2;
       byte line;
-//---------------------------------------------
+      //---------------------------------------------
       line = 0;
       my_setCursor(0, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
@@ -77,30 +77,30 @@ void display_all()
       my_setCursor(shift, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("A");
-      my_setCursor(shift+del, line, 1);
+      my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buffer, "Acc=%1d", ACCEL_FACTOR[g.reg.i_accel_factor]);
       tft.print(g.buffer);
 
-//---------------------------------------------
+      //---------------------------------------------
       line = 1;
       my_setCursor(0, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("4");
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      sprintf(g.buffer, "N=%-3d", g.reg.n_timelapse);      
+      sprintf(g.buffer, "N=%-3d", g.reg.n_timelapse);
       my_setCursor(del, line, 1);
       tft.print(g.buffer);
-      
+
       my_setCursor(shift, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("B");
-      my_setCursor(shift+del, line, 1);
+      my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buffer, "BL=%2d", g.reg.backlash_on);
       tft.print(g.buffer);
 
-//---------------------------------------------
+      //---------------------------------------------
       line = 2;
       my_setCursor(0, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
@@ -109,17 +109,17 @@ void display_all()
       my_setCursor(del, line, 1);
       sprintf(g.buf6, "dt=%ds", (int)g.reg.dt_timelapse);
       tft.print(g.buf6);
-      
+
       my_setCursor(shift, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("C");
-      my_setCursor(shift+del, line, 1);
+      my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buf6, "Mir");
       sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
       tft.print(g.buffer);
 
-//---------------------------------------------
+      //---------------------------------------------
       line = 3;
       my_setCursor(0, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
@@ -128,17 +128,17 @@ void display_all()
       my_setCursor(del, line, 1);
       sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
       tft.print(g.buffer);
-      
+
       my_setCursor(shift, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("D");
-      my_setCursor(shift+del, line, 1);
+      my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       sprintf(g.buf6, "Buzz");
       sprintf(g.buffer, "%4s=%1d", g.buf6, g.reg.buzzer);
       tft.print(g.buffer);
-     
-//---------------------------------------------
+
+      //---------------------------------------------
       line = 6;
       my_setCursor(3, line, 1);
       sprintf(g.buffer, "Fast Stacker s%s", VERSION);
@@ -334,7 +334,7 @@ void display_third_line()
     else
       sprintf(g.buffer, " FPS=%4s", ftoa(g.buf10, g.reg.fps, 2));
     tft.print(g.buffer);
-   
+
     my_setCursor(10, 2, 1);
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
     tft.print("9");
@@ -814,6 +814,7 @@ void battery_status(byte only_if_changed)
 #else
   my_setCursor(17, 6, 0);  // 12
 
+
   // A 5-level bitmap indication (between V_LOW and V_HIGH):
   int level = (int)((V - V_LOW) / (V_HIGH - V_LOW) * 5.0);
   if (level < 0)
@@ -821,11 +822,15 @@ void battery_status(byte only_if_changed)
   if (level > 4)
     level = 4;
 
-  if (only_if_changed && level == g.level_old)  
+  // Detecting if we are using AC:
+  if (V > V_THRESHOLD)
+    level = 5;  // Special value of level for AC power
+
+  if (only_if_changed && level == g.level_old)
     return;
 
   g.level_old = level;
-    
+
   int color;
   if (level == 0)
     color = TFT_RED;
@@ -833,11 +838,15 @@ void battery_status(byte only_if_changed)
     color = TFT_ORANGE;
   else if (level == 2)
     color = TFT_YELLOW;
-  else    
+  else
     color = TFT_WHITE;
-    
+
   tft.fillRect(g.x0, g.y0 + DEL_BITMAP, 2 * FONT_WIDTH, FONT_HEIGHT, TFT_BLACK);
-  tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, battery_char[level], 2 * FONT_WIDTH, FONT_HEIGHT, color);
+  if (level < 5)
+    tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, battery_char[level], 2 * FONT_WIDTH, FONT_HEIGHT, color);
+  else
+    tft.drawBitmap(g.x0, g.y0 + DEL_BITMAP, AC_char, 2 * FONT_WIDTH, FONT_HEIGHT, color);
+
 
 #endif // BATTERY_DEBUG
 
