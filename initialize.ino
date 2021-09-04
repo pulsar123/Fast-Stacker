@@ -59,6 +59,7 @@ void initialize(byte factory_reset)
   //  g.limiter_counter = 0;
   g.help_mode = 0;
   g.level_old = -1;
+  g.ipos_printed = HUGE;
 
   if (factory_reset)
   {
@@ -128,6 +129,7 @@ void initialize(byte factory_reset)
   g.t_next_step = g.t;
   g.t_key_delay = g.t;
   g.t_delayed_key = g.t;
+  g.t_init = g.t;
 
   g.N_repeats = 0;
   g.uninterrupted = 0;

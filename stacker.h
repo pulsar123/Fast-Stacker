@@ -39,7 +39,6 @@
 // Don't use DELAY_DEBUG together with either BL_DEBUG or BL2_DEBUG!
 //#define DELAY_DEBUG
 
-//#define SER_DEBUG  // Debugging using serial interface
 // If defined, no display updates when moving
 //#define NO_DISP
 // For timing the main loop:
@@ -66,12 +65,7 @@
 // If defined, use serial monitor to receive switch test data (only in TEST_SWITCH mode):
 //#define SERIAL_SWITCH
 //#define TEST_LIMITER // If defined, displays limiter state after the coordinate
-
-// Memory saving tricks:
-// Show only short error messages instead of detailed ones (saves space):
-// Show bitmaps (takes more space):
-#define BATTERY_BITMAPS
-#define REWIND_BITMAPS
+//#define SER_DEBUG  // Debugging motion algorithms using serial interface
 
 // Port expander initial state:
 // For MCP23S17 expander; ports numbering is 16, 15, ..., 1 (B7, B6, ..., A7, ..., A0):
@@ -85,8 +79,8 @@ const TIME_STYPE CONT_STACKING_DELAY = 100000;  // 100000
 const TIME_STYPE SHUTTER_TIME_US = 100000; // Time to keep the shutter button pressed (us) 100000
 const TIME_STYPE SHUTTER_ON_DELAY = 5000; // Delay in microseconds between setting AF on and shutter on  5000
 const TIME_STYPE SHUTTER_OFF_DELAY = 5000; // Delay in microseconds between setting shutter off and AF off  5000
-// The mode of AF synching with the shutter:
-//  0 (default): AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
+// The mode of AF synching with the shutter (Canon 50D: 0; Canon 6D: 1):
+//  0: AF is synched with shutter (when shutter is on AF is on; when shutter is off AF is off) only
 //      for non-continuous stacking (#0); during continuous stacking, AF is permanently on (this can increase the maximum FPS your camera can yield);
 //  1: AF is always synched with shutter, even for continuous stacking. Use this feature only if your camera requires it.
 const short AF_SYNC = 1;
@@ -152,7 +146,9 @@ const float V_LOW = 0.9;
 // Highest voltage from a freshly charged AA battery:
 const float V_HIGH = 1.4;
 // Threshold voltage (Volts) between battery and AC operations (divided by 8 - so it's "per battery" value)
-const float V_THRESHOLD = 11.2 / 8;
+const float V_THRESHOLD = 11.3 / 8;
+// Wait this long (us) after booting to determine whether we are battery or AC powered (for Auto energy save operation)
+const TIME_STYPE AC_DELAY = 500000;
 
 
 //////// Keypad stuff: ////////
@@ -232,11 +228,12 @@ const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microst
 
 
 //////// User interface parameters: ////////
-const TIME_STYPE COMMENT_DELAY = 1000000; // time in us to keep the comment line visible
+const TIME_STYPE COMMENT_DELAY = 2000000; // time in us to keep the comment line visible
 const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change key pressed before it will start repeating
 const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
-const TIME_STYPE DISPLAY_REFRESH_TIME = 1000000; // time interval in us for refreshing the whole display (only when not moving). Mostly for updating the battery status and temperature
+const TIME_STYPE DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing battery status
 const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
+const float POS_SPEED_FRACTION = 0.1; // If speed is larger than this factor times MAXIMUM_SPEED, stop updating currently displayed position (to minimize noise and vibrations)
 
 ///// Editor related parameters //////
 #define MAX_POS 10 // Maximum number of characters in the edited value
@@ -532,6 +529,8 @@ struct global
 #define N_HELP_PAGES 10 // Number of help pages  
   short help_page; // help page (0...N_HELP_PAGES-1)
   signed char level_old; // the old value of the battery level (0...4)
+  TIME_UTYPE t_init; // Controller initialization time
+  COORD_TYPE ipos_printed; // The last printed value of the position
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one

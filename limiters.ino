@@ -13,7 +13,7 @@ void limiters()
   if (g.limit_on != g.limiter_ini)
   {
     g.limiter_i++;
-    display_current_position();
+    display_current_position(0);
   }
 #endif
 

@@ -193,7 +193,7 @@ void display_all()
         display_third_line();
         display_derivatives();
         display_two_points();
-        display_current_position();
+        display_current_position(0);
         display_status_line();
         break;
 
@@ -498,9 +498,10 @@ void display_two_points()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void display_current_position()
+void display_current_position(byte only_position)
 /*
   Display the current position on the transient line (#6)
+  If only_position !=0, printing only the position.
 */
 {
   float p;
@@ -515,12 +516,35 @@ void display_current_position()
   return;
 #endif
 
-  if (g.error || g.moving == 0 && g.reg.backlash_on * g.BL_counter > 0 || g.alt_flag)
+  //  if (g.error || g.moving == 0 && g.reg.backlash_on * g.BL_counter > 0 || g.alt_flag)
+  //    return;
+
+  if (g.error || g.alt_flag || g.editing)
     return;
 
-  // Do not show the line untill the comment line stayed on for COMMENT_DELAY
-  //  if (g.comment_flag == 1 && g.t < g.t_comment + COMMENT_DELAY)
-  //    return;
+  if (only_position)
+    // Update only the position, and only if it changed
+  {
+    if (g.ipos != g.ipos_printed)
+    {
+      float speed = fabs(current_speed());
+      if (speed < SPEED_LIMIT * POS_SPEED_FRACTION)
+      // A hack; only if the current speed is small enough, update the current displayed position while moving (to minimize noise)
+      {
+        p = MM_PER_MICROSTEP * g.ipos;
+        my_setCursor(2, 5, 0);
+        if (g.reg.straight)
+          g.x0 += 2; 
+          else
+          g.x0 += 4; 
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+        sprintf(g.buffer, "%8smm   ", ftoa(g.buf10, p, 4));
+        tft.drawString(g.buffer, g.x0, g.y0);
+      }
+      g.ipos_printed = g.ipos;
+      return;
+    }
+  }
 
   if (g.reg.straight)
     g.tmp_char = ' ';
@@ -558,11 +582,13 @@ void display_current_position()
   my_setCursor(0, 5, 1);
   if (g.comment_flag == 1)
   {
-    tft.setTextColor(TFT_PINK, TFT_BLACK);
+    tft.setTextColor(TFT_RED, TFT_BLACK);
     tft.print(g.buf_comment);
   }
   else
     tft.print(g.buffer);
+
+  g.ipos_printed = g.ipos;
 
   return;
 }
@@ -584,7 +610,7 @@ void display_comment_line(char const * l)
   if (g.error || g.alt_flag)
     return;
 
-  tft.setTextColor(TFT_PINK, TFT_BLACK);
+  tft.setTextColor(TFT_RED, TFT_BLACK);
   my_setCursor(0, 5, 1);
   tft.print(g.empty_buffer);
   my_setCursor(0, 5, 1);

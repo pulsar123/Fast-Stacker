@@ -708,7 +708,7 @@ void stop_now()
     display_all();
   else
   {
-    display_current_position();
+    display_current_position(0);
     display_status_line();
   }
 
