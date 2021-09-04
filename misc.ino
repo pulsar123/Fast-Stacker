@@ -112,6 +112,7 @@ void set_accel_v()
   g.accel_v[2] = 0.0;
   g.accel_v[3] =  ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[4] =  ACCEL_LIMIT;
+  g.accel_v2 = ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor2];
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

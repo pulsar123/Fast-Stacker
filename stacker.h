@@ -255,7 +255,7 @@ const float POS_SPEED_FRACTION = 0.1; // If speed is larger than this factor tim
 
 //////// INPUT PARAMETERS: ////////
 // Number of custom memory registers:
-const byte N_REGS = 6;
+const byte N_REGS = 5;
 // Table of possible values for accel_factor parameter:
 const byte N_ACCEL_FACTOR = 7;
 const byte ACCEL_FACTOR[N_ACCEL_FACTOR] = {1, 2, 4, 8, 16, 32, 64};
@@ -320,7 +320,8 @@ struct regist
     #define ONE_SHOT_MODE 0
     #define CONT_MODE 1
     #define NONCONT_MODE 2
-  byte i_accel_factor; // Index for accel_factor
+  byte i_accel_factor; // Index for accel_factor (initial acceleration for REWIND and FASTFORWARD)
+  byte i_accel_factor2; // Index for accel_factor2 (stopping acceleration, except when BREAK)
   int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
   float dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap
   byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
@@ -539,6 +540,7 @@ struct global
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
   float accel_v[5]; // Five possible floating point values for acceleration
   float accel_limit; // Maximum allowed acceleration
+  float accel_v2; // Acceleration for normal stopping (not breaking). Computed from g.reg.i_accel_factor2
   COORD_TYPE ipos;  // Current position (in microsteps).
   TIME_UTYPE t_key_pressed; // Last time when a key was pressed
   TIME_UTYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)

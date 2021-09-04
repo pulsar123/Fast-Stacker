@@ -287,9 +287,9 @@ void generate_model()
     The following models are supported (values of g.model_type):
     MODEL_NONE 0 : No model, no motion
     MODEL_GOTO 1 : GoTo model, can only start from rest, cannot be interrupted by FF, REWIND, STOP. Needs model_speed and model_ipos1
-    MODEL_FF 2 : Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration (except for the final leg, where it's at max), and maximum speed limit
-    MODEL_REWIND 3 : Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration (except for the final leg, where it's at max), and maximum speed limit
-    MODEL_STOP 4 : Decelerate until stopped, using maximum acceleration. Can be interrupted by FF and REWIND
+    MODEL_FF 2 : Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration (except for the final leg, where it's at accel_v2), and maximum speed limit
+    MODEL_REWIND 3 : Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration (except for the final leg, where it's at accel_v2), and maximum speed limit
+    MODEL_STOP 4 : Decelerate until stopped, using accel_v2 acceleration. Can be interrupted by FF and REWIND
     MODEL_BREAK 5 : Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
 
     Soft limits have to be enforced here!
@@ -300,7 +300,7 @@ void generate_model()
     STOP model should essentially behave as REWIND (or FF, depending on the direction). It starts from a non-zero speed, and then goes to the
     calculated target position, which is the position it would stop without a backlash, minus (or plus) BACKLASH. As it is following a FF/REWIND
     model, it can first accelerate before slowing down and stopping at the destination. (This is unlike STOP model, which can only decelerated until stopped.)
-    We move at the highest acceleration/deceleration, and maximum speed, so the move will be as quick as it can be.
+    We move at accel_v2 acceleration, and maximum speed.
 */
 {
   float speed0, dx_break, accel, Vmax0, Vmax;
@@ -357,7 +357,10 @@ void generate_model()
   {
     // Acceleration vector (we are deccelerating):
     // Maximum deceleration:
-    accel = -g.direction * g.accel_v[4];
+    if (g.model_type == MODEL_STOP)
+      accel = -g.direction * g.accel_v2;
+    else
+      accel = -g.direction * g.accel_v[4]; // Maximum acceleration when breaking
     // Breaking travel vector with the current speed and accel:
     dx_break = -0.5 * speed0 * speed0 / accel;
     COORD_TYPE dx_break_int = roundMy(dx_break);  // Rounding to the nearest integer
@@ -380,7 +383,7 @@ void generate_model()
       // Old stype (constant deceleration) breaking time:
       float t_old = 2 * dx1 / V0;
       // New style (accel, then decel, using maximum accelerations) breaking time:
-      float t_new = (V0 + 2 * sqrt(0.5 * V0 * V0 + ACCEL_LIMIT * dx1)) / ACCEL_LIMIT;
+      float t_new = (V0 + 2 * sqrt(0.5 * V0 * V0 + g.accel_v2 * dx1)) / g.accel_v2;
       // To use new style breaking, the new time should be shorter than the old one.
       // The 0.95 factors are to avoid floating point issues later on
       if (t_new < 0.95 * t_old && V0 < 0.95 * SPEED_LIMIT)
@@ -457,16 +460,16 @@ void generate_model()
     if (g.model_type == MODEL_FF)
     {
       accel = g.accel_v[3];
-      accel_last = g.accel_v[0];
+      accel_last = -g.accel_v2;
     }
     else if (g.model_type == MODEL_REWIND)
     {
       accel = g.accel_v[1];
-      accel_last = g.accel_v[4];
+      accel_last = g.accel_v2;
     }
     else
     {
-      accel = g.direction * g.accel_v[4];  // Maximum acceleration is used for all GOTO moves, and for backlashed_stop=1 situation
+      accel = g.direction * g.accel_v2;  // accel_v2 is used for all GOTO moves, and for backlashed_stop=1 situation
       accel_last = -accel;
     }
 

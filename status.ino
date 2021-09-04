@@ -139,6 +139,17 @@ void display_all()
       tft.print(g.buffer);
 
       //---------------------------------------------
+      line = 4;
+
+      my_setCursor(shift, line, 1);
+      tft.setTextColor(TFT_BLACK, TFT_ORANGE);
+      tft.print("9");
+      my_setCursor(shift + del, line, 1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      sprintf(g.buffer, "Acc2=%1d", ACCEL_FACTOR[g.reg.i_accel_factor2]);
+      tft.print(g.buffer);
+
+      //---------------------------------------------
       line = 6;
       my_setCursor(3, line, 1);
       sprintf(g.buffer, "Fast Stacker s%s", VERSION);
@@ -419,7 +430,7 @@ void display_derivatives()
     else
     {
       // Time to travel one frame (s), with fixed acceleration:
-      float dt_goto = 1e-6 * sqrt((float)g.reg.mstep / ACCEL_LIMIT);
+      float dt_goto = 1e-6 * sqrt((float)g.reg.mstep / g.accel_v2);
       // +0.5 for roundoff:
       dt = (float)(g.Nframes) * (g.reg.first_delay + g.reg.second_delay) + (float)(g.Nframes - 1) * dt_goto + 0.5;
     }
@@ -519,7 +530,7 @@ void display_current_position(byte only_position)
   //  if (g.error || g.moving == 0 && g.reg.backlash_on * g.BL_counter > 0 || g.alt_flag)
   //    return;
 
-  if (g.error || g.alt_flag || g.editing)
+  if (g.error || g.alt_flag || g.editing || g.Backlashing)
     return;
 
   if (only_position)

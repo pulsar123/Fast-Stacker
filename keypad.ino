@@ -257,12 +257,20 @@ void process_keypad()
           read_params(5);
           break;
 
-        case '8': //@ *8: Save parameters to 6th memory bank
-          save_params(6);
+        case '8': //@ *8: 
+//          save_params(6);
           break;
 
-        case '9': //@ *9: Read parameters from 6th memory bank
-          read_params(6);
+        case '9': //@ *9: Set acceleration_factor2 (for stopping)
+//          read_params(6);
+          if (g.reg.i_accel_factor2 < N_ACCEL_FACTOR - 1)
+            g.reg.i_accel_factor2++;
+          else
+            g.reg.i_accel_factor2 = 0;
+          EEPROM.put( g.addr_reg[0], g.reg);
+          display_all();
+          // Five possible floating point values for acceleration
+          set_accel_v();
           break;
 
         case 'A': //@ *A: Change accel_factor
@@ -753,7 +761,7 @@ void process_keypad()
           // Any key press in stacking mode interrupts stacking
           if (g.moving)
           {
-            g.model_type = MODEL_BREAK;
+            g.model_type = MODEL_STOP;
             g.model_init = 1;
           }
           // All situations when we pause: during 2-point stacking, while travelling to the starting point, and while waiting between stacks in timelaspe mode:

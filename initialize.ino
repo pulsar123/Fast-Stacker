@@ -72,6 +72,7 @@ void initialize(byte factory_reset)
     g.reg.first_delay = 1.0;
     g.reg.second_delay = 1.0;
     g.reg.i_accel_factor = 0;
+    g.reg.i_accel_factor2 = 0;
     g.reg.n_timelapse = 1;
     g.reg.dt_timelapse = 0.0;
     g.reg.mirror_lock = 1;

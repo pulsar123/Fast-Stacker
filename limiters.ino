@@ -57,7 +57,7 @@ void limiters()
         {
           // Memoryzing the very first switch-on position:
           g.pos_tmp = g.ipos;
-          g.model_type = MODEL_BREAK;
+          g.model_type = MODEL_STOP;
           g.model_init = 1;
           g.on_init = 1;
         }
