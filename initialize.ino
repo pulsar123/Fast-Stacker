@@ -47,6 +47,7 @@ void initialize(byte factory_reset)
   g.dir_raw = 1;
   g.comment_flag = 0;
   g.current_point = -1;
+  g.refresh = 0;
   g.limit1 = 0;
   g.accident = 0;
   g.delayed_goto = 0;

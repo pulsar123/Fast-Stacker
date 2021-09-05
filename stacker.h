@@ -24,7 +24,7 @@
 // Long signed type (for time differences and such):
 #define TIME_STYPE s32
 
-//////// Debugging options //////// 
+//////// Debugging options ////////
 // Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
 // Only positive values are accepted. Make sure backlash compensations works against the gravity!
 // When BL_DEBUG is defined, key "5" becomes "eidit BACKLASH" function. Once proper value for BACKLASH is determined, copy it back in the code (below)
@@ -139,7 +139,7 @@ const byte EPIN_BUZZ = 15; // expander B6
 // To reduce reading noise, a 0.1uF capacitor can be soldered parallel to R4.
 // The simplest way is to measure it: define DEBUG_VOLTAGE above (this will display raw voltage measurement),
 // then compute VOLTASGE_SCALER as actual_voltage (in volts) / raw_voltage / 8 (so it's per AA battery)
-const float VOLTAGE_SCALER = 10.72/450.0 / 8.0;
+const float VOLTAGE_SCALER = 10.72 / 450.0 / 8.0;
 // Critically low voltage, per AA battery (when V becomes lower than this, the macro rail is disabled)
 // Set it slightly above the value when the rail with camera starts skipping steps
 const float V_LOW = 0.9;
@@ -216,7 +216,7 @@ const float LIMITER_PAD_MM = 0.5;
 // travel this many mm, before starting checking the limiter again (should be large enough that the limiter is guaranteed to go off by that point)
 const float DELTA_LIMITER_MM = 4.0;
 // Final calibratio leg (after hitting limit1); should be long enogh for limiter1 to go off, but smaller than 0.5 of the rail length
-const float CALIBRATE_FINAL_LEG_MM = 4.0; 
+const float CALIBRATE_FINAL_LEG_MM = 4.0;
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP
 // For DRV8825 stepper driver it should be at least 1.9 us. Form my measurements, setting STEP_LOW_DT to 2 us results
 // in 2.8 us impulses, to 1 us - in 1.7 us impulses, so I choose to use 2 us:
@@ -317,9 +317,9 @@ struct regist
   float first_delay; // First delay in non-continuous mode, seconds
   float second_delay; // Second delay in non-continuous mode, seconds
   byte i_mode; // counter for the current mode:
-    #define ONE_SHOT_MODE 0
-    #define CONT_MODE 1
-    #define NONCONT_MODE 2
+#define ONE_SHOT_MODE 0
+#define CONT_MODE 1
+#define NONCONT_MODE 2
   byte i_accel_factor; // Index for accel_factor (initial acceleration for REWIND and FASTFORWARD)
   byte i_accel_factor2; // Index for accel_factor2 (stopping acceleration, except when BREAK)
   int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
@@ -329,12 +329,12 @@ struct regist
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
   COORD_TYPE point[2];  // two memory points:
-    #define FOREGROUND 0
-    #define BACKGROUND 1
+#define FOREGROUND 0
+#define BACKGROUND 1
   byte buzzer; // 1: buzzer on; 0: buzzer off
 };
 // Add 1 (byte) if SIZE_REG is odd, to make the total regist size even (I suspect EEPROM wants data to have even number of bytes):
-short SIZE_REG = sizeof(regist)+1;
+short SIZE_REG = sizeof(regist) + 1;
 
 const short dA = sizeof(COORD_TYPE);
 
@@ -346,123 +346,123 @@ const int ADDR_END = ADDR_REG1 + (N_REGS + 1) * SIZE_REG;   // End of used EEPRO
 
 // 2-char bitmaps to display the battery status; 5 levels: 0 for empty, 4 for full:
 const uint8_t battery_char [][20] = {{
-  0B00111111,0B11111111,
-  0B00100000,0B00000001,
-  0B00100000,0B00000001,
-  0B11100000,0B00000001,
-  0B11100000,0B00000001,
-  0B11100000,0B00000001,
-  0B11100000,0B00000001,
-  0B00100000,0B00000001,
-  0B00100000,0B00000001,
-  0B00111111,0B11111111
-},{
-  0B00111111,0B11111111,
-  0B00100000,0B00001111,
-  0B00100000,0B00001111,
-  0B11100000,0B00001111,
-  0B11100000,0B00001111,
-  0B11100000,0B00001111,
-  0B11100000,0B00001111,
-  0B00100000,0B00001111,
-  0B00100000,0B00001111,
-  0B00111111,0B11111111
-},{
-  0B00111111,0B11111111,
-  0B00100000,0B01111111,
-  0B00100000,0B01111111,
-  0B11100000,0B01111111,
-  0B11100000,0B01111111,
-  0B11100000,0B01111111,
-  0B11100000,0B01111111,
-  0B00100000,0B01111111,
-  0B00100000,0B01111111,
-  0B00111111,0B11111111
-},{
-  0B00111111,0B11111111,
-  0B00100011,0B11111111,
-  0B00100011,0B11111111,
-  0B11100011,0B11111111,
-  0B11100011,0B11111111,
-  0B11100011,0B11111111,
-  0B11100011,0B11111111,
-  0B00100011,0B11111111,
-  0B00100011,0B11111111,
-  0B00111111,0B11111111
-},{
-  0B00111111,0B11111111,
-  0B00111111,0B11111111,
-  0B00111111,0B11111111,
-  0B11111111,0B11111111,
-  0B11111111,0B11111111,
-  0B11111111,0B11111111,
-  0B11111111,0B11111111,
-  0B00111111,0B11111111,
-  0B00111111,0B11111111,
-  0B00111111,0B11111111
-}
+    0B00111111, 0B11111111,
+    0B00100000, 0B00000001,
+    0B00100000, 0B00000001,
+    0B11100000, 0B00000001,
+    0B11100000, 0B00000001,
+    0B11100000, 0B00000001,
+    0B11100000, 0B00000001,
+    0B00100000, 0B00000001,
+    0B00100000, 0B00000001,
+    0B00111111, 0B11111111
+  }, {
+    0B00111111, 0B11111111,
+    0B00100000, 0B00001111,
+    0B00100000, 0B00001111,
+    0B11100000, 0B00001111,
+    0B11100000, 0B00001111,
+    0B11100000, 0B00001111,
+    0B11100000, 0B00001111,
+    0B00100000, 0B00001111,
+    0B00100000, 0B00001111,
+    0B00111111, 0B11111111
+  }, {
+    0B00111111, 0B11111111,
+    0B00100000, 0B01111111,
+    0B00100000, 0B01111111,
+    0B11100000, 0B01111111,
+    0B11100000, 0B01111111,
+    0B11100000, 0B01111111,
+    0B11100000, 0B01111111,
+    0B00100000, 0B01111111,
+    0B00100000, 0B01111111,
+    0B00111111, 0B11111111
+  }, {
+    0B00111111, 0B11111111,
+    0B00100011, 0B11111111,
+    0B00100011, 0B11111111,
+    0B11100011, 0B11111111,
+    0B11100011, 0B11111111,
+    0B11100011, 0B11111111,
+    0B11100011, 0B11111111,
+    0B00100011, 0B11111111,
+    0B00100011, 0B11111111,
+    0B00111111, 0B11111111
+  }, {
+    0B00111111, 0B11111111,
+    0B00111111, 0B11111111,
+    0B00111111, 0B11111111,
+    0B11111111, 0B11111111,
+    0B11111111, 0B11111111,
+    0B11111111, 0B11111111,
+    0B11111111, 0B11111111,
+    0B00111111, 0B11111111,
+    0B00111111, 0B11111111,
+    0B00111111, 0B11111111
+  }
 };
 // AC power symbol:
 const uint8_t AC_char[] = {
-  0B00000000,0B00000000,
-  0B00000000,0B00100000,
-  0B00000011,0B11100000,
-  0B00000111,0B11111110,
-  0B11111111,0B11100000,
-  0B11111111,0B11100000,
-  0B00000111,0B11111110,
-  0B00000011,0B11100000,
-  0B00000000,0B00100000,
-  0B00000000,0B00000000
+  0B00000000, 0B00000000,
+  0B00000000, 0B00100000,
+  0B00000011, 0B11100000,
+  0B00000111, 0B11111110,
+  0B11111111, 0B11100000,
+  0B11111111, 0B11100000,
+  0B00000111, 0B11111110,
+  0B00000011, 0B11100000,
+  0B00000000, 0B00100000,
+  0B00000000, 0B00000000
 };
 // 8x10 bitmaps
 const uint8_t rewind_char[] = {
-  0B00001100,0B00000000,0B00000000,
-  0B00011000,0B00000000,0B00000000,
-  0B00110000,0B00000000,0B00000000,
-  0B01100000,0B00000000,0B00000000,
-  0B11111111,0B11111111,0B00000000,
-  0B11111111,0B11111111,0B00000000,
-  0B01100000,0B00000000,0B00000000,
-  0B00110000,0B00000000,0B00000000,
-  0B00011000,0B00000000,0B00000000,
-  0B00001100,0B00000000,0B00000000
+  0B00001100, 0B00000000, 0B00000000,
+  0B00011000, 0B00000000, 0B00000000,
+  0B00110000, 0B00000000, 0B00000000,
+  0B01100000, 0B00000000, 0B00000000,
+  0B11111111, 0B11111111, 0B00000000,
+  0B11111111, 0B11111111, 0B00000000,
+  0B01100000, 0B00000000, 0B00000000,
+  0B00110000, 0B00000000, 0B00000000,
+  0B00011000, 0B00000000, 0B00000000,
+  0B00001100, 0B00000000, 0B00000000
 };
 const uint8_t forward_char[] = {
-  0B00000000,0B00110000,0B00000000,
-  0B00000000,0B00011000,0B00000000,
-  0B00000000,0B00001100,0B00000000,
-  0B00000000,0B00000110,0B00000000,
-  0B11111111,0B11111111,0B00000000,
-  0B11111111,0B11111111,0B00000000,
-  0B00000000,0B00000110,0B00000000,
-  0B00000000,0B00001100,0B00000000,
-  0B00000000,0B00011000,0B00000000,
-  0B00000000,0B00110000,0B00000000
+  0B00000000, 0B00110000, 0B00000000,
+  0B00000000, 0B00011000, 0B00000000,
+  0B00000000, 0B00001100, 0B00000000,
+  0B00000000, 0B00000110, 0B00000000,
+  0B11111111, 0B11111111, 0B00000000,
+  0B11111111, 0B11111111, 0B00000000,
+  0B00000000, 0B00000110, 0B00000000,
+  0B00000000, 0B00001100, 0B00000000,
+  0B00000000, 0B00011000, 0B00000000,
+  0B00000000, 0B00110000, 0B00000000
 };
 const uint8_t straight_char[] = {
-  0B00001000,0B00000000,0B00000000,
-  0B00001100,0B00000000,0B00000000,
-  0B00001110,0B00000000,0B00000000,
-  0B00001111,0B00000000,0B00000000,
-  0B00001111,0B10000000,0B00000000,
-  0B00001111,0B10000000,0B00000000,
-  0B00001111,0B00000000,0B00000000,
-  0B00001110,0B00000000,0B00000000,
-  0B00001100,0B00000000,0B00000000,
-  0B00001000,0B00000000,0B00000000
+  0B00001000, 0B00000000, 0B00000000,
+  0B00001100, 0B00000000, 0B00000000,
+  0B00001110, 0B00000000, 0B00000000,
+  0B00001111, 0B00000000, 0B00000000,
+  0B00001111, 0B10000000, 0B00000000,
+  0B00001111, 0B10000000, 0B00000000,
+  0B00001111, 0B00000000, 0B00000000,
+  0B00001110, 0B00000000, 0B00000000,
+  0B00001100, 0B00000000, 0B00000000,
+  0B00001000, 0B00000000, 0B00000000
 };
 const uint8_t reverse_char[] = {
-  0B00000000,0B00010000,0B00000000,
-  0B00000000,0B00110000,0B00000000,
-  0B00000000,0B01110000,0B00000000,
-  0B00000000,0B11110000,0B00000000,
-  0B00000001,0B11110000,0B00000000,
-  0B00000001,0B11110000,0B00000000,
-  0B00000000,0B11110000,0B00000000,
-  0B00000000,0B01110000,0B00000000,
-  0B00000000,0B00110000,0B00000000,
-  0B00000000,0B00010000,0B00000000
+  0B00000000, 0B00010000, 0B00000000,
+  0B00000000, 0B00110000, 0B00000000,
+  0B00000000, 0B01110000, 0B00000000,
+  0B00000000, 0B11110000, 0B00000000,
+  0B00000001, 0B11110000, 0B00000000,
+  0B00000001, 0B11110000, 0B00000000,
+  0B00000000, 0B11110000, 0B00000000,
+  0B00000000, 0B01110000, 0B00000000,
+  0B00000000, 0B00110000, 0B00000000,
+  0B00000000, 0B00010000, 0B00000000
 };
 
 
@@ -474,52 +474,52 @@ struct global
   TIME_UTYPE model_t0; // Absolute (model) time for the first model point.
   COORD_TYPE model_ipos0; // The coordinate at the start of a movement.
   byte model_type; // Code for the current (or requested) model. Codes:
-    #define MODEL_NONE 0 // No model, no motion
-    #define MODEL_GOTO 1 // GoTo model, can only start from rest, cannot be interrupted by FF, REWIND, STOP. Needs model_speed and model_ipos1
-    #define MODEL_FF 2 // Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
-    #define MODEL_REWIND 3 // Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
-    #define MODEL_STOP 4 // Decelerate until stopped, using intermediate acceleration. Can be interrupted by FF and REWIND
-    #define MODEL_BREAK 5 // Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
+#define MODEL_NONE 0 // No model, no motion
+#define MODEL_GOTO 1 // GoTo model, can only start from rest, cannot be interrupted by FF, REWIND, STOP. Needs model_speed and model_ipos1
+#define MODEL_FF 2 // Fast-Forward model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
+#define MODEL_REWIND 3 // Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
+#define MODEL_STOP 4 // Decelerate until stopped, using intermediate acceleration. Can be interrupted by FF and REWIND
+#define MODEL_BREAK 5 // Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
   float model_speed_max; // Desired (maximum) speed for the next goto motion (always positive).
   COORD_TYPE model_ipos1; // Desired target position for the next move (goto, accelerate, or stop)
   byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes. (Normally do not coincide with steps.)
-  #define N_POINTS_MAX 5  // Largest possible value for Npoints
+#define N_POINTS_MAX 5  // Largest possible value for Npoints
   float model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
   TIME_UTYPE model_time[N_POINTS_MAX]; // Model time for each model point (relative to the 0-th point)
   float model_speed[N_POINTS_MAX]; // Model speed (signed)
   float model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
   byte model_ptype[N_POINTS_MAX]; // Model point type:
-    #define INIT_POINT 0  // Starting moving from rest; currently not used
-    #define ZERO_ACCEL_POINT 1  // Acceleration becomes zero
-    #define ACCEL_POINT 2  // Acceleration becomes non-zero; currently not used
-    #define STOP_POINT 3  // Final (stop) point; currently not used
-    #define DIR_CHANGE_POINT 4  // Changing direction point
+#define INIT_POINT 0  // Starting moving from rest; currently not used
+#define ZERO_ACCEL_POINT 1  // Acceleration becomes zero
+#define ACCEL_POINT 2  // Acceleration becomes non-zero; currently not used
+#define STOP_POINT 3  // Final (stop) point; currently not used
+#define DIR_CHANGE_POINT 4  // Changing direction point
   signed char model_dir[N_POINTS_MAX]; // Model direction (-1, 0, 1), in the sense of the desired g.direction values
   TIME_UTYPE t_next_step; // Absolute timing prediction for the next step
   COORD_TYPE ipos_next_step; // Absolute coordinate for the next step
   byte motion_status_code; // Used for displaying motion status. Possible values:
-    #define STATUS_NONE 0 // no motion
-    #define STATUS_REWIND 1
-    #define STATUS_REVERSE 2
-    #define STATUS_FORWARD 3
-    #define STATUS_STRAIGHT 4
+#define STATUS_NONE 0 // no motion
+#define STATUS_REWIND 1
+#define STATUS_REVERSE 2
+#define STATUS_FORWARD 3
+#define STATUS_STRAIGHT 4
   byte delayed_goto; // set to 1 when pausing focus stacking - a signal to execute goto inside camera() after the breaking is finished
   byte enable_flag; // Tracks down status of the motor enable pin: HIGH: disable motor, LOW: enable motor
   byte editing; // =1 when editing a value
   float edited_value; // Edited value
   int edited_param; // Parameter which is being edited. Possible values:
-    #define PARAM_MSTEP 0 // Number of microsteps per frame
-    #define PARAM_FPS 1
-    #define PARAM_N_SHOTS 2 // Number of shots
-    #define PARAM_FIRST_DELAY 3
-    #define PARAM_SECOND_DELAY 4
-    #define PARAM_GOTO 5  // GoTo target coordinate
-    #define PARAM_ACCEL_FACTOR 6
-    #define PARAM_N_TIMELAPSE 7
-    #define PARAM_DT_TIMELAPSE 8
+#define PARAM_MSTEP 0 // Number of microsteps per frame
+#define PARAM_FPS 1
+#define PARAM_N_SHOTS 2 // Number of shots
+#define PARAM_FIRST_DELAY 3
+#define PARAM_SECOND_DELAY 4
+#define PARAM_GOTO 5  // GoTo target coordinate
+#define PARAM_ACCEL_FACTOR 6
+#define PARAM_N_TIMELAPSE 7
+#define PARAM_DT_TIMELAPSE 8
   byte cursor_pos; // Initial cursor position (when editing)
   signed char dot_pos; // Counting dots n the edited value
-  char value[MAX_POS+1]; // String to store the digits of the edited value
+  char value[MAX_POS + 1]; // String to store the digits of the edited value
   TIME_UTYPE t_key_delay; // Time when a key with the delay function (4,B) was pressed
   byte key_delay_on; // 1: in the process of delaying a key; 0: otherwise
   COORD_TYPE ipos_raw; // Raw coordinate, used for parking
@@ -532,6 +532,7 @@ struct global
   signed char level_old; // the old value of the battery level (0...4)
   TIME_UTYPE t_init; // Controller initialization time
   COORD_TYPE ipos_printed; // The last printed value of the position
+  byte refresh; // if 1, each display line gets refreshed
   //-----------------
   struct regist reg; // Custom parameters register
   int addr_reg[N_REGS + 1]; // The starting addresses of the EEPROM memory registers, including the default (0th) one
@@ -546,15 +547,15 @@ struct global
   TIME_UTYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)
   int N_repeats; // Counter of key repeats
   TIME_UTYPE t_display; // time since the last display refresh (only when not moving)
-  /* a flag for each leg of calibration: 
-    0: no calibration; 
+  /* a flag for each leg of calibration:
+    0: no calibration;
     1: initiating full calibration: moving towards switch 2 for its calibration, with maximum speed and acceleration;
     2: triggered limit2 and stopped, initiating move towards switch 1
     3: triggered limit1 and stopped, initiating move forward to calibrate limit1 on the first switch-off position
     4: moving forward to calibrate limit1 on the first switch-off position;
     5: end of calibration; updating coordinates;
-   */
-  byte calibrate_flag; 
+  */
+  byte calibrate_flag;
   COORD_TYPE limit1; // ipos for the foreground limiter (temporary value, only used when accidently triggering foreground switch; normally it's 0)
   COORD_TYPE limit2; // ipos for the background limiter; limit2 > limit1
   byte accident;  // =1 if we accidently triggered limit1; 0 otherwise
@@ -593,7 +594,7 @@ struct global
   // 1: when 2-point stacking was paused
   // 2: pause which happened during the initial travel to the starting point after hitting any key
   // 3: pause which happened between stacks (in timelapse mode)
-  byte paused;   
+  byte paused;
   COORD_TYPE BL_counter; // Counting microsteps made in the bad direction. Possible values 0...BACKLASH. Each step in the good (+) direction decreases it by 1.
   byte Backlashing; // A flag to ensure that backlash compensation is uniterrupted (except for emergency breaking, #B); =1 when BL compensation is being done, 0 otherwise
   byte continuous_mode; // 2-point stacking mode: =0 for a non-continuous mode, =1 for a continuous mode
@@ -613,11 +614,11 @@ struct global
   COORD_TYPE backlash; // current value of backlash in microsteps (can be either 0 or BACKLASH)
   byte point1; // First point for stacking (either FOREGROUND or BACKGROUND, depending on the backlash direction)
   byte point2; // Second point for stacking (either BACKGROUND or FOREGROUND, depending on the backlash direction)
-//  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
+  //  int limiter_counter; // Used in impulse noise suppression inside Read_limiters()
 #ifdef BUZZER
   TIME_UTYPE t_buzz; // timer for the buzzer
   byte buzz_state; // HIGH or LOW for the buzzer state
-#endif  
+#endif
   TIME_STYPE dt_lost;
 #ifdef TIMING
   TIME_UTYPE i_timing;
@@ -634,7 +635,7 @@ struct global
   int d_max;
   int N_insanity;
 #endif
-  signed char current_point; // The index of the currently loaded memory point. Can be 0/3 for fore/background (macro mode). -1 means no point has been loaded/saved yet.
+  signed char current_point; // The index of the currently loaded memory point. Can be 0/1 for fore/background (macro mode). -1 means no point has been loaded/saved yet.
 #ifdef TEST_SWITCH
   // Number of tests to perform:
 #define TEST_N_MAX 50

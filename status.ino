@@ -199,6 +199,7 @@ void display_all()
     switch (g.error)
     {
       case 0:  // No error, normal display
+        g.refresh = 1;
         display_mode();
         display_step();
         display_third_line();
@@ -206,6 +207,7 @@ void display_all()
         display_two_points();
         display_current_position(0);
         display_status_line();
+        g.refresh = 0;
         break;
 
       case 1:
@@ -540,14 +542,14 @@ void display_current_position(byte only_position)
     {
       float speed = fabs(current_speed());
       if (speed < SPEED_LIMIT * POS_SPEED_FRACTION)
-      // A hack; only if the current speed is small enough, update the current displayed position while moving (to minimize noise)
+        // A hack; only if the current speed is small enough, update the current displayed position while moving (to minimize noise)
       {
         p = MM_PER_MICROSTEP * g.ipos;
         my_setCursor(2, 5, 0);
         if (g.reg.straight)
-          g.x0 += 2; 
-          else
-          g.x0 += 4; 
+          g.x0 += 2;
+        else
+          g.x0 += 4;
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         sprintf(g.buffer, "%8smm   ", ftoa(g.buf10, p, 4));
         tft.drawString(g.buffer, g.x0, g.y0);
@@ -649,7 +651,7 @@ void display_status_line()
   letter_status(" ");
   motion_status();
   display_frame_counter();
-  points_status();
+  points_status(0);
   battery_status(0);
   return;
 }
@@ -784,31 +786,40 @@ void display_frame_counter()
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-void points_status()
+void points_status(byte clear)
 /* Displays F or B if the current coordinate is exactly the foreground (g.reg.point[FOREGROUND]) or background (g.reg.point[BACKGROUND]) point.
+   Clear the area if clear=1
 */
 {
 #ifdef NO_DISP
-  if (g.moving || g.model_init)
+  if (g.model_init)
     return;
 #endif
-  if (g.error || g.alt_flag)
+  if (g.error || g.alt_flag || g.editing || g.moving)
     return;
 
   my_setCursor(14, 6, 1);
-
-  if (g.current_point < 0)
-  {
-    tft.print("  ");
-    return;
-  }
-
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
-  if (g.current_point == 0)
-    tft.print("F ");
+  if (clear)
+  {
+    tft.print("  ");
+  }
   else
-    tft.print("B ");
+  {
+    if (g.ipos == g.reg.point[FOREGROUND])
+    {
+      tft.print("F ");
+    }
+    else if (g.ipos == g.reg.point[BACKGROUND])
+    {
+      tft.print("B ");
+    }
+    else
+    {
+      tft.print("  ");
+    }
+  }
 
   return;
 }

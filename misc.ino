@@ -310,6 +310,7 @@ void set_memory_point(char n)
 //  display_all();
   display_derivatives();
   display_two_points();
+  points_status(0);
   sprintf(g.buffer, "     P%1d was set     ", n);
   display_comment_line(g.buffer);
   

@@ -35,6 +35,11 @@ void motor_control()
 */
 
 {
+  if (g.model_init == 1 && g.moving == 0)
+  {
+    points_status(1);
+  }
+
   // Current time in microseconds (might not be synced yet in the current Arduino loop):
   // Model time (can be behind or ahead of the physical time):
   g.t = micros() - g.dt_lost;

@@ -189,7 +189,6 @@ void process_keypad()
         else
           ipos_target = g.ipos - g.reg.mstep;
         move_to_next_frame(&ipos_target, &frame_counter0);
-        g.current_point = -1;
         break;
 
       case 'A': //@ #A: Fast-forward a single frame step (no shooting)
@@ -202,7 +201,6 @@ void process_keypad()
         else
           ipos_target = g.ipos + g.reg.mstep;
         move_to_next_frame(&ipos_target, &frame_counter0);
-        g.current_point = -1;
         break;
 
       case 'D': //@ #D: Go to the last starting point (for both 1- and 2-point shooting); not memorized in EEPROM
@@ -257,12 +255,12 @@ void process_keypad()
           read_params(5);
           break;
 
-        case '8': //@ *8: 
-//          save_params(6);
+        case '8': //@ *8:
+          //          save_params(6);
           break;
 
         case '9': //@ *9: Set acceleration_factor2 (for stopping)
-//          read_params(6);
+          //          read_params(6);
           if (g.reg.i_accel_factor2 < N_ACCEL_FACTOR - 1)
             g.reg.i_accel_factor2++;
           else
@@ -289,7 +287,6 @@ void process_keypad()
             g.reg.backlash_on++;
           else
             g.reg.backlash_on = -1;
-          g.current_point = -1;
           update_backlash();
           display_all();
           EEPROM.put( g.addr_reg[0], g.reg);
@@ -420,7 +417,6 @@ void process_keypad()
                 {
                   g.model_type = MODEL_REWIND;
                   g.model_init = 1;
-                  g.current_point = -1;
                 }
               }
               break;
@@ -463,7 +459,6 @@ void process_keypad()
                 {
                   g.model_type = MODEL_FF;
                   g.model_init = 1;
-                  g.current_point = -1;
                 }
               }
               break;
