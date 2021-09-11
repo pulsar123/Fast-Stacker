@@ -70,9 +70,12 @@ void display_all()
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
       tft.print("1");
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      sprintf(g.buf6, "Rev=%1d", 1 - g.reg.straight);
+      if (g.reg.straight == 1)
+        sprintf(g.buf10, "Rev=Off");
+      else
+        sprintf(g.buf10, "Rev=On");
       my_setCursor(del, line, 1);
-      tft.print(g.buf6);
+      tft.print(g.buf10);
 
       my_setCursor(shift, line, 1);
       tft.setTextColor(TFT_BLACK, TFT_ORANGE);
@@ -97,7 +100,12 @@ void display_all()
       tft.print("B");
       my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      sprintf(g.buffer, "BL=%2d", g.reg.backlash_on);
+      if (g.reg.backlash_on == -1)
+        sprintf(g.buffer, "BL=Down");
+      else if (g.reg.backlash_on == 0)
+        sprintf(g.buffer, "BL=Off ");
+      else
+        sprintf(g.buffer, "BL=Up  ");
       tft.print(g.buffer);
 
       //---------------------------------------------
@@ -132,7 +140,10 @@ void display_all()
       tft.print("0");
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       my_setCursor(del, line, 1);
-      sprintf(g.buffer, "Save=%1d        ", g.reg.save_energy);
+      if (g.reg.save_energy == 0)
+        sprintf(g.buffer, "Save=Off        ");
+      else
+        sprintf(g.buffer, "Save=On         ");
       tft.print(g.buffer);
 
       my_setCursor(shift, line, 1);
@@ -140,8 +151,10 @@ void display_all()
       tft.print("D");
       my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      sprintf(g.buf6, "Buzz");
-      sprintf(g.buffer, "%4s=%1d", g.buf6, g.reg.buzzer);
+      if (g.reg.buzzer == 0)
+        sprintf(g.buffer, "Buzz=Off");
+      else
+        sprintf(g.buffer, "Buzz=On");
       tft.print(g.buffer);
 
       //---------------------------------------------
