@@ -115,8 +115,14 @@ void display_all()
       tft.print("C");
       my_setCursor(shift + del, line, 1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      sprintf(g.buf6, "Mir");
-      sprintf(g.buffer, "%3s=%1d", g.buf6, g.reg.mirror_lock);
+      if (g.reg.mirror_lock == MIRROR_OFF)
+        sprintf(g.buffer, "Mir=Off");
+      else if (g.reg.mirror_lock == MIRROR_ON)
+        sprintf(g.buffer, "Mir=On");
+      else if (g.reg.mirror_lock == MIRROR_FRSP)
+        sprintf(g.buffer, "Mir=FRSP");
+      else if (g.reg.mirror_lock == MIRROR_BURST)
+        sprintf(g.buffer, "Mir=Brst");
       tft.print(g.buffer);
 
       //---------------------------------------------

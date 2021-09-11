@@ -122,7 +122,7 @@ void process_keypad()
           g.end_of_stacking = 0;
           display_all();
         }
-        else
+        else if (g.moving == 1)
           // Emergency breaking:
         {
           start_breaking();
@@ -292,8 +292,8 @@ void process_keypad()
           EEPROM.put( g.addr_reg[0], g.reg);
           break;
 
-        case 'C': //@ *C: Mirror lock: 0, 1, 2
-          if (g.reg.mirror_lock < 2)
+        case 'C': //@ *C: Mirror lock: 0-3
+          if (g.reg.mirror_lock < 3)
             g.reg.mirror_lock++;
           else
             g.reg.mirror_lock = 0;

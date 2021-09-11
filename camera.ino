@@ -11,17 +11,26 @@ void camera()
   if (g.error > 0 || g.uninterrupted == 1)
     return;
 
-  // Paused during 2-point stacking; rewinding to the last taken frame position
-  if (g.delayed_goto==1 && g.model_type==MODEL_NONE && g.t - g.t0_stacking > CONT_STACKING_DELAY)
+  if (g.reg.mirror_lock == MIRROR_BURST && g.reg.i_mode != ONE_SHOT_MODE && g.stacker_mode != 0)
+    // 2-points modes are ignored in burst mode
   {
-      g.delayed_goto = 0;
-      // Switches the frame counter back to the last accomplished frame
-      g.frame_counter--;
-      // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
-      #ifdef SER_DEBUG
-      Serial.println("--Delayed goto--");
-      #endif
-      go_to(frame_coordinate(), SPEED_LIMIT);
+    g.stacker_mode = 0;
+    display_comment_line("Burst not supported!");
+    return;
+  }
+
+
+  // Paused during 2-point stacking; rewinding to the last taken frame position
+  if (g.delayed_goto == 1 && g.model_type == MODEL_NONE && g.t - g.t0_stacking > CONT_STACKING_DELAY)
+  {
+    g.delayed_goto = 0;
+    // Switches the frame counter back to the last accomplished frame
+    g.frame_counter--;
+    // I think this is the logical behaviour: when paused between two frame positions, instantly rewind to the last taken frame position:
+#ifdef SER_DEBUG
+    Serial.println("--Delayed goto--");
+#endif
+    go_to(frame_coordinate(), SPEED_LIMIT);
   }
 
 
@@ -53,7 +62,7 @@ void camera()
   {
     g.start_stacking = 3;
 
-  // Enforcing the initial delay before a stacking (only for continuous mode):
+    // Enforcing the initial delay before a stacking (only for continuous mode):
     if (g.continuous_mode)
     {
       // Estimating the required speed in microsteps per microsecond
@@ -63,7 +72,7 @@ void camera()
       {
         if (g.reg.backlash_on >= 0)
           go_to(g.limit2, speed);
-          else
+        else
           go_to(g.limit1, speed);
       }
       else if (g.stacker_mode == 2)
@@ -114,7 +123,7 @@ void camera()
     if (g.ipos == g.ipos_to_shoot && g.shutter_on == 0 && (g.continuous_mode == 1 || g.noncont_flag == 1))
     {
       // Setting the shutter on:
-      // If MIRROR_LOCK if not defined, the following shutter actuation will only take place in a continuous stacking mode
+      // If MIRROR_LOCK not defined, the following shutter actuation will only take place in a continuous stacking mode
       // If it is defined, it will also happen in non-continuous mode, where it will be used to lock the mirror
       if (g.continuous_mode || g.reg.mirror_lock == 1)
       {
@@ -165,8 +174,12 @@ void camera()
     // Switching camera's AF on
     if (g.continuous_mode == 1 && g.start_stacking == 1 || g.AF_on == 0 && g.make_shot == 1 && (g.continuous_mode == 0 || g.single_shot == 1 || AF_SYNC))
     {
-      // Initiating AF now:
-      iochip.digitalWrite(EPIN_AF, HIGH);
+      // This "if" is to accomodate the special BURST mode:
+      if ((g.reg.mirror_lock == MIRROR_BURST && g.start_stacking == 1) || g.reg.mirror_lock != MIRROR_BURST)
+      {
+        // Initiating AF now:
+        iochip.digitalWrite(EPIN_AF, HIGH);
+      }
       g.t_AF = g.t;
       g.AF_on = 1;
 #ifdef CAMERA_DEBUG
@@ -179,10 +192,12 @@ void camera()
   }
 
   // Triggering camera's shutter:
-  if (g.make_shot == 1 && g.AF_on == 1 && ((g.reg.mirror_lock < 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
+  if (g.make_shot == 1 && g.AF_on == 1 && ((g.reg.mirror_lock != 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_AF >= SHUTTER_ON_DELAY2)))
   {
 #ifndef DISABLE_SHUTTER
-    iochip.digitalWrite(EPIN_SHUTTER, HIGH);
+    // In the burst mode, we trigger the shutter only for the very first shot:
+    if (g.frame_counter == 1 || g.reg.mirror_lock != MIRROR_BURST)
+      iochip.digitalWrite(EPIN_SHUTTER, HIGH);
 #endif
 #ifdef CAMERA_DEBUG
     shutter_status(1);
@@ -193,11 +208,14 @@ void camera()
   }
 
   // Making sure that the shutter is pressed for at least SHUTTER_TIME microseconds
+  // In the Burst mode, we release the shutter at the very end, after g.stacker_mode == 0
   if (g.shutter_on == 1 && g.t - g.t_shutter >= SHUTTER_TIME_US)
   {
     // Releasing the shutter:
 #ifndef DISABLE_SHUTTER
-    iochip.digitalWrite(EPIN_SHUTTER, LOW);
+    // In the burst mode, we close the shutter only after finishing/aborting stacking (when stacker_mode becomes 0):
+    if (g.stacker_mode == 0 || g.reg.mirror_lock != MIRROR_BURST)
+      iochip.digitalWrite(EPIN_SHUTTER, LOW);
 #endif
 #ifdef CAMERA_DEBUG
     shutter_status(0);
@@ -208,10 +226,12 @@ void camera()
 
   // Depress the camera's AF when it's no longer needed
   // and only if the shutter has been off for at least SHUTTER_OFF_DELAY microseconds:
-  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.reg.mirror_lock < 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
+  if (g.make_shot == 0 && g.AF_on == 1 && g.shutter_on == 0 && ((g.reg.mirror_lock != 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY) || (g.reg.mirror_lock == 2 && g.t - g.t_shutter_off >= SHUTTER_OFF_DELAY2)) &&
       (g.continuous_mode == 0 || g.stacker_mode == 0 || g.paused == 1 || AF_SYNC))
   {
-    iochip.digitalWrite(EPIN_AF, LOW);
+    // In the burst mode, we close the AF only after finishing/aborting stacking (when stacker_mode becomes 0):
+    if (g.stacker_mode == 0 || g.reg.mirror_lock != MIRROR_BURST)
+      iochip.digitalWrite(EPIN_AF, LOW);
 #ifdef CAMERA_DEBUG
     AF_status(0);
 #endif

@@ -241,7 +241,7 @@ const float POS_SPEED_FRACTION = 0.1; // If speed is larger than this factor tim
 #define MSTEP_MIN 1
 #define MSTEP_MAX 8000 // Make sure it's not larger than the length of the rail! 8000 -> 5mm
 #define FPS_MIN 0.01
-#define FPS_MAX 4.0 // Adjust to your camera's maximum possible frame rate
+#define FPS_MAX 4.5 // Adjust to your camera's (and flash) maximum possible frame rate
 #define FIRST_DELAY_MIN 0.5
 #define FIRST_DELAY_MAX 8.0
 #define SECOND_DELAY_MIN 0.5
@@ -324,7 +324,11 @@ struct regist
   byte i_accel_factor2; // Index for accel_factor2 (stopping acceleration, except when BREAK)
   int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
   float dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap
-  byte mirror_lock; // 1: mirror lock is used in non-continuous stacking; 0: not used; 2: similar to 0, but using SHUTTER_ON_DELAY2, SHUTTER_OFF_DELAY2 instead of SHUTTER_ON_DELAY, SHUTTER_OFF_DELAY
+  byte mirror_lock; // See the posible values below:
+#define MIRROR_OFF 0 // no mirror lock in non-continuous stacking
+#define MIRROR_ON 1 // mirror lock is used in non-continuous stacking
+#define MIRROR_FRSP 2 // Full Resolution Silet Picture (electronic shutter; only Canon DSLRs, with Magick Lantern firmware)
+#define MIRROR_BURST 3  // Using the burst shooting mode of the camera, instead of initiating each shot (only for 1-point continuous mode)
   signed char backlash_on; // =1 when g.backlash=BACKLASH; =0 when g.backlash=0.0; =-1 when g.backlash=-BACKLASH
   byte straight;  // 0: reversed rail (PIN_DIR=LOW is positive); 1: straight rail (PIN_DIR=HIGH is positive)
   byte save_energy; // =0: always using the motor's torque, even when not moving (should improve accuracy and holding torque); =1: save energy (only use torque during movements)
