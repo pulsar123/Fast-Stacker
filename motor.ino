@@ -18,7 +18,7 @@ void motor_control()
   This way, all motions happen exactly according to the model equations (in terms of position), with speeds a bit slower than in the model.
   This should result in zero missed steps even if some Arduino loops are significantly longer than a time between adjacent steps (because of displaying data, or some internal
   microprocessor delays - happens to ESP8266 regularly).
-
+u
   Overall strategy:
   1) An event (external, internal) submits a request to initialize a new model of motion, of the following types:
    - GOTO: always starting from rest, go to a specific coordinate, stop there.

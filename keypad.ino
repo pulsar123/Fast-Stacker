@@ -784,6 +784,12 @@ void process_keypad()
           else
             // In 1-point stacking, we abort
           {
+            if (g.reg.mirror_lock == MIRROR_BURST)
+            // In the burst mode, shuttre_on and AF_on do not reflect the real state anymore, so we have to manually enable them now
+            {
+              g.shutter_on = 1;
+              g.AF_on = 1;
+            }
             g.frame_counter = 0;
             display_comment_line("   Stacking abort   ");
           }

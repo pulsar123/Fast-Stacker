@@ -141,9 +141,9 @@ void display_all()
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       my_setCursor(del, line, 1);
       if (g.reg.save_energy == 0)
-        sprintf(g.buffer, "Save=Off        ");
+        sprintf(g.buffer, "Save=Off");
       else
-        sprintf(g.buffer, "Save=On         ");
+        sprintf(g.buffer, "Save=On ");
       tft.print(g.buffer);
 
       my_setCursor(shift, line, 1);
