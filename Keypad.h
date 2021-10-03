@@ -78,6 +78,7 @@ typedef struct {
 // stacker: original values were 10, 10
 #define LIST_MAX 2		// Max number of keys on the active list.
 #define MAPSIZE 4		// MAPSIZE is the number of rows (times 16 columns)
+#define N_KEY_READS 3  // stacker: scan has to be identical for these many scans in a row to be accepted (to defeat impulse nosie)
 #define makeKeymap(x) ((char*)x)
 
 #include  "MCP23S17.h"
@@ -99,11 +100,12 @@ class Keypad : public Key {
       return iochip.digitalRead(pinNum);
     }
 
-    uint bitMap[MAPSIZE];	// 10 row x 16 column array of bits. Except Due which has 32 columns.
+    uint bitMap[N_KEY_READS][MAPSIZE];	// 4 row x 16 column array of bits. Except Due which has 32 columns.
     Key key[LIST_MAX];
     unsigned long holdTimer;
     //stacker: flag used to have row pins initialized only once (to save time):
     byte init = 1;
+    byte scan_counter = 0;
 
     char getKey();
     bool getKeys();
@@ -129,7 +131,7 @@ class Keypad : public Key {
     uint holdTime;
     bool single_key;
 
-    void scanKeys();
+    byte scanKeys();
     bool updateList();
     void nextKeyState(byte n, boolean button);
     void transitionTo(byte n, KeyState nextState);
