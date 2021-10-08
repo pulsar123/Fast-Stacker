@@ -88,7 +88,7 @@ void setup() {
   iochip.pinMode(EPIN_BUZZ, OUTPUT);
 #endif
 
-#ifdef SER_DEBUG
+#if  defined(SER_DEBUG) || defined(SER_DEBUG_TIME)
   Serial.begin(115200);
 #endif
 

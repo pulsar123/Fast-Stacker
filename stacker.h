@@ -9,20 +9,34 @@
 #include <TFT_eSPI.h>
 
 // Requires hardware version h2.0
-#define VERSION "2.0"
+#define VERSION "2.03"
 
 //++++++++++ Major features +++++++++++++++++
 #define BUZZER
 #define BUZZER_PASSIVE  // If you are using a passive buzzer (requires explicit PWM signal)
 
 //+++++++++++++ Data types +++++++++++++++++++
+// Using both real64 and LONG_TIME (int64 for all timings) surprisingly adds very little to the Arduino loop timing - during motion,
+// the average loop interval / std grow from 11.33 / 9.03 us (all 32 bit) to 12.54 / 9.16 us (all 64 bit). These are all well below
+// the maximum allowed interval of 62 us (time between motor step commands when moving at the maximum speed - 10 mm/s). Using
+// 64-bit data is crucial for the accuracy and stability of very long (> 10 minutes) moves, like in 2-point continuous stacking.
+#define FLOAT_TYPE real64
+// If defined, time will use 64-bit integers
+#define LONG_TIME
 // Integer type for all coordinates (cannot be an unsigned type!). Use "short" if the total number of microsteps for your rail is <32,000,
 // and use "long" for larger numbers (will consume more memory)
 #define COORD_TYPE s32
+#ifdef LONG_TIME
+// Long unsigned type (for times and such):
+#define TIME_UTYPE uint64
+// Long signed type (for time differences and such):
+#define TIME_STYPE sint64
+#else
 // Long unsigned type (for times and such):
 #define TIME_UTYPE uint32
 // Long signed type (for time differences and such):
 #define TIME_STYPE s32
+#endif
 
 //////// Debugging options ////////
 // Uncomment this line to measure the BACKLASH parameter for your rail (you don't need this if you are using Velbon Super Mag Slider - just use my value of BACKLASH)
@@ -66,6 +80,7 @@
 //#define SERIAL_SWITCH
 //#define TEST_LIMITER // If defined, displays limiter state after the coordinate
 //#define SER_DEBUG  // Debugging motion algorithms using serial interface
+//#define SER_DEBUG_TIME
 
 // Port expander initial state:
 // For MCP23S17 expander; ports numbering is 16, 15, ..., 1 (B7, B6, ..., A7, ..., A0):
@@ -177,7 +192,7 @@ const byte MOTOR_M2 = HIGH;
 // Number of microsteps in a step (corresponding to the above M0, M1, M2 values):
 const COORD_TYPE N_MICROSTEPS = 32;
 // Macro rail parameter: travel distance per one rotation, in mm (3.98mm for Velbon Mag Slider):
-const float MM_PER_ROTATION = 3.98;
+const FLOAT_TYPE MM_PER_ROTATION = 3.98;
 // Backlash compensation (in mm); positive direction (towards background) is assumed to be the good one (no BL compensation required);
 // all motions moving in the bad (negative) direction at the end will need some BL compensation.
 // v2.0: Now one can designate either negative or positive directions as bad ones (*B keys)
@@ -187,7 +202,7 @@ const float MM_PER_ROTATION = 3.98;
 // Should be determined experimentally: too small values will produce visible backlash (two or more frames at the start of the stacking
 // sequence will look alsmost identical). For my Velbon Super Mag Slide rail I measured the BL to be ~0.2 mm.
 // Set it to zero to disable BL compensation.
-const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
+const FLOAT_TYPE BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
 // This is the second backlash related parameter you need to measure for you rail (or just use the value provided if your rail is Velbon Super Mag Slider)
 // This parameter is only relevant for one operation - rail reversal (*1 function). Unlike the above parameter (BACKLASH_MM) which can be equal to or
 // larger than the actual backlash value for the rail movements to be perfectly accurate, the BACKLASH_2 parameter has to have a specific value (not larger, no smaller); if
@@ -197,33 +212,33 @@ const float BACKLASH_MM = 0.2; // 0.2mm for Velbon Super Mag Slider
 // Use the BL2_DEBUG mode to find the good value of this parameter. You should convert the displayed value of BL2_DEBUG from microsteps
 // to mm, by multiplying by MM_PER_ROTATION/(MOTOR_STEPS*N_MICROSTEPS).
 // Adjust this parameter only after you found a good value for BACKLASH_MM parameter.
-const float BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
+const FLOAT_TYPE BACKLASH_2_MM = 0.3333; // 0.3333mm for Velbom Super Mag Slider
 // Speed limiter, in mm/s. Higher values will result in lower torques and will necessitate larger travel distance
 // between the limiting switches and the physical limits of the rail. In addition, too high values will result
 // in Arduino loop becoming longer than inter-step time interval, which effectively will limit your maxium speed.
 // For an arbitrary rail and motor, make sure the following condition is met:
 // 10^6 * MM_PER_ROTATION / (MOTOR_STEPS * N_MICROSTEPS * SPEED_LIMIT_MM_S) > typical Arduino loop timing (us)
 // Macro rail speed limit:
-const float SPEED_LIMIT_MM_S = 10; // 10
+const FLOAT_TYPE SPEED_LIMIT_MM_S = 10; // 10
 // Breaking distance (mm) for the rail when stopping while moving at the fastest speed (SPEED_LIMIT)
 // This will determine the maximum acceleration/deceleration allowed for any rail movements - important
 // for reducing the damage to the (mostly plastic) rail gears. Make sure that this distance is smaller
 // than the smaller distance of the two limiting switches (between the switch actuation and the physical rail limits)
-const float BREAKING_DISTANCE_MM = 1.0;
+const FLOAT_TYPE BREAKING_DISTANCE_MM = 1.0;
 // Padding (in mm) for a soft limit, before hitting the limiters (increase if you constantly hit the limiter by accident)
-const float LIMITER_PAD_MM = 0.5;
+const FLOAT_TYPE LIMITER_PAD_MM = 0.5;
 // During calibration, after hitting the first limiter, breaking, and moving in the opposite direction,
 // travel this many mm, before starting checking the limiter again (should be large enough that the limiter is guaranteed to go off by that point)
-const float DELTA_LIMITER_MM = 4.0;
+const FLOAT_TYPE DELTA_LIMITER_MM = 4.0;
 // Final calibratio leg (after hitting limit1); should be long enogh for limiter1 to go off, but smaller than 0.5 of the rail length
-const float CALIBRATE_FINAL_LEG_MM = 4.0;
+const FLOAT_TYPE CALIBRATE_FINAL_LEG_MM = 4.0;
 // Delay in microseconds between LOW and HIGH writes to PIN_STEP
 // For DRV8825 stepper driver it should be at least 1.9 us. Form my measurements, setting STEP_LOW_DT to 2 us results
 // in 2.8 us impulses, to 1 us - in 1.7 us impulses, so I choose to use 2 us:
 const short STEP_LOW_DT = 2;
 // Delay after writing to PIN_ENABLE, ms (only used in SAVE_ENERGY mode):
 const short ENABLE_DELAY_MS = 3;
-const float OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
+const FLOAT_TYPE OVERSHOOT = 0.5; // (0.0-1.0) In all moves, overshoot the target by these many microsteps (stop will happen at the accurate target position). To account for roundoff errors.
 const COORD_TYPE HUGE = 1000000;  // Should be larger than the number of microsteps for the whole rail length
 
 
@@ -233,7 +248,7 @@ const TIME_STYPE T_KEY_LAG = 500000; // time in us to keep a parameter change ke
 const TIME_STYPE T_KEY_REPEAT = 100000; // time interval in us for repeating with parameter change keys
 const TIME_STYPE DISPLAY_REFRESH_TIME = 100000; // time interval in us for refreshing battery status
 const TIME_STYPE KEY_DELAY_US = 500000; // Delay for keys (4,B)
-const float POS_SPEED_FRACTION = 0.1; // If speed is larger than this factor times MAXIMUM_SPEED, stop updating currently displayed position (to minimize noise and vibrations)
+const FLOAT_TYPE POS_SPEED_FRACTION = 0.1; // If speed is larger than this factor times MAXIMUM_SPEED, stop updating currently displayed position (to minimize noise and vibrations)
 
 ///// Editor related parameters //////
 #define MAX_POS 10 // Maximum number of characters in the edited value
@@ -282,17 +297,17 @@ TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 #define DEL_BITMAP 3 // Offset for drawBitmap relative to print
 
 // MM per microstep:
-const float MM_PER_MICROSTEP = MM_PER_ROTATION / ((float)MOTOR_STEPS * (float)N_MICROSTEPS);
+const FLOAT_TYPE MM_PER_MICROSTEP = MM_PER_ROTATION / ((FLOAT_TYPE)MOTOR_STEPS * (FLOAT_TYPE)N_MICROSTEPS);
 // Number of microsteps per rotation
 const COORD_TYPE MICROSTEPS_PER_ROTATION = MOTOR_STEPS * N_MICROSTEPS;
 // Breaking distance in internal units (microsteps):
-const float BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
-const float SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
+const FLOAT_TYPE BREAKING_DISTANCE = MICROSTEPS_PER_ROTATION * BREAKING_DISTANCE_MM / (1.0 * MM_PER_ROTATION);
+const FLOAT_TYPE SPEED_SCALE = MICROSTEPS_PER_ROTATION / (1.0e6 * MM_PER_ROTATION); // Conversion factor from mm/s to usteps/usecond
 // Speed limit in internal units (microsteps per microsecond):
-const float SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
+const FLOAT_TYPE SPEED_LIMIT = SPEED_SCALE * SPEED_LIMIT_MM_S;
 // Maximum acceleration/deceleration allowed, in microsteps per microseconds^2 (a float)
 // (This is a limiter, to minimize damage to the rail and motor)
-const float ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
+const FLOAT_TYPE ACCEL_LIMIT = SPEED_LIMIT * SPEED_LIMIT / (2.0 * BREAKING_DISTANCE);
 // Backlash in microsteps (+0.5 for proper round-off):
 const COORD_TYPE BACKLASH = (COORD_TYPE)(BACKLASH_MM / MM_PER_MICROSTEP + 0.5);
 #ifdef BL2_DEBUG
@@ -303,7 +318,7 @@ COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE BACKLASH_2 = (COORD_TYPE)(BACKLASH_2_MM / MM_PER_MICROSTEP + 0.5);
 #endif
 // Maximum FPS possible (depends on various delay parameters above; the additional factor of 2000 us is to account for a few Arduino loops):
-const float MAXIMUM_FPS = 1e6 / (float)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
+const FLOAT_TYPE MAXIMUM_FPS = 1e6 / (FLOAT_TYPE)(SHUTTER_TIME_US + SHUTTER_ON_DELAY + SHUTTER_OFF_DELAY + 2000);
 const COORD_TYPE DELTA_LIMITER = (COORD_TYPE)(DELTA_LIMITER_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE LIMITER_PAD = (COORD_TYPE)(LIMITER_PAD_MM / MM_PER_MICROSTEP + 0.5);
 const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_PER_MICROSTEP + 0.5);
@@ -312,10 +327,10 @@ const COORD_TYPE CALIBRATE_FINAL_LEG = (COORD_TYPE)(CALIBRATE_FINAL_LEG_MM / MM_
 struct regist
 {
   COORD_TYPE mstep; // Number of microsteps per frame
-  float fps; // frames per second for continuous mode
+  FLOAT_TYPE fps; // frames per second for continuous mode
   int n_shots; // Number of shots in 1-point mode
-  float first_delay; // First delay in non-continuous mode, seconds
-  float second_delay; // Second delay in non-continuous mode, seconds
+  FLOAT_TYPE first_delay; // First delay in non-continuous mode, seconds
+  FLOAT_TYPE second_delay; // Second delay in non-continuous mode, seconds
   byte i_mode; // counter for the current mode:
 #define ONE_SHOT_MODE 0
 #define CONT_MODE 1
@@ -323,7 +338,7 @@ struct regist
   byte i_accel_factor; // Index for accel_factor (initial acceleration for REWIND and FASTFORWARD)
   byte i_accel_factor2; // Index for accel_factor2 (stopping acceleration, except when BREAK)
   int n_timelapse; // Number of passses in a timelapse sequence (set to 1 to disable timelapsing)
-  float dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap
+  FLOAT_TYPE dt_timelapse; // Time interval (seconds) between timelapse passes. If shorter than the length of one pass, passes will occur one after another without a gap
   byte mirror_lock; // See the posible values below:
 #define MIRROR_OFF 0 // no mirror lock in non-continuous stacking
 #define MIRROR_ON 1 // mirror lock is used in non-continuous stacking
@@ -484,14 +499,14 @@ struct global
 #define MODEL_REWIND 3 // Rewind model, ignored if current model is GOTO or BREAK. Uses intermediate acceleration, and maximum speed limit
 #define MODEL_STOP 4 // Decelerate until stopped, using intermediate acceleration. Can be interrupted by FF and REWIND
 #define MODEL_BREAK 5 // Emergency breaking (hit a limiter etc). Decelerate until stopped, using maximum acceleration. Cannot be interrupted by anything
-  float model_speed_max; // Desired (maximum) speed for the next goto motion (always positive).
+  FLOAT_TYPE model_speed_max; // Desired (maximum) speed for the next goto motion (always positive).
   COORD_TYPE model_ipos1; // Desired target position for the next move (goto, accelerate, or stop)
   byte Npoints; // Number of points in the model (2..5). Points correspond to times when acceleration or direction changes. (Normally do not coincide with steps.)
 #define N_POINTS_MAX 5  // Largest possible value for Npoints
-  float model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
+  FLOAT_TYPE model_accel[N_POINTS_MAX]; // Acceleration (signed) at each model point
   TIME_UTYPE model_time[N_POINTS_MAX]; // Model time for each model point (relative to the 0-th point)
-  float model_speed[N_POINTS_MAX]; // Model speed (signed)
-  float model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
+  FLOAT_TYPE model_speed[N_POINTS_MAX]; // Model speed (signed)
+  FLOAT_TYPE model_pos[N_POINTS_MAX]; // Model position (relative to the 0-th point) at each point
   byte model_ptype[N_POINTS_MAX]; // Model point type:
 #define INIT_POINT 0  // Starting moving from rest; currently not used
 #define ZERO_ACCEL_POINT 1  // Acceleration becomes zero
@@ -510,7 +525,7 @@ struct global
   byte delayed_goto; // set to 1 when pausing focus stacking - a signal to execute goto inside camera() after the breaking is finished
   byte enable_flag; // Tracks down status of the motor enable pin: HIGH: disable motor, LOW: enable motor
   byte editing; // =1 when editing a value
-  float edited_value; // Edited value
+  FLOAT_TYPE edited_value; // Edited value
   int edited_param; // Parameter which is being edited. Possible values:
 #define PARAM_MSTEP 0 // Number of microsteps per frame
 #define PARAM_FPS 1
@@ -543,9 +558,9 @@ struct global
   // Variables used to communicate between modules:
   TIME_UTYPE t;  // Model time in us, measured at the beginning of motor_control() module
   byte moving;  // 0 for stopped, 1 when moving; can only be set to 0 in motor_control()
-  float accel_v[5]; // Five possible floating point values for acceleration
-  float accel_limit; // Maximum allowed acceleration
-  float accel_v2; // Acceleration for normal stopping (not breaking). Computed from g.reg.i_accel_factor2
+  FLOAT_TYPE accel_v[5]; // Five possible floating point values for acceleration
+  FLOAT_TYPE accel_limit; // Maximum allowed acceleration
+  FLOAT_TYPE accel_v2; // Acceleration for normal stopping (not breaking). Computed from g.reg.i_accel_factor2
   COORD_TYPE ipos;  // Current position (in microsteps).
   TIME_UTYPE t_key_pressed; // Last time when a key was pressed
   TIME_UTYPE t_last_repeat; // Last time when a key was repeated (for parameter change keys)
@@ -625,41 +640,35 @@ struct global
 #endif
   TIME_STYPE dt_lost;
 #ifdef TIMING
-  TIME_UTYPE i_timing;
-  TIME_UTYPE t0_timing;
-  int dt_max;
-  int dt_min;
-  int bad_timing_counter; // How many loops in the last movement were longer than the shortest microstep interval allowed
-  int dt_timing; // Timing for the last loop in motion, us
-  int total_dt_timing; // Cumulative movement time in microseconds
-  byte moving_old;  // Old value of g.moving
-  float d_sum;
-  int d_N;
-  int d_Nbad;
-  int d_max;
-  int N_insanity;
+  TIME_UTYPE t_prev;
+  TIME_UTYPE i1_timing;
+  TIME_UTYPE t1_timing;
+  TIME_UTYPE t2_timing;
+  FLOAT_TYPE d_sum;
+  FLOAT_TYPE d2_sum;
+  byte moving_old;
 #endif
   signed char current_point; // The index of the currently loaded memory point. Can be 0/1 for fore/background (macro mode). -1 means no point has been loaded/saved yet.
 #ifdef TEST_SWITCH
   // Number of tests to perform:
 #define TEST_N_MAX 50
-  float speed_test;
+  FLOAT_TYPE speed_test;
   short test_flag;
   short on_init;
-  float test_sum[2];
-  float test_sum2[2];
+  FLOAT_TYPE test_sum[2];
+  FLOAT_TYPE test_sum2[2];
   short test_N;
-  float test_pos0[2];
-  float delta_min[2];
-  float delta_max[2];
-  float test_dev[2];
-  float test_avr[2];
-  float test_std[2];
+  FLOAT_TYPE test_pos0[2];
+  FLOAT_TYPE delta_min[2];
+  FLOAT_TYPE delta_max[2];
+  FLOAT_TYPE test_dev[2];
+  FLOAT_TYPE test_avr[2];
+  FLOAT_TYPE test_std[2];
   int count[2];
   byte test_limit_on[2];
-  float pos_tmp;
-  float pos_tmp2;
-  float test_limit;
+  FLOAT_TYPE pos_tmp;
+  FLOAT_TYPE pos_tmp2;
+  FLOAT_TYPE test_limit;
   char buf9[10];
   COORD_TYPE pos0_test;
 #endif
@@ -674,6 +683,14 @@ struct global
   int limiter_i; // counter for the false limiter readings
   byte limiter_ini; // initial limiter state
 #endif
+#ifdef LONG_TIME
+  uint32 t_curr;
+  uint32 t_old;  
+  uint64 overflow_correction;
+#endif
+#ifdef SER_DEBUG_TIME    
+  uint64 i_debug;
+#endif  
 };
 
 struct global g;

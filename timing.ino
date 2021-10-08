@@ -1,44 +1,70 @@
 #ifdef TIMING
 void timing()
 {
+  if (g.moving_old == 0 && g.moving == 0)
+    return;
 
   if (g.moving_old == 0 && g.moving == 1)
-    g.t0_timing = g.t;
+  {
+    g.t1_timing = g.t;
+    g.i1_timing = 0;
+    g.d_sum = 0;
+    g.d2_sum = 0;
+  }
+
+  if (g.i1_timing > 0)
+  {
+    FLOAT_TYPE dt = g.t - g.t_prev;
+    g.d_sum += dt;
+    g.d2_sum += dt * dt;
+  }
+
+#ifdef SER_DEBUG_TIME
+  g.i_debug++;
+  if (g.i_debug % 100000 == 0)
+  {
+    uint64_t ll = g.t;
+    uint64_t xx = ll / 1000000000ULL;
+    if (xx > 0) Serial.print((long)xx);
+    Serial.print((long)(ll - xx * 1000000000));
+    
+    Serial.print(" ");
+    ll = 4294967296ull;
+    xx = ll / 1000000000ULL;
+    if (xx > 0) Serial.print((long)xx);
+    Serial.print((long)(ll - xx * 1000000000));
+    
+    Serial.print(" ");
+    Serial.print(g.t_curr);
+
+    Serial.print(" ");
+    ll = g.overflow_correction;
+    xx = ll / 1000000000ULL;
+    if (xx > 0) Serial.print((long)xx);
+    Serial.println((long)(ll - xx * 1000000000));
+  }
+#endif
 
   if (g.moving_old == 1 && g.moving == 0)
   {
-      g.total_dt_timing = g.total_dt_timing + (g.t - g.t0_timing);
-      g.dt_timing = 0;
+    g.t2_timing = g.t;
   }
 
+  if (g.moving == 1)
+    g.i1_timing++;
+
   g.moving_old = g.moving;
-  
-  if (g.moving == 0 || g.dt_timing == 0)
-    return;
-
-  g.i_timing++;
-
-  // Counting the number of loops longer than the shortest microstep interval allowed, for the last movement:
-  if ((float)g.dt_timing > (1.0 / SPEED_LIMIT))
-    g.bad_timing_counter++;
-
-  // Finding the longest loop length, for the last movement:
-  //  float dpos = g.pos - (float)g.ipos;
-  //  dt = 10.0 * (abs(dpos));
-  if (g.dt_timing > g.dt_max)
-    g.dt_max = g.dt_timing;
-
-  if (g.dt_timing < g.dt_min)
-    g.dt_min = g.dt_timing;
+  g.t_prev = g.t;
 
   return;
 }
 #endif
 
+
 #ifdef TEST_SWITCH
 void test_switch()
 {
-  float breaking_distance, delta, x;
+  FLOAT_TYPE breaking_distance, delta, x;
   byte i;
 
   if (g.moving || g.model_init || g.error)
@@ -77,11 +103,11 @@ void test_switch()
           g.delta_max[i] = delta;
         if (delta < g.delta_min[i])
           g.delta_min[i] = delta;
-        g.test_avr[i] = g.test_sum[i] / (float)(g.test_N - 1);
+        g.test_avr[i] = g.test_sum[i] / (FLOAT_TYPE)(g.test_N - 1);
       }
       if (g.test_N > 2)
       {
-        g.test_std[i] = sqrt(g.test_sum2[i] / (float)(g.test_N - 1) - g.test_avr[i] * g.test_avr[i]);
+        g.test_std[i] = sqrt(g.test_sum2[i] / (FLOAT_TYPE)(g.test_N - 1) - g.test_avr[i] * g.test_avr[i]);
         g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
       }
       display_all();
@@ -112,10 +138,10 @@ void test_switch()
         g.delta_max[i] = delta;
       if (delta < g.delta_min[i])
         g.delta_min[i] = delta;
-      g.test_avr[i] = g.test_sum[i] / (float)g.test_N;
+      g.test_avr[i] = g.test_sum[i] / (FLOAT_TYPE)g.test_N;
       if (g.test_N > 1)
       {
-        g.test_std[i] = sqrt(g.test_sum2[i] / (float)g.test_N - g.test_avr[i] * g.test_avr[i]);
+        g.test_std[i] = sqrt(g.test_sum2[i] / (FLOAT_TYPE)g.test_N - g.test_avr[i] * g.test_avr[i]);
         g.test_dev[i] = (g.delta_max[i] - g.delta_min[i]) / 2.0;
       }
       if (g.test_N > TEST_N_MAX)
@@ -126,7 +152,7 @@ void test_switch()
         if (d % N_MICROSTEPS > 0)
         {
           // The next full step coordinate:
-          float next_step = g.ipos + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
+          FLOAT_TYPE next_step = g.ipos + N_MICROSTEPS * (d / N_MICROSTEPS + 1) + 0.5;
           // Parking macro rail at the next full step position after the test:
           go_to(next_step, SPEED_LIMIT);
         }

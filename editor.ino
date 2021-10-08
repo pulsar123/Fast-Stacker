@@ -197,7 +197,7 @@ void editor(char key)
     if (g.cursor_pos > 0)
     {
       // First - converting to float
-      float fvalue = atof(g.value);
+      FLOAT_TYPE fvalue = atof(g.value);
       if (g.edited_param == PARAM_MSTEP)
       {
         #if defined(BL_DEBUG)
@@ -226,7 +226,7 @@ void editor(char key)
         SHUTTER_ON_DELAY2 = 1000 * SHUTTER_ON_DELAY2;  // Converting ms -> us
 
         #else
-        float n_steps = fvalue / 1000.0 / MM_PER_MICROSTEP;
+        FLOAT_TYPE n_steps = fvalue / 1000.0 / MM_PER_MICROSTEP;
         COORD_TYPE in_steps = (COORD_TYPE)(n_steps + 0.5); // Rounding up to the nearest integer value
         // Enforcing limits:
         if (in_steps < MSTEP_MIN)
@@ -265,7 +265,7 @@ void editor(char key)
           fvalue = FPS_MAX;
         }
         // Maximum fps from speed limit:
-        float max_fps1 = max_fps();
+        FLOAT_TYPE max_fps1 = max_fps();
         if (fvalue > max_fps1)
         {
           fvalue = max_fps1;
@@ -407,13 +407,13 @@ void editor(char key)
     display_all();
 
     if      (comment_code == 1)
-      display_comment_line("   Reduce FPS!");
+      display_comment_line("   Reduce FPS!  ");
     else if (comment_code == 2)
-      display_comment_line("   Reduce Step!");
+      display_comment_line("   Reduce Step! ");
     else if (comment_code == 3)
-      display_comment_line("    Too small!");
+      display_comment_line("    Too small!  ");
     else if (comment_code == 4)
-      display_comment_line("    Too large!");
+      display_comment_line("    Too large!  ");
       
   }
 

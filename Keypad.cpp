@@ -44,8 +44,8 @@ Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCol
 
   begin(userKeymap);
 
-  setDebounceTime(2); //10
-  setHoldTime(500); // 500
+  setDebounceTime(1); // 
+  setHoldTime(500); // 500  milliseconds
   keypadEventListener = 0;
 
   startTime = 0;
@@ -284,7 +284,7 @@ byte Keypad::numKeys() {
   return sizeof(key) / sizeof(Key);
 }
 
-// Minimum debounceTime is 1 mS. Any lower *will* slow down the loop().
+// Minimum debounceTime is 1 uS.
 void Keypad::setDebounceTime(uint debounce) {
   debounce < 1 ? debounceTime = 1 : debounceTime = debounce;
 }

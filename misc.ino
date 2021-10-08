@@ -1,3 +1,19 @@
+TIME_UTYPE micros_my()
+// My version of micros - can be made 64-bit integer
+{
+#ifdef LONG_TIME
+  g.t_curr = micros();
+  // Detecting the overflow of micros():
+  if (g.t_curr < g.t_old)
+    g.overflow_correction += 4294967296ull;  // At each overflow, adding 2^32
+  g.t_old = g.t_curr;
+  return g.t_curr + g.overflow_correction;
+#else
+  return micros();
+#endif
+}
+
+
 void my_setCursor(byte pos, byte line, byte set)
 /*
    Added in h2.0. Translates old position/line coordinates (0...13 / 0...5) to new display pixel coordinates -
@@ -22,7 +38,7 @@ void my_setCursor(byte pos, byte line, byte set)
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-float target_speed ()
+FLOAT_TYPE target_speed ()
 // Estimating the required speed in microsteps per microsecond
 {
   return 1e-6 * g.reg.fps * g.reg.mstep;
@@ -30,10 +46,10 @@ float target_speed ()
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-float max_fps ()
+FLOAT_TYPE max_fps ()
 // A reverse of the above function. Given speed (microstep/microsecond), estimate the maximum allowed fps
 {
-  return 1e6 * SPEED_LIMIT / (float)g.reg.mstep;
+  return 1e6 * SPEED_LIMIT / (FLOAT_TYPE)g.reg.mstep;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -44,12 +60,12 @@ short Nframes ()
    g.reg.point[FOREGROUND], or g.reg.point[BACKGROUND] changes.
 */
 {
-  return short(((float)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND])) / (float)g.reg.mstep) + 1;
+  return short(((FLOAT_TYPE)(g.reg.point[BACKGROUND] - g.reg.point[FOREGROUND])) / (FLOAT_TYPE)g.reg.mstep) + 1;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-char *ftoa(char *a, float f, int precision)
+char *ftoa(char *a, FLOAT_TYPE f, int precision)
 // Converting float to string (up to 9 decimals)
 {
   long p[] = {0, 10, 100, 1000, 10000};
@@ -70,7 +86,7 @@ char *ftoa(char *a, float f, int precision)
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-COORD_TYPE roundMy(float x)
+COORD_TYPE round_coords(FLOAT_TYPE x)
 /* Rounding of float numbers, output - COORD_TYPE.
    Works with positive, negative numbers and 0.
 */
@@ -79,6 +95,19 @@ COORD_TYPE roundMy(float x)
     return (COORD_TYPE)(x + 0.5);
   else
     return (COORD_TYPE)(x - 0.5);
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+TIME_STYPE round_time(FLOAT_TYPE x)
+/* Rounding of float numbers, output - TIME_STYPE.
+   Works with positive, negative numbers and 0.
+*/
+{
+  if (x >= 0.0)
+    return (TIME_STYPE)(x + 0.5);
+  else
+    return (TIME_STYPE)(x - 0.5);
 }
 
 
@@ -108,11 +137,11 @@ void set_accel_v()
 {
   // Five possible floating point values for acceleration
   g.accel_v[0] = -ACCEL_LIMIT;
-  g.accel_v[1] = -ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
+  g.accel_v[1] = -ACCEL_LIMIT / (FLOAT_TYPE)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[2] = 0.0;
-  g.accel_v[3] =  ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor];
+  g.accel_v[3] =  ACCEL_LIMIT / (FLOAT_TYPE)ACCEL_FACTOR[g.reg.i_accel_factor];
   g.accel_v[4] =  ACCEL_LIMIT;
-  g.accel_v2 = ACCEL_LIMIT / (float)ACCEL_FACTOR[g.reg.i_accel_factor2];
+  g.accel_v2 = ACCEL_LIMIT / (FLOAT_TYPE)ACCEL_FACTOR[g.reg.i_accel_factor2];
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -212,7 +241,7 @@ void save_params(byte n)
   sprintf(g.buffer, "   Saved to Reg%1d    ", n);
   display_comment_line(g.buffer);
   //  tft.print("       ");
-  
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -299,29 +328,29 @@ void set_memory_point(char n)
   if (g.paused || g.moving)
     return;
 
-//  if (g.N_repeats != N_REPEATS_KEY_DELAY)
-//    return;
+  //  if (g.N_repeats != N_REPEATS_KEY_DELAY)
+  //    return;
 
   g.current_point = n - 1;
   g.reg.point[g.current_point] = g.ipos;
   // Saving the changed register as default one:
   EEPROM.put( g.addr_reg[0], g.reg);
   g.Nframes = Nframes();
-//  display_all();
+  //  display_all();
   display_derivatives();
   display_two_points();
   points_status(0);
   sprintf(g.buffer, "     P%1d was set     ", n);
   display_comment_line(g.buffer);
-  
-#ifdef BUZZER  
+
+#ifdef BUZZER
   // Starting a short beep
   g.beep_length = KEY_BEEP_US; // Beep length in us
   g.beep_on = 1;
   g.t_beep = micros(); // We nee actual time, not g.t, for buzzer manipulation
   g.t_buzz = g.t_beep;
-#endif  
-    
+#endif
+
   return;
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

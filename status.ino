@@ -7,7 +7,7 @@ void display_all()
   Refreshing the whole screen
 */
 {
-  float p;
+  FLOAT_TYPE p;
   byte row, col;
 
   if (g.help_mode)
@@ -23,11 +23,11 @@ void display_all()
 
 #ifdef TEST_SWITCH
   byte i;
-  float xcount;
+  FLOAT_TYPE xcount;
   // The switch on section
   i = 0;
   my_setCursor(0, 0, 1);
-  xcount = ((float)g.count[i]) / ((float)g.test_N);
+  xcount = ((FLOAT_TYPE)g.count[i]) / ((FLOAT_TYPE)g.test_N);
   // Averge number of triggers, average coordinate of the first trigger:
   sprintf(g.buffer, "%4s %9s", ftoa(g.buf6, xcount, 2), ftoa(g.buf9, g.test_avr[i], 2));
   //  sprintf(g.buffer, "%5d", g.limit1);
@@ -40,7 +40,7 @@ void display_all()
   i = 1;
   my_setCursor(0, 2, 1);
   if (g.test_N > 0)
-    xcount = ((float)g.count[i]) / ((float)g.test_N - 1);
+    xcount = ((FLOAT_TYPE)g.count[i]) / ((FLOAT_TYPE)g.test_N - 1);
   else
     xcount = 0.0;
   sprintf(g.buffer, "%4s %9s", ftoa(g.buf6, xcount, 2), ftoa(g.buf9, g.test_avr[i], 2));
@@ -174,24 +174,13 @@ void display_all()
       sprintf(g.buffer, "Fast Stacker s%s", VERSION);
 
 #ifdef TIMING
-      // Average loop length for the last motion, in shortest miscrostep length units *100:
-      int avr = (100.0 * (float)g.total_dt_timing / (float)(g.i_timing - 1) * SPEED_LIMIT);
-      // Maximum/minimum loop lenght in the above units:
-      int max1 = (100.0 * (float)(g.dt_max) * SPEED_LIMIT);
-      int min1 = (100.0 * (float)(g.dt_min) * SPEED_LIMIT);
-      sprintf(g.buffer, "%4d %4d %4d", min1, avr, max1);
+      FLOAT_TYPE N = (FLOAT_TYPE)g.i1_timing;
+      FLOAT_TYPE avr2 = g.d_sum / N ;
       my_setCursor(0, 4, 1);
-      tft.print(g.buffer);
-
-      // Maximum number of steps requested in one loop (should be 1), number of loops with d>1, total number of loops, number of times when PRECISE_STEPPING sanity check failed:
-      sprintf(g.buffer, "%3d %4d %6d %4d", g.d_max, g.d_Nbad, g.d_N, g.N_insanity);
-      my_setCursor(0, 6, 1);
-      tft.print(g.buffer);
-
-      // How many times arduino loop was longer than the shortest microstep time interval; total number of arduino loops:
-      sprintf(g.buffer, "%4d %8d   ", g.bad_timing_counter, g.i_timing);
+      tft.print(avr2); // The average length of the Arduino loop (during the last move) in us
       my_setCursor(0, 5, 1);
-      tft.print(g.buffer);
+      FLOAT_TYPE sgm = sqrt(g.d2_sum/N - g.d_sum*g.d_sum/(N*N));
+      tft.print(sgm);  // The std of the Arduino loop (during the last move) in us
 #ifdef MOTOR_DEBUG
       //  sprintf(g.buffer, "%4d %4d %4d", cplus2, cmax, imax);
       //  my_setCursor(0, 3);
@@ -204,7 +193,10 @@ void display_all()
       sprintf(g.buffer, "%4d s%s", ADDR_END, VERSION);
 #else
 #endif  // EEPROM
+
+#ifndef TIMING
       tft.print(g.buffer);
+#endif      
     }
 
   }
@@ -327,7 +319,7 @@ void display_step()
   my_setCursor(1, 1, 1);
   tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
 
-  float step_um = 1e3 * MM_PER_MICROSTEP * g.reg.mstep;
+  FLOAT_TYPE step_um = 1e3 * MM_PER_MICROSTEP * g.reg.mstep;
 
   if (step_um >= 10.0)
     // +0.5 is for proper round-off:
@@ -426,13 +418,13 @@ void display_derivatives()
   if (g.reg.i_mode == ONE_SHOT_MODE)
   {
     // +0.05 for proper round off:
-    float dx = (float)(g.reg.n_shots - 1) * MM_PER_MICROSTEP * g.reg.mstep + 0.05;
+    FLOAT_TYPE dx = (FLOAT_TYPE)(g.reg.n_shots - 1) * MM_PER_MICROSTEP * g.reg.mstep + 0.05;
     if (dx < 1000.0)
       ftoa(g.buf10, dx, 2);
     else
       sprintf(g.buf10, "******");
 
-    int dt = roundMy((float)(g.reg.n_shots - 1) / g.reg.fps);
+    int dt = round_time((FLOAT_TYPE)(g.reg.n_shots - 1) / g.reg.fps);
     if (dt < 10000 && dt >= 0)
       sprintf(g.buf6, "%4d", dt);
     else
@@ -446,14 +438,14 @@ void display_derivatives()
     if (g.reg.i_mode == CONT_MODE)
     {
       // +0.5 for proper round off:
-      dt = (float)(g.Nframes - 1) / g.reg.fps + 0.5;
+      dt = (FLOAT_TYPE)(g.Nframes - 1) / g.reg.fps + 0.5;
     }
     else
     {
       // Time to travel one frame (s), with fixed acceleration:
-      float dt_goto = 1e-6 * sqrt((float)g.reg.mstep / g.accel_v2);
+      FLOAT_TYPE dt_goto = 1e-6 * sqrt((FLOAT_TYPE)g.reg.mstep / g.accel_v2);
       // +0.5 for roundoff:
-      dt = (float)(g.Nframes) * (g.reg.first_delay + g.reg.second_delay) + (float)(g.Nframes - 1) * dt_goto + 0.5;
+      dt = (FLOAT_TYPE)(g.Nframes) * (g.reg.first_delay + g.reg.second_delay) + (FLOAT_TYPE)(g.Nframes - 1) * dt_goto + 0.5;
     }
 
     if (dt < 100000 && dt >= 0)
@@ -483,7 +475,7 @@ void display_two_points()
   Display the positions (in mm) of two points: foreground, F, and background, B. Line #5.
 */
 {
-  float p;
+  FLOAT_TYPE p;
   COORD_TYPE p_int;
 
 #ifdef NO_DISP
@@ -505,7 +497,7 @@ void display_two_points()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "F%5d", g.reg.point[FOREGROUND]);
 #else
-  p = MM_PER_MICROSTEP * (float)(g.reg.point[FOREGROUND]);
+  p = MM_PER_MICROSTEP * (FLOAT_TYPE)(g.reg.point[FOREGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "F%s", ftoa(g.buf10, p, 3));
   else
@@ -517,7 +509,7 @@ void display_two_points()
 #ifdef SHOW_RAW
   sprintf(g.buffer, "B%5d", g.reg.point[BACKGROUND]);
 #else
-  p = MM_PER_MICROSTEP * (float)(g.reg.point[BACKGROUND]);
+  p = MM_PER_MICROSTEP * (FLOAT_TYPE)(g.reg.point[BACKGROUND]);
   if (p >= 0.0)
     sprintf(g.buffer, "B%s", ftoa(g.buf10, p, 3));
   else
@@ -536,7 +528,7 @@ void display_current_position(byte only_position)
   If only_position !=0, printing only the position.
 */
 {
-  float p;
+  FLOAT_TYPE p;
 #ifdef NO_DISP
   if (g.moving || g.model_init)
     return;
@@ -559,7 +551,7 @@ void display_current_position(byte only_position)
   {
     if (g.ipos != g.ipos_printed)
     {
-      float speed = fabs(current_speed());
+      FLOAT_TYPE speed = fabs(current_speed());
       if (speed < SPEED_LIMIT * POS_SPEED_FRACTION)
         // A hack; only if the current speed is small enough, update the current displayed position while moving (to minimize noise)
       {

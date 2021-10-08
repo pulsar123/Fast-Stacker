@@ -11,7 +11,7 @@ void process_keypad()
 
 */
 {
-  float speed, dx_stop;
+  FLOAT_TYPE speed, dx_stop;
   short frame_counter0;
   COORD_TYPE ipos_target;
 
@@ -21,7 +21,7 @@ void process_keypad()
     return;
 
   // Treating delayed keyes here:
-  if (g.init_delayed_key == 1 && micros() - g.t_delayed_key > KEY_DELAY_US)
+  if (g.init_delayed_key == 1 && micros_my() - g.t_delayed_key > KEY_DELAY_US)
   {
     g.init_delayed_key = 0;
 
@@ -468,7 +468,7 @@ void process_keypad()
               {
                 //                set_memory_point(1);
                 g.init_delayed_key = 1;
-                g.t_delayed_key = micros();
+                g.t_delayed_key = micros_my();
               }
               else
                 editor('4');
@@ -479,7 +479,7 @@ void process_keypad()
               {
                 //                set_memory_point(2);
                 g.init_delayed_key = 1;
-                g.t_delayed_key = micros();
+                g.t_delayed_key = micros_my();
               }
               else
                 editor('B');

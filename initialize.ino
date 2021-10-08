@@ -21,7 +21,9 @@ void initialize(byte factory_reset)
   // Keypad stuff:
   // No locking for keys:
   keypad.setHoldTime(65000);
-  keypad.setDebounceTime(50);
+  // This is called "debounce" but in fact is simply an interval between scanning the keypad.
+  // Should be at least 15 ms (if lower, too much time will be wasted on scanning, so rail will vibrate more when moving)
+  keypad.setDebounceTime(15); // milliseconds
   g.key_old = '=';
 
   address = ADDR_REG1;
@@ -76,7 +78,7 @@ void initialize(byte factory_reset)
     g.reg.i_accel_factor2 = 0;
     g.reg.n_timelapse = 1;
     g.reg.dt_timelapse = 0.0;
-    g.reg.mirror_lock = 1;
+    g.reg.mirror_lock = 0;
     g.reg.backlash_on = 0;
     update_backlash();
     g.reg.straight = 1;
@@ -119,8 +121,17 @@ void initialize(byte factory_reset)
   // Five possible floating point values for acceleration
   set_accel_v();
 
+#ifdef LONG_TIME
+  g.t_old = 0;  
+  g.overflow_correction = 0;
+#endif
+
+#ifdef SER_DEBUG_TIME    
+  g.i_debug = 0;
+#endif  
+
   g.model_ipos0 = g.ipos;
-  g.t = micros();
+  g.t = micros_my();
   g.t_key_pressed = g.t;
   g.t_last_repeat = g.t;
   g.t_display = g.t;
@@ -170,21 +181,12 @@ void initialize(byte factory_reset)
   display_all();
 
 #ifdef TIMING
-  if (g.moving == 0)
-  {
-    g.i_timing = (unsigned long)0;
-    g.dt_max = 0;
-    g.dt_min = 10000000;
-    g.bad_timing_counter = 0;
-    g.total_dt_timing = 0;
-    g.moving_old = 0;
-    g.dt_timing = 0;
-  }
-  g.d_sum += 0.0;
-  g.d_N = 0;
-  g.d_Nbad = 0;
-  g.d_max = 0;
-  g.N_insanity = 0;
+  g.t_prev = g.t;
+  g.t1_timing = 0;
+  g.t2_timing = 0;
+  g.i1_timing = 1;
+  g.d_sum = 0.0;
+  g.d2_sum = 0.0;
 #endif
 
 #ifdef MOTOR_DEBUG

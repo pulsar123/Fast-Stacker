@@ -3,7 +3,7 @@ void camera()
   Everything related to camera shutter and AF triggering
 */
 {
-  float speed;
+  FLOAT_TYPE speed;
 #if defined(TEST_SWITCH)
   return;
 #endif
@@ -248,7 +248,7 @@ void camera()
       // Special stacker mode: waiting between stacks in a timelapse sequence:
       g.stacker_mode = 4;
       g.t_mil = millis();
-      if (((float)(g.t_mil - g.t0_mil)) / 1000.0 > g.reg.dt_timelapse)
+      if (((FLOAT_TYPE)(g.t_mil - g.t0_mil)) / 1000.0 > g.reg.dt_timelapse)
         // We are initiating the next stacking in the timelapse sequence
       {
         g.end_of_stacking = 0;
